@@ -23,6 +23,25 @@ import org.w3c.dom.Element
 // Key: "brave_origin_off_<policyKey>", value: true = user disabled this feature.
 private const val PREF_PREFIX = "brave_origin_off_"
 
+private fun braveCompatibility(
+    name: String,
+    packageName: String,
+    experimental: Boolean = false,
+    version: String? = null,
+) = Compatibility(
+    name = name,
+    packageName = packageName,
+    apkFileType = ApkFileType.APKM,
+    appIconColor = 0xFF4500,
+    targets = listOf(AppTarget(version = version, isExperimental = experimental)),
+)
+
+private fun braveCompatibilities() = listOf(
+    braveCompatibility("Brave Browser", "com.brave.browser", version = "1.92.140"),
+    braveCompatibility("Brave Beta", "com.brave.browser_beta", experimental = true),
+    braveCompatibility("Brave Nightly", "com.brave.browser_nightly", experimental = true),
+)
+
 // Sets XML defaultValue="true" on all Origin preference switches so they
 // display as ON before b5() runs. Merged from EnableBraveOriginPatch.
 private val braveOriginResourcePatch = resourcePatch(
@@ -30,15 +49,7 @@ private val braveOriginResourcePatch = resourcePatch(
     description = "Sets Origin preference switches to enabled by default.",
     default = false,
 ) {
-    compatibleWith(
-        Compatibility(
-            name = "Brave Browser",
-            packageName = "com.brave.browser",
-            apkFileType = ApkFileType.APKM,
-            appIconColor = 0xFF4500,
-            targets = listOf(AppTarget(version = "1.92.140")),
-        ),
-    )
+    compatibleWith(*braveCompatibilities().toTypedArray())
     execute {
         val switches = listOf(
             "rewards_switch",
@@ -85,15 +96,7 @@ val braveOriginPatch = bytecodePatch(
     description = "Unlocks Brave Origin and enables feature toggle controls.",
     default = true,
 ) {
-    compatibleWith(
-        Compatibility(
-            name = "Brave Browser",
-            packageName = "com.brave.browser",
-            apkFileType = ApkFileType.APKM,
-            appIconColor = 0xFF4500,
-            targets = listOf(AppTarget(version = "1.92.140")),
-        ),
-    )
+    compatibleWith(*braveCompatibilities().toTypedArray())
 
     dependsOn(braveOriginResourcePatch)
 

@@ -147,7 +147,7 @@ def build_content(expanded=False):
     lines = [
         f"> **[v{ver}](https://github.com/{owner}/{repo}/releases/tag/v{ver})**"
         f"&nbsp;&nbsp;•&nbsp;&nbsp;`{branch}`&nbsp;&nbsp;•&nbsp;&nbsp;"
-        f"{total} patches total"
+        f"{total} {'patch' if total == 1 else 'patches'} total"
     ]
 
     # One spoiler per app, in the order they appear in the JSON
@@ -178,7 +178,11 @@ def build_content(expanded=False):
 raw_ver = data["version"]
 # Strip leading "v" if present
 ver   = raw_ver.lstrip("v")
-total = sum(len(e["patches"]) for e in by_pkg.values()) + len(universal)
+total = len({
+    patch_name
+    for entry in by_pkg.values()
+    for patch_name in entry["patches"]
+} | set(universal))
 
 readme = readme_path.read_text(encoding="utf-8")
 
@@ -224,4 +228,4 @@ new_readme = re.sub(
     flags=re.DOTALL,
 )
 readme_path.write_text(new_readme, encoding="utf-8")
-print(f"✅ Injected patches section into {readme_path} (v{ver}, branch={branch}, {total} patches, expanded={expanded})")
+print(f"Updated patches section in {readme_path} (v{ver}, branch={branch}, {total} patches, expanded={expanded})")
