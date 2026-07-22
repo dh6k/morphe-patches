@@ -1,9 +1,9 @@
-group = "app.bounce"
+group = "app.brave"
 
 patches {
     about {
-        name = "bufferk patches"
-        description = "bufferk patches"
+        name = "Brave Origin patches"
+        description = "Brave Browser patches"
         author = "bufferk"
         website = "https://github.com/bufferk/morphe-patches"
         source = "git@github.com:bufferk/morphe-patches"
@@ -32,14 +32,6 @@ tasks {
 
         classpath = sourceSets["main"].runtimeClasspath
         mainClass.set("util.PatchListGeneratorKt")
-    }
-    register<JavaExec>("runPatchRunner") {
-        description = "Run patcher locally on MyGate APK"
-
-        dependsOn(build)
-
-        classpath = sourceSets["main"].runtimeClasspath
-        mainClass.set("util.PatchRunnerKt")
     }
     // Used by gradle-semantic-release-plugin.
     publish {
