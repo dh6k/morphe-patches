@@ -1,3 +1,52 @@
+## 1.0.0 (2026-07-22)
+
+### 🐛 Bug Fixes
+
+* add gold tier to truecaller ([f1377d5](https://github.com/dh6k/morphe-patches/commit/f1377d5f83a9e5fcd60fc7b14cd2e5e660440162))
+* **brave:** Fixed XML resource issue for Brave Patch ([#17](https://github.com/dh6k/morphe-patches/issues/17)) ([0c0ada3](https://github.com/dh6k/morphe-patches/commit/0c0ada3dfeaad7e741e46e66e104795fea2e07e1))
+* fix at4k patch ([a43fe1e](https://github.com/dh6k/morphe-patches/commit/a43fe1e829f5687c179f6201b6af7ee5a23ab2e6))
+* fix missing file ([28e8a32](https://github.com/dh6k/morphe-patches/commit/28e8a322c66ebf291d2a297f2acd915c7f29f17f))
+* fix notifications ([2afb127](https://github.com/dh6k/morphe-patches/commit/2afb1274e6519708a2580bc158b07b19eaac685b))
+* fix patch generator ([29ba352](https://github.com/dh6k/morphe-patches/commit/29ba352a4e23174710b320518319a6b22f296f66))
+* fix patch instructions ([1b172a6](https://github.com/dh6k/morphe-patches/commit/1b172a68a8e2df9ff5808dfe2381e2d596521021))
+* fix patch instructions ([0e3f83b](https://github.com/dh6k/morphe-patches/commit/0e3f83bd0569e2dbe17b96211aa368f5c2b0ce56))
+* fix spoofed setting ([19e3b5b](https://github.com/dh6k/morphe-patches/commit/19e3b5bb9a80c00f85721bd0676339bbc4d3e8b6))
+* fix truecaller patch ([988cd62](https://github.com/dh6k/morphe-patches/commit/988cd625ad9edf7ed4f347b8e9eb47caa599d5b6))
+* fixed truecaller patch ([18cb40f](https://github.com/dh6k/morphe-patches/commit/18cb40f329b9dc269756b1ade90830e37ebd3b03))
+* inject plan code and name to properly trick flutter into premium status ([b575d70](https://github.com/dh6k/morphe-patches/commit/b575d703ec47f4cef4f430b57c92602254202d3f))
+* **medium:** add custom host option inside freedium settings dialog ([c2927fb](https://github.com/dh6k/morphe-patches/commit/c2927fbef2f7b4bf2071b5fb391580d512dd2ce2))
+* **medium:** add onLongClickListener to hide the Unlock button ([c4a5488](https://github.com/dh6k/morphe-patches/commit/c4a5488608181d2a1dca821f27504fb48eed2b13))
+* **medium:** change extension file type to .mpe for Morphe compatibility ([144a163](https://github.com/dh6k/morphe-patches/commit/144a163ea3d50ca02223ea6c394979f498b6216d))
+* **medium:** correct syntax error in FreediumPatch.kt ([a6cfb87](https://github.com/dh6k/morphe-patches/commit/a6cfb87bb2921f1e8b018d121ec981909775a8c0))
+* **medium:** declare extension dependency in patch builder DSL ([e651e27](https://github.com/dh6k/morphe-patches/commit/e651e272625dde8525c2a79c2168dd6e5873a49f))
+* **medium:** implement manual reflection-based extension loader to resolve classloader issues ([1d3a965](https://github.com/dh6k/morphe-patches/commit/1d3a9655ff62cd83990dae02b1f68b60a6968a9e))
+* **medium:** inject at start of PostFragment.Q to prevent Verifier error ([bf12e08](https://github.com/dh6k/morphe-patches/commit/bf12e08ab17c232b8abb62fa974a55468b3dbcf7))
+* **medium:** prevent status bar overlap and adjust FAB bottom margin to 76dp ([eea5176](https://github.com/dh6k/morphe-patches/commit/eea5176533819374cd4730ae29092e698de4151a))
+* **medium:** refine Settings row integrations, click ripples, and floating button color/alignment ([f62a9f8](https://github.com/dh6k/morphe-patches/commit/f62a9f86a279d1c7979305264ec230dbfbe50ef6))
+* **medium:** set pill-shaped Unlock button with overlay and HTML loading animation inside webview ([b3905cc](https://github.com/dh6k/morphe-patches/commit/b3905cc49aa2915e4548dff0e5aba9f33e922c6c))
+* **morphe:** merge latest patches template improvements and update patch list generator ([20ec4f2](https://github.com/dh6k/morphe-patches/commit/20ec4f28bc0f90c6554fee0a7fe615b7bcbb8c10))
+* mygate notifications ([0f9b162](https://github.com/dh6k/morphe-patches/commit/0f9b1626a893695e31396420ce458963612a956d))
+* mygate patch ([1cb64e9](https://github.com/dh6k/morphe-patches/commit/1cb64e94b9165427ddcfedc3159bbdf29b492e37))
+* mygate patch fixed ([40fe967](https://github.com/dh6k/morphe-patches/commit/40fe967a563783b98e1b9ee394d835a562488616))
+* mygate patch fixed ([9a4ec7d](https://github.com/dh6k/morphe-patches/commit/9a4ec7dce9981ec7f771b7479180021a75e10be5))
+* **mygate:** make ShowUpgradeDialogFingerprint dynamic to bypass method z obfuscation ([1cfb5b9](https://github.com/dh6k/morphe-patches/commit/1cfb5b9b53e430e3812da1bd951f5d4ad091c796))
+* **mygate:** resolve notification loss and fingerprint mismatches on 7.30.1 ([0233b61](https://github.com/dh6k/morphe-patches/commit/0233b616e395622c8c2edb071c4f61e01ce69766))
+* remove gpg check ([4fbcb01](https://github.com/dh6k/morphe-patches/commit/4fbcb018dc04a2e7bfd3d1dd3867701e0ce7a79e))
+* **workflow:** move clean task to start of build to prevent deleting release assets ([05629a6](https://github.com/dh6k/morphe-patches/commit/05629a61578af627cfbe1bed535c5d30ad3ef66c))
+
+### ✨ New Features
+
+* add more truecaller patches ([c9cec9c](https://github.com/dh6k/morphe-patches/commit/c9cec9c54c3ce39c73ce24589c9e7b6b83b9c0c8))
+* add one more patch ([6c59017](https://github.com/dh6k/morphe-patches/commit/6c5901702a029702f4c0aa90ccf6b5c8954fb5b2))
+* Added patches for at4k and bounce ([5b0ca44](https://github.com/dh6k/morphe-patches/commit/5b0ca445236468fb8ab61c925354578e8dda0b12))
+* Brave Browser Origin Unlocked and some MyGate fixes ([#15](https://github.com/dh6k/morphe-patches/issues/15)) ([fb1e24a](https://github.com/dh6k/morphe-patches/commit/fb1e24a838ef0dda09066a76f3d0e826090421a0))
+* bypass Flutter ad rendering via JSON spoofing & nuke native floating banners ([e01ef3b](https://github.com/dh6k/morphe-patches/commit/e01ef3bdb6c23bb68d99ac5910c47489ebc417dc))
+* fix mygate issue ([94c875d](https://github.com/dh6k/morphe-patches/commit/94c875d5e5d84ee2cc190bb1753e25cacb7123bf))
+* **medium:** add Freedium Mirror patch ([02be3f7](https://github.com/dh6k/morphe-patches/commit/02be3f76a2d9ac6194b6cc7e1388f3ac44c0926b))
+* my gate patch ([e599c68](https://github.com/dh6k/morphe-patches/commit/e599c68317bbf33cbb8d59a1381cae6b011705c0))
+* **mygate:** Introducing MyGate Premium Patch ([#19](https://github.com/dh6k/morphe-patches/issues/19)) ([ff0953b](https://github.com/dh6k/morphe-patches/commit/ff0953bf3219fab9a14841c2fee258cfbb85094c))
+* patch splitwise app ([df0a5a1](https://github.com/dh6k/morphe-patches/commit/df0a5a1e1e34c7dffd89a95f43188babe50d9a07))
+
 ## [1.8.0](https://github.com/bufferk/morphe-patches/compare/v1.7.1...v1.8.0) (2026-07-18)
 
 ### ✨ New Features
