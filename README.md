@@ -15,7 +15,7 @@ Beta and Nightly share Brave Origin code paths, but require APK validation for e
 ## Patch
 
 <!-- PATCHES_START EXPANDED -->
-> **[v1.8.0](https://github.com/bufferk/morphe-patches/releases/tag/v1.8.0)**&nbsp;&nbsp;•&nbsp;&nbsp;`main`&nbsp;&nbsp;•&nbsp;&nbsp;1 patch total
+> **[v1.0.0](https://github.com/dh6k/morphe-patches/releases/tag/v1.0.0)**&nbsp;&nbsp;•&nbsp;&nbsp;`main`&nbsp;&nbsp;•&nbsp;&nbsp;1 patch total
 <details open>
 <summary>📦 Brave Browser&nbsp;&nbsp;•&nbsp;&nbsp;1 patch</summary>
 <br>
