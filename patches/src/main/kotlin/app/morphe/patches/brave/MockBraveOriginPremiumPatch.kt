@@ -15,10 +15,16 @@ import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.patch.resourcePatch
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.reference.FieldReference
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import org.w3c.dom.Element
 
-// SharedPreferences key prefix for feature disable flags written by D1()
+private const val ORIGIN_PREFERENCES_CLASS =
+    "Lorg/chromium/chrome/browser/settings/BraveOriginPreferences;"
+
+// SharedPreferences key prefix for feature disable flags written by the preference change listener
 // and read by the feature gatekeeper methods.
 // Key: "brave_origin_off_<policyKey>", value: true = user disabled this feature.
 private const val PREF_PREFIX = "brave_origin_off_"
@@ -171,13 +177,12 @@ val braveOriginPatch = bytecodePatch(
             """,
         )
 
-        // ── 6. Q4(): force v42.d call-site result = false ─────────────────────────────
+        // ── 6. Origin preferences setup: force v42.d call-site result = false ─────────
         val validSubscriptionClass = hasValidSubscriptionTokensFingerprint.originalClassDef.type
         val validSubscriptionMethod = hasValidSubscriptionTokensFingerprint.originalMethod?.name
             ?: error("Failed to resolve Brave Origin credential predicate")
         val q4Fingerprint = Fingerprint(
-            definingClass = "Lorg/chromium/chrome/browser/settings/BraveOriginPreferences;",
-            name = "Q4",
+            definingClass = ORIGIN_PREFERENCES_CLASS,
             returnType = "V",
             parameters = listOf("Ljava/lang/String;", "Landroid/os/Bundle;"),
             filters = listOf(
@@ -194,10 +199,9 @@ val braveOriginPatch = bytecodePatch(
             .getInstruction<OneRegisterInstruction>(validCheckIndex + 1).registerA
         q4Fingerprint.method.addInstructions(validCheckIndex + 2, "const/4 v$resultReg, 0x0")
 
-        // ── 6b. Q4(): force J0=false to stop restart snackbar loop ────────────────────
+        // ── 6b. Origin preferences setup: disable restart prompt loop ─────────────────
         val q4RestartPromptFingerprint = Fingerprint(
-            definingClass = "Lorg/chromium/chrome/browser/settings/BraveOriginPreferences;",
-            name = "Q4",
+            definingClass = ORIGIN_PREFERENCES_CLASS,
             returnType = "V",
             parameters = listOf("Ljava/lang/String;", "Landroid/os/Bundle;"),
             filters = listOf(
@@ -210,7 +214,7 @@ val braveOriginPatch = bytecodePatch(
             .getInstruction<TwoRegisterInstruction>(j0PutIndex).registerA
         q4RestartPromptFingerprint.method.addInstructions(j0PutIndex, "const/4 v$j0PutReg, 0x0")
 
-        // ── 7. D1(): write toggle state to SharedPreferences + show snackbar ──────────
+        // ── 7. Preference change listener: persist toggle state + show snackbar ────────
         //
         //  Strategy: use Android SharedPreferences (SDK-only, no defpackage.* refs).
         //  Key: "brave_origin_off_<policyKey>", value: true = feature disabled.
@@ -222,34 +226,75 @@ val braveOriginPatch = bytecodePatch(
         //  The 4 gatekeeper classes (d72/b12/lf2/pc2) are patched below to read
         //  these SharedPreferences values and return true when key is true.
         //
-        //  Context: use getApplicationContext() via the fragment's Activity.
+        //  Obfuscated method and field names change between Brave versions. Resolve
+        //  them from stable switch/policy strings and the original listener bytecode.
+        val policyKeyFingerprint = Fingerprint(
+            definingClass = ORIGIN_PREFERENCES_CLASS,
+            returnType = "Ljava/lang/String;",
+            parameters = listOf("Ljava/lang/String;"),
+            strings = listOf(
+                "rewards_switch",
+                "BraveRewardsDisabled",
+                "wallet_switch",
+                "BraveWalletDisabled",
+            ),
+        )
+        val policyKeyMethod = policyKeyFingerprint.originalMethod
+
         val d1Fingerprint = Fingerprint(
-            definingClass = "Lorg/chromium/chrome/browser/settings/BraveOriginPreferences;",
-            name = "D1",
+            definingClass = ORIGIN_PREFERENCES_CLASS,
             returnType = "Z",
             parameters = listOf("Landroidx/preference/Preference;", "Ljava/lang/Object;"),
+            filters = listOf(methodCall(policyKeyMethod)),
         )
+        val d1Instructions = d1Fingerprint.originalMethod.implementation!!.instructions
+        val lockField = d1Instructions
+            .first { it.opcode == Opcode.IGET_BOOLEAN }
+            .let { (it as ReferenceInstruction).reference as FieldReference }
+        val preferenceKeyField = d1Instructions
+            .first { instruction ->
+                if (instruction.opcode != Opcode.IGET_OBJECT) return@first false
+                val reference = (instruction as ReferenceInstruction).reference as? FieldReference
+                    ?: return@first false
+                reference.definingClass == "Landroidx/preference/Preference;" &&
+                    reference.type == "Ljava/lang/String;"
+            }
+            .let { (it as ReferenceInstruction).reference as FieldReference }
+
+        val restartPromptFingerprint = Fingerprint(
+            strings = listOf("Failed to set policy value for "),
+            filters = listOf(
+                methodCall(
+                    definingClass = ORIGIN_PREFERENCES_CLASS,
+                    returnType = "V",
+                    parameters = emptyList(),
+                ),
+            ),
+        )
+        val restartPromptMethod = restartPromptFingerprint.instructionMatches
+            .first()
+            .getInstruction<ReferenceInstruction>()
+            .reference as MethodReference
+
         d1Fingerprint.method.apply {
             removeInstructions(0, implementation!!.instructions.count())
             addInstructionsWithLabels(
                 0,
                 """
-                    iget-boolean v0, p0, Lorg/chromium/chrome/browser/settings/BraveOriginPreferences;->I0:Z
+                    iget-boolean v0, p0, ${lockField.definingClass}->${lockField.name}:${lockField.type}
                     if-eqz v0, :not_locked
                     const/4 v0, 0x0
                     return v0
                     :not_locked
-                    iget-object v0, p1, Landroidx/preference/Preference;->E:Ljava/lang/String;
-                    invoke-static {v0}, Lorg/chromium/chrome/browser/settings/BraveOriginPreferences;->Z4(Ljava/lang/String;)Ljava/lang/String;
+                    iget-object v0, p1, ${preferenceKeyField.definingClass}->${preferenceKeyField.name}:${preferenceKeyField.type}
+                    invoke-static {v0}, ${policyKeyMethod.definingClass}->${policyKeyMethod.name}(Ljava/lang/String;)Ljava/lang/String;
                     move-result-object v0
                     if-eqz v0, :no_key
                     check-cast p2, Ljava/lang/Boolean;
                     invoke-virtual {p2}, Ljava/lang/Boolean;->booleanValue()Z
                     move-result v1
                     xor-int/lit8 v1, v1, 0x1
-                    invoke-virtual {p0}, Lorg/chromium/chrome/browser/settings/BraveOriginPreferences;->A4()Landroid/content/Context;
-                    move-result-object v2
-                    invoke-virtual {v2}, Landroid/content/Context;->getApplicationContext()Landroid/content/Context;
+                    invoke-static {}, Landroid/app/ActivityThread;->currentApplication()Landroid/app/Application;
                     move-result-object v2
                     const-string v3, "$PREF_PREFIX"
                     invoke-virtual {v3, v0}, Ljava/lang/String;->concat(Ljava/lang/String;)Ljava/lang/String;
@@ -267,7 +312,7 @@ val braveOriginPatch = bytecodePatch(
                     move-result-object v2
                     :write_done
                     invoke-interface {v2}, Landroid/content/SharedPreferences${'$'}Editor;->apply()V
-                    invoke-virtual {p0}, Lorg/chromium/chrome/browser/settings/BraveOriginPreferences;->c5()V
+                    invoke-virtual {p0}, ${restartPromptMethod.definingClass}->${restartPromptMethod.name}()V
                     :no_key
                     const/4 v0, 0x1
                     return v0
@@ -275,36 +320,21 @@ val braveOriginPatch = bytecodePatch(
             )
         }
 
-        // ── 8. b5(): set w=this via reflection, skip native n42.b() read ────────────────
+        // ── 8. Switch binder: retain listener assignment, skip native policy read ──────
         //
-        //  b5() must set chromeSwitchPreference.w = this so D1() fires on toggle.
-        //  Direct iput of Preference.w:nzc fails cross-DEX (ClassNotFoundException).
-        //  Fix: use java.lang.reflect.Field to set w — pure Android SDK, always safe.
-        //  Then return-void to skip the n42.b() native read (G0 is null anyway).
+        //  The original method already assigns this listener with a valid in-DEX field
+        //  reference. Return immediately after that instruction to skip the native read.
         val b5Fingerprint = Fingerprint(
-            definingClass = "Lorg/chromium/chrome/browser/settings/BraveOriginPreferences;",
-            name = "b5",
+            definingClass = ORIGIN_PREFERENCES_CLASS,
             returnType = "V",
             parameters = listOf("Ljava/lang/String;"),
+            filters = listOf(
+                opcode(Opcode.IPUT_OBJECT),
+                methodCall(policyKeyMethod),
+            ),
         )
-        b5Fingerprint.method.addInstructions(
-            0,
-            """
-                invoke-virtual {p0, p1}, Lorg/chromium/chrome/browser/settings/BraveOriginPreferences;->N4(Ljava/lang/CharSequence;)Landroidx/preference/Preference;
-                move-result-object v0
-                if-eqz v0, :b5_done
-                move-object v3, p0
-                const-string v1, "w"
-                const-class v2, Landroidx/preference/Preference;
-                invoke-virtual {v2, v1}, Ljava/lang/Class;->getDeclaredField(Ljava/lang/String;)Ljava/lang/reflect/Field;
-                move-result-object v1
-                const/4 v2, 0x1
-                invoke-virtual {v1, v2}, Ljava/lang/reflect/Field;->setAccessible(Z)V
-                invoke-virtual {v1, v0, v3}, Ljava/lang/reflect/Field;->set(Ljava/lang/Object;Ljava/lang/Object;)V
-                :b5_done
-                return-void
-            """,
-        )
+        val listenerPutIndex = b5Fingerprint.instructionMatches.first().index
+        b5Fingerprint.method.addInstructions(listenerPutIndex + 1, "return-void")
 
         // ── 9. Gatekeeper patches: read SharedPreferences to enforce feature state ─────
         //
@@ -392,7 +422,7 @@ val braveOriginPatch = bytecodePatch(
         leoAIFeatureFlagFingerprint.method.apply {
             removeInstructions(0, implementation!!.instructions.count())
             // lv1.d() has 0 params = only 2 registers (v0, v1). Use contains() — 2 args only.
-            // D1() removes key on toggle ON and writes key on toggle OFF,
+            // Preference listener removes key on toggle ON and writes key on toggle OFF,
             // so contains() = true means Leo is disabled.
             addInstructions(
                 0,
