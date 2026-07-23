@@ -1,3 +1,9 @@
+## [1.0.1-dev.1](https://github.com/dh6k/morphe-patches/compare/v1.0.0...v1.0.1-dev.1) (2026-07-23)
+
+### 🐛 Bug Fixes
+
+* **brave:** support Brave Beta 1.94.94 ([9aeeb69](https://github.com/dh6k/morphe-patches/commit/9aeeb691ecdc724db6510e89a8c63577dbd6f6da))
+
 ## 1.0.0 (2026-07-22)
 
 ### 🐛 Bug Fixes
