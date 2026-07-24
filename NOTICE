@@ -20,3 +20,14 @@ References to Morphe are permitted solely for descriptive compatibility purposes
 - Are accurate, factual, and non-misleading;
 - Do not suggest authorship by the Morphe project; and
 - Appear only in a secondary or descriptive context, not as part of the product or project name.
+
+Third-party patch attribution
+-----------------------------
+
+The universal "Change app name" patch is adapted from
+durgesh0505/chiggi_morphe_patches at commit
+6b8a9a36cbd36faa4d5b8ce6e811fb428eb365f9:
+
+https://github.com/durgesh0505/chiggi_morphe_patches
+
+The upstream patch is licensed under the GNU General Public License v3.0.
