@@ -1,8 +1,8 @@
-# Brave Origin Patches
+# Brave Origin and Universal Patches
 
-Morphe patch bundle for Brave Browser on Android. Contains one patch: Brave Origin.
+Morphe patch bundle for Brave Browser plus app-independent Android resource patches.
 
-## Supported builds
+## Brave Origin support
 
 | Build | Package name | Support status |
 | --- | --- | --- |
@@ -12,7 +12,7 @@ Morphe patch bundle for Brave Browser on Android. Contains one patch: Brave Orig
 
 Beta and Nightly share Brave Origin code paths, but require APK validation for each release before promotion from experimental support.
 
-## Patch
+## Patches
 
 <!-- PATCHES_START EXPANDED -->
 > **[v1.0.1](https://github.com/dh6k/morphe-patches/releases/tag/v1.0.1)**&nbsp;&nbsp;•&nbsp;&nbsp;`main`&nbsp;&nbsp;•&nbsp;&nbsp;1 patch total
@@ -56,9 +56,9 @@ Beta and Nightly share Brave Origin code paths, but require APK validation for e
 ## Install
 
 1. Install [Morphe Manager](https://morphe.software) on Android.
-2. Add `https://github.com/bufferk/morphe-patches` as patch source.
-3. Select Brave Browser, Brave Beta, or Brave Nightly. Select `Brave Origin`.
-4. Patch APKM and install output.
+2. Add `https://github.com/dh6k/morphe-patches` as patch source.
+3. Select an app and enable the desired patch. Universal patches are available for any app.
+4. Patch the APK or APKM and install output.
 
 ## Build
 
@@ -69,3 +69,7 @@ Beta and Nightly share Brave Origin code paths, but require APK validation for e
 ## License
 
 Licensed under [GPLv3](LICENSE). See [NOTICE](NOTICE) for additional GPLv3 Section 7 conditions.
+
+`Change app name` is adapted from
+[durgesh0505/chiggi_morphe_patches](https://github.com/durgesh0505/chiggi_morphe_patches)
+at commit `6b8a9a36cbd36faa4d5b8ce6e811fb428eb365f9`.
