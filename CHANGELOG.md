@@ -1,3 +1,9 @@
+## [1.0.2-dev.1](https://github.com/dh6k/morphe-patches/compare/v1.0.1...v1.0.2-dev.1) (2026-07-24)
+
+### 🚀 Updated App Support
+
+* **universal:** backport Change app name patch ([8b34d84](https://github.com/dh6k/morphe-patches/commit/8b34d84d0063e9ad7c065c14270c06206501ed33))
+
 ## [1.0.1](https://github.com/dh6k/morphe-patches/compare/v1.0.0...v1.0.1) (2026-07-23)
 
 ### 🐛 Bug Fixes
