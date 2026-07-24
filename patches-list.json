@@ -1,6 +1,6 @@
 {
   "NOTE": "Do NOT manually edit this file. This file is automatically updated when semantic release (release.yml) runs. Manually editing this file can break your releases and break third party tools that use this file.",
-  "version": "1.0.1",
+  "version": "1.0.2-dev.1",
   "patches": [
     {
       "name": "Brave Origin",
@@ -63,6 +63,24 @@
         }
       ],
       "options": []
+    },
+    {
+      "name": "Change app name",
+      "description": "Changes the app name shown by Android launchers. Set the desired name in the patch options.",
+      "default": false,
+      "dependencies": [],
+      "compatiblePackages": null,
+      "options": [
+        {
+          "key": "appName",
+          "title": "App name",
+          "description": "The name shown under the app icon.",
+          "required": true,
+          "type": "kotlin.String",
+          "default": "Patched",
+          "values": null
+        }
+      ]
     }
   ]
 }
