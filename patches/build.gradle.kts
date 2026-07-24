@@ -2,11 +2,11 @@ group = "app.brave"
 
 patches {
     about {
-        name = "Brave Origin patches"
-        description = "Brave Browser patches"
-        author = "bufferk"
-        website = "https://github.com/bufferk/morphe-patches"
-        source = "git@github.com:bufferk/morphe-patches"
+        name = "Brave and universal patches"
+        description = "Brave Browser and universal Android patches"
+        author = "dh6k"
+        website = "https://github.com/dh6k/morphe-patches"
+        source = "git@github.com:dh6k/morphe-patches"
         contact = ""
         license = "GPLv3"
     }
