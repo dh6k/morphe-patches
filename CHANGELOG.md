@@ -1,3 +1,9 @@
+## [1.1.0-dev.2](https://github.com/dh6k/morphe-patches/compare/v1.1.0-dev.1...v1.1.0-dev.2) (2026-07-25)
+
+### 🐛 Bug Fixes
+
+* **build:** keep generator dependencies out of patch dex ([fe0a25e](https://github.com/dh6k/morphe-patches/commit/fe0a25e9767e47ffd90342e116e58c4c7e7f4e2b))
+
 ## [1.1.0-dev.1](https://github.com/dh6k/morphe-patches/compare/v1.0.2...v1.1.0-dev.1) (2026-07-25)
 
 ### ✨ New Features
