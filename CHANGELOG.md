@@ -1,3 +1,9 @@
+## [1.1.0-dev.4](https://github.com/dh6k/morphe-patches/compare/v1.1.0-dev.3...v1.1.0-dev.4) (2026-07-25)
+
+### 🐛 Bug Fixes
+
+* **universal:** restore appName option key ([83f1677](https://github.com/dh6k/morphe-patches/commit/83f1677388c16073f71ed83d99a6663d63cd63a3))
+
 ## [1.1.0-dev.3](https://github.com/dh6k/morphe-patches/compare/v1.1.0-dev.2...v1.1.0-dev.3) (2026-07-25)
 
 ### 🐛 Bug Fixes
