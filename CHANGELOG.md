@@ -1,3 +1,9 @@
+## [1.1.0-dev.3](https://github.com/dh6k/morphe-patches/compare/v1.1.0-dev.2...v1.1.0-dev.3) (2026-07-25)
+
+### 🐛 Bug Fixes
+
+* **universal:** release bundle-specific app name option ([dbdb4fc](https://github.com/dh6k/morphe-patches/commit/dbdb4fc184f82ddfc010e9d7f8fb1f4bde527758))
+
 ## [1.1.0-dev.2](https://github.com/dh6k/morphe-patches/compare/v1.1.0-dev.1...v1.1.0-dev.2) (2026-07-25)
 
 ### 🐛 Bug Fixes
