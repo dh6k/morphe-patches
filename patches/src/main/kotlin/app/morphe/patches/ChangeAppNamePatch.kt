@@ -88,14 +88,10 @@ private fun org.w3c.dom.NodeList.hasAnyAndroidName(expectedNames: Set<String>): 
 }
 
 private fun Element.getAndroidAttribute(name: String): String =
-    getAttributeNS(ANDROID_NAMESPACE, name).ifEmpty {
-        getAttribute("android:$name")
+    getAttribute("android:$name").ifEmpty {
+        getAttributeNS(ANDROID_NAMESPACE, name)
     }
 
 private fun Element.setAndroidAttribute(name: String, value: String) {
-    val namespacePrefix = lookupPrefix(ANDROID_NAMESPACE)
-    val qualifiedName = namespacePrefix
-        ?.let { "$it:$name" }
-        ?: "android:$name"
-    setAttributeNS(ANDROID_NAMESPACE, qualifiedName, value)
+    setAttribute("android:$name", value)
 }

@@ -65,6 +65,24 @@
       "options": []
     },
     {
+      "name": "Change app icon",
+      "description": "Changes the Android launcher icon using a custom PNG image. Use a square image with transparent adaptive-icon padding.",
+      "default": false,
+      "dependencies": [],
+      "compatiblePackages": null,
+      "options": [
+        {
+          "key": "customIcon",
+          "title": "Custom app icon",
+          "description": "Square PNG, 48-4096 px, maximum 256 KiB. Recommended: 432x432 px with transparent padding.",
+          "required": true,
+          "type": "kotlin.String",
+          "default": null,
+          "values": null
+        }
+      ]
+    },
+    {
       "name": "Change app name",
       "description": "Changes the app name shown by Android launchers. Set the desired name in the patch options.",
       "default": false,
