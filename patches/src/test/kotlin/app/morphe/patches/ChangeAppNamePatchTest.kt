@@ -6,6 +6,6 @@ import kotlin.test.assertEquals
 class ChangeAppNamePatchTest {
     @Test
     fun `option key is bundle specific`() {
-        assertEquals(setOf("braveAppName"), changeAppNamePatch.options.keys)
+        assertEquals(setOf("appName"), changeAppNamePatch.options.keys)
     }
 }

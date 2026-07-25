@@ -27,8 +27,8 @@ val changeAppNamePatch = resourcePatch(
         "Set the desired name in the patch options.",
     default = false,
 ) {
-    val braveAppName by stringOption(
-        key = "braveAppName",
+    val appName by stringOption(
+        key = "appName",
         default = "Patched",
         title = "App name",
         description = "The name shown under the app icon.",
@@ -38,7 +38,7 @@ val changeAppNamePatch = resourcePatch(
 
     execute {
         document("AndroidManifest.xml").use { document ->
-            val newName = braveAppName?.trim().orEmpty()
+            val newName = appName?.trim().orEmpty()
             require(newName.isNotEmpty()) { "App name must not be blank" }
 
             val application = document.getElementsByTagName("application").item(0) as? Element
