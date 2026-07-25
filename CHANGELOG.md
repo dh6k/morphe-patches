@@ -1,3 +1,9 @@
+## [1.1.0-dev.1](https://github.com/dh6k/morphe-patches/compare/v1.0.2...v1.1.0-dev.1) (2026-07-25)
+
+### ✨ New Features
+
+* **universal:** add custom app icon patch ([affb2d4](https://github.com/dh6k/morphe-patches/commit/affb2d4e578a91da7ce5ec6a40c56b47d7ae968f))
+
 ## [1.0.2](https://github.com/dh6k/morphe-patches/compare/v1.0.1...v1.0.2) (2026-07-24)
 
 ### 🚀 Updated App Support
