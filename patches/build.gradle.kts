@@ -18,9 +18,13 @@ kotlin {
     }
 }
 
+// Keep Gson available to generatePatchesList without bundling its runtime graph
+// into the patches DEX.
+val patchListGeneratorClasspath = configurations.create("patchListGeneratorClasspath")
+
 dependencies {
-    // Used by JsonGenerator.
-    implementation(libs.gson)
+    compileOnly(libs.gson)
+    patchListGeneratorClasspath(libs.gson)
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
     testImplementation(kotlin("test-junit5"))
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
@@ -36,7 +40,7 @@ tasks {
 
         dependsOn(build)
 
-        classpath = sourceSets["main"].runtimeClasspath
+        classpath = sourceSets["main"].runtimeClasspath + patchListGeneratorClasspath
         mainClass.set("util.PatchListGeneratorKt")
     }
     // Used by gradle-semantic-release-plugin.
