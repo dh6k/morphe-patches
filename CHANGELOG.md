@@ -1,3 +1,16 @@
+## [1.1.0](https://github.com/dh6k/morphe-patches/compare/v1.0.2...v1.1.0) (2026-07-25)
+
+### 🐛 Bug Fixes
+
+* **build:** keep generator dependencies out of patch dex ([fe0a25e](https://github.com/dh6k/morphe-patches/commit/fe0a25e9767e47ffd90342e116e58c4c7e7f4e2b))
+* **release:** publish appName option on main ([87f6a6e](https://github.com/dh6k/morphe-patches/commit/87f6a6ed75ced66379debe0ba89bdf66da693189))
+* **universal:** release bundle-specific app name option ([dbdb4fc](https://github.com/dh6k/morphe-patches/commit/dbdb4fc184f82ddfc010e9d7f8fb1f4bde527758))
+* **universal:** restore appName option key ([83f1677](https://github.com/dh6k/morphe-patches/commit/83f1677388c16073f71ed83d99a6663d63cd63a3))
+
+### ✨ New Features
+
+* **universal:** add custom app icon patch ([affb2d4](https://github.com/dh6k/morphe-patches/commit/affb2d4e578a91da7ce5ec6a40c56b47d7ae968f))
+
 ## [1.1.0-dev.4](https://github.com/dh6k/morphe-patches/compare/v1.1.0-dev.3...v1.1.0-dev.4) (2026-07-25)
 
 ### 🐛 Bug Fixes
