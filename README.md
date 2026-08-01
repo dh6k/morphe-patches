@@ -12,6 +12,30 @@ Morphe patch bundle for Brave Browser plus app-independent Android resource patc
 
 Beta and Nightly share Brave Origin code paths, but require APK validation for each release before promotion from experimental support.
 
+### Web app installation limitation
+
+Patched Brave APKs are re-signed. WebAPK installation through **Install and create shortcut > Install** may remain stuck on `Installing`, especially when the package name is also changed. This is separate from the Brave Origin bytecode patch: Brave Origin modifies subscription and feature-policy behavior, not the Chromium WebAPK installer.
+
+Use **Create shortcut** as the supported workaround. It uses Android's pinned-shortcut flow and does not install a WebAPK.
+
+When reporting this problem, include the app version, final package name, whether **Create shortcut** works, and filtered ADB output:
+
+```powershell
+adb logcat -c
+# Reproduce the failed Install action, then run:
+adb logcat -d -v threadtime |
+    Select-String -Pattern 'webapk|shortcut|packageinstaller|finsky|playcore|install'
+```
+
+Also verify the installed package and patched APK certificate:
+
+```powershell
+adb shell dumpsys package <package-name>
+apksigner verify --print-certs <patched.apk>
+```
+
+Do not use Chromium's GServices WebAPK package/signing-check overrides as an end-user fix. Those overrides are intended for development builds and may require privileged device access.
+
 ## Patches
 
 <!-- PATCHES_START EXPANDED -->
