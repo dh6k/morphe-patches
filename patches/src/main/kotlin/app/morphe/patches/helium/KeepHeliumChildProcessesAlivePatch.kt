@@ -26,7 +26,7 @@ internal val heliumChildProcessCompatibility = Compatibility(
     name = "Helium Browser",
     packageName = HELIUM_PACKAGE,
     apkFileType = ApkFileType.APK,
-    targets = listOf(AppTarget(isExperimental = true)),
+    targets = listOf(AppTarget(version = null, isExperimental = true)),
 )
 
 /**
@@ -50,18 +50,19 @@ val keepHeliumChildProcessesAlivePatch = bytecodePatch(
             parameters = listOf("J", "[Ljava/lang/String;", "[Lorg/chromium/base/process_launcher/IFileDescriptorInfo;", "Z", "Z"),
             strings = listOf("ChildProcessLauncher.start", "renderer", "gpu-process"),
         )
-        val startAnchors = spawn.method.instructions.withIndex().filter { (_, instruction) ->
+        val spawnInstructions = spawn.method.implementation!!.instructions
+        val startAnchors = spawnInstructions.withIndex().filter { (_, instruction) ->
             ((instruction as? ReferenceInstruction)?.reference as? StringReference)?.string == HELIUM_SPAWN_START_ANCHOR
         }.map { it.index }
         require(startAnchors.size == 1) { "Helium createAndStart: expected one start anchor, found ${startAnchors.size}" }
         val startIndex = startAnchors.single()
-        val endIndex = spawn.method.instructions.withIndex().firstOrNull { (index, instruction) ->
+        val endIndex = spawnInstructions.withIndex().firstOrNull { (index, instruction) ->
             index > startIndex && (instruction as? ReferenceInstruction)?.reference.let { ref ->
                 ref is MethodReference && ref.definingClass == "Lorg/chromium/base/TraceEvent;" && ref.returnType == "V" && ref.parameterTypes == listOf("Ljava/lang/String;")
             }
         }?.index ?: error("Helium createAndStart: TraceEvent end anchor not found")
         val candidates = (startIndex + 1 until endIndex).mapNotNull { index ->
-            val instruction = spawn.method.instructions.elementAt(index)
+            val instruction = spawnInstructions.elementAt(index)
             val ref = (instruction as? ReferenceInstruction)?.reference as? MethodReference ?: return@mapNotNull null
             if (ref.returnType == "V" || ref.parameterTypes.lastOrNull() != "I") return@mapNotNull null
             val register = when (instruction) {
