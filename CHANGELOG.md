@@ -1,3 +1,13 @@
+## [1.2.0-dev.2](https://github.com/dh6k/morphe-patches/compare/v1.2.0-dev.1...v1.2.0-dev.2) (2026-08-07)
+
+### 🐛 Bug Fixes
+
+* **helium:** use compatible patcher APIs ([a4e53db](https://github.com/dh6k/morphe-patches/commit/a4e53db1500c3697c03713dc88fb67a321af31ba))
+
+### ✨ New Features
+
+* **helium:** strengthen child process survival ([99d7e27](https://github.com/dh6k/morphe-patches/commit/99d7e27a3a8bd4be1ba48c1e1c10829efd88d6ed))
+
 ## [1.2.0-dev.1](https://github.com/dh6k/morphe-patches/compare/v1.1.0...v1.2.0-dev.1) (2026-08-07)
 
 ### ✨ New Features
