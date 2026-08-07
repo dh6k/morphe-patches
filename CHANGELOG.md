@@ -1,3 +1,9 @@
+## [1.2.0-dev.1](https://github.com/dh6k/morphe-patches/compare/v1.1.0...v1.2.0-dev.1) (2026-08-07)
+
+### ✨ New Features
+
+* **helium:** keep child processes strongly bound ([524412d](https://github.com/dh6k/morphe-patches/commit/524412d48a8898a36295593f9d875c94749e8d5d))
+
 ## [1.1.0](https://github.com/dh6k/morphe-patches/compare/v1.0.2...v1.1.0) (2026-07-25)
 
 ### 🐛 Bug Fixes
