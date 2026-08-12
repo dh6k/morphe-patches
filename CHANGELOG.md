@@ -1,3 +1,16 @@
+## [1.2.0](https://github.com/dh6k/morphe-patches/compare/v1.1.0...v1.2.0) (2026-08-12)
+
+### 🐛 Bug Fixes
+
+* **helium:** use compatible patcher APIs ([a4e53db](https://github.com/dh6k/morphe-patches/commit/a4e53db1500c3697c03713dc88fb67a321af31ba))
+* pass list to Quetta fingerprint strings ([dbe35a6](https://github.com/dh6k/morphe-patches/commit/dbe35a6e2fe1861f3eb0318e1acd61cecff90772))
+
+### ✨ New Features
+
+* **helium:** keep child processes strongly bound ([524412d](https://github.com/dh6k/morphe-patches/commit/524412d48a8898a36295593f9d875c94749e8d5d))
+* **helium:** strengthen child process survival ([99d7e27](https://github.com/dh6k/morphe-patches/commit/99d7e27a3a8bd4be1ba48c1e1c10829efd88d6ed))
+* **quetta:** block bundled extension installation ([e63165d](https://github.com/dh6k/morphe-patches/commit/e63165dbf5c3bff778c9f612b45fb8979af73cc2))
+
 ## [1.2.0-dev.3](https://github.com/dh6k/morphe-patches/compare/v1.2.0-dev.2...v1.2.0-dev.3) (2026-08-12)
 
 ### 🐛 Bug Fixes
