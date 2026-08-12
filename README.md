@@ -2,6 +2,17 @@
 
 Morphe patch bundle for Brave Browser, Quetta browser plus app-independent Android resource patches.
 
+## Quetta Browser support
+
+Supports Quetta Browser (`net.quetta.browser`) and Quetta Browser Official (`net.quetta.browser.official`) through the **Block Quetta bundled extension installation** patch. Compatibility is version-unpinned and experimental, intended for arm64-v8a APKs; the framework does not enforce ABI.
+
+Patch blocks bundled installation/reinstallation for these exact extensions:
+
+- `nnedfbcpeenmccjbdcnlnhogapndfeoa` — Q30 from Quetta Translator
+- `gadlcodpkkelmagfhkldjlobfncbkbmd` — Q30 from Quetta
+
+It does not remove copies already installed in existing profiles. Remove them through Quetta's extension-management UI, or use a clean profile as appropriate. Static validation is anchored to supplied Quetta `2.0.2-530` Official arm64-v8a APK; this is not broad runtime proof. Future versions may change fingerprints; patch should fail safely rather than modify unrelated methods.
+
 ## Brave Origin support
 
 | Build | Package name | Support status |
