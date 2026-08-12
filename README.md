@@ -1,6 +1,6 @@
-# Brave Origin and Universal Patches
+# Brave Origin, Quetta and Universal Patches
 
-Morphe patch bundle for Brave Browser plus app-independent Android resource patches.
+Morphe patch bundle for Brave Browser, Quetta browser plus app-independent Android resource patches.
 
 ## Brave Origin support
 
