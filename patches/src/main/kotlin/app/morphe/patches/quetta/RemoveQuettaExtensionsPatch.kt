@@ -25,7 +25,7 @@ val removeQuettaExtensionsPatch = bytecodePatch(
 ) {
     compatibleWith(*quettaCompatibilities.toTypedArray())
     execute {
-        val installer = Fingerprint(returnType = "V", strings = QUETTA_EXTENSION_IDS + QUETTA_ASSETS)
+        val installer = Fingerprint(returnType = "V", strings = (QUETTA_EXTENSION_IDS + QUETTA_ASSETS).toList())
         require(installer.method.implementation != null) { "Quetta installer fingerprint has no implementation" }
         installer.method.addInstructions(0, QUETTA_BLOCK_INSTRUCTION)
     }
