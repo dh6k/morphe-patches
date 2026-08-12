@@ -1,3 +1,13 @@
+## [1.2.0-dev.3](https://github.com/dh6k/morphe-patches/compare/v1.2.0-dev.2...v1.2.0-dev.3) (2026-08-12)
+
+### 🐛 Bug Fixes
+
+* pass list to Quetta fingerprint strings ([dbe35a6](https://github.com/dh6k/morphe-patches/commit/dbe35a6e2fe1861f3eb0318e1acd61cecff90772))
+
+### ✨ New Features
+
+* **quetta:** block bundled extension installation ([e63165d](https://github.com/dh6k/morphe-patches/commit/e63165dbf5c3bff778c9f612b45fb8979af73cc2))
+
 ## [1.2.0-dev.2](https://github.com/dh6k/morphe-patches/compare/v1.2.0-dev.1...v1.2.0-dev.2) (2026-08-07)
 
 ### 🐛 Bug Fixes
