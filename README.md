@@ -9,7 +9,7 @@ Morphe patch bundle for Brave Browser, Quetta browser plus app-independent Andro
 | Quetta Browser (Play Store edition) | `net.quetta.browser` | version-unpinned, Should work normally |
 | Quetta Browser (Direct APK edition) | `net.quetta.browser.official` | version-unpinned, tested on `2.0.2 (5307)` |
 
-Supports Quetta Browser (`net.quetta.browser`) and Quetta Browser Official (`net.quetta.browser.official`) through the **Block Quetta bundled extension installation** patch. Compatibility is version-unpinned and experimental, intended for arm64-v8a APKs (armeabi-v7a might work too, but currently not planned atm); the framework does not enforce ABI.
+Supports both versions of Quetta Browser through the **Block Quetta bundled extension installation** patch. Compatibility is version-unpinned and experimental, intended for arm64-v8a APKs (armeabi-v7a might work too, but currently not planned atm); the framework does not enforce ABI.
 
 Patch blocks bundled installation/reinstallation for these exact extensions:
 
