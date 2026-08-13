@@ -20,7 +20,7 @@ internal val quettaCompatibilities = listOf(
 @Suppress("unused")
 val removeQuettaExtensionsPatch = bytecodePatch(
     name = "Block Quetta bundled extension installation",
-    description = "Blocks bundled extension installation/reinstallation on arm64-v8a APKs (framework does not enforce ABI). Does not remove copies already present in existing profiles.",
+    description = "Blocks bundled extension installation/reinstallation on arm64-v8a APKs (the framework does not enforce ABI restrictions). Does not remove copies already present in existing profiles. Takes effect immediately on clean installs.",
     default = true,
 ) {
     compatibleWith(*quettaCompatibilities.toTypedArray())
