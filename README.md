@@ -4,16 +4,21 @@ Morphe patch bundle for Brave Browser, Quetta browser plus app-independent Andro
 
 ## Quetta Browser support
 
-Supports Quetta Browser (`net.quetta.browser`) and Quetta Browser Official (`net.quetta.browser.official`) through the **Block Quetta bundled extension installation** patch. Compatibility is version-unpinned and experimental, intended for arm64-v8a APKs; the framework does not enforce ABI.
+| Build | Package name | Support status |
+| --- | --- | --- |
+| Quetta Browser (Play Store edition) | `net.quetta.browser` | version-unpinned, Should work normally |
+| Quetta Browser (Direct APK edition) | `net.quetta.browser.official` | version-unpinned, tested on `2.0.2 (5307)` |
+
+Supports Quetta Browser (`net.quetta.browser`) and Quetta Browser Official (`net.quetta.browser.official`) through the **Block Quetta bundled extension installation** patch. Compatibility is version-unpinned and experimental, intended for arm64-v8a APKs (armeabi-v7a might work too, but currently not planned atm); the framework does not enforce ABI.
 
 Patch blocks bundled installation/reinstallation for these exact extensions:
 
 - `nnedfbcpeenmccjbdcnlnhogapndfeoa` — Q30 from Quetta Translator
 - `gadlcodpkkelmagfhkldjlobfncbkbmd` — Q30 from Quetta
 
-Analyzed manifests show these extensions have broad page access and background behavior, and can communicate with remote services. Blocking bundled installation/reinstallation reduces bundled background code and remote-service exposure, giving users more privacy and control without claiming what those services collect.
+Analyzed manifests show these extensions have broad page access and background behavior, and can communicate with remote services (or telemetry in short). Blocking bundled installation/reinstallation reduces bundled background code and remote-service exposure, giving users more privacy and control without claiming what those services collect. **All related functions works probably fine withoit these extensions in the first place, so this is definitely bloated components.
 
-This does not block all Quetta telemetry or every Quetta network connection, and does not remove copies already installed in existing profiles. Remove existing copies through Quetta's extension-management UI, or use a clean profile as appropriate. Static validation is anchored to supplied Quetta `2.0.2-530` Official arm64-v8a APK; this is not broad runtime proof. Future versions may change fingerprints; patch should fail safely rather than modify unrelated methods.
+This does not block all Quetta telemetry or every Quetta network connection (for that just use DNS with blocklist instead), and does not remove copies already installed in existing profiles. Remove existing copies through ~~Quetta's extension-management UI~~ [SimpleExtManager Beta, since it's hidden from the Inbuilt Extension management UI](https://chromewebstore.google.com/detail/simpleextmanager-beta/bbgbjeiedibajiehaenkindljahjkodi) and install it from [here](https://www.crx4chrome.com/crx-downloader/) if download interrupted from the Web store, ~~or use a clean profile as appropriate~~ **Clean install already removed that, just patch it as usual and enjoy**. Static validation is anchored to supplied Quetta `2.0.2-530` Official (Direct APK from website) arm64-v8a APK; this is not broad runtime proof. Future versions may change fingerprints; patch should fail safely rather than modify unrelated methods.
 
 ## Brave Origin support
 
