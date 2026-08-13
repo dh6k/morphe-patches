@@ -11,7 +11,9 @@ Patch blocks bundled installation/reinstallation for these exact extensions:
 - `nnedfbcpeenmccjbdcnlnhogapndfeoa` — Q30 from Quetta Translator
 - `gadlcodpkkelmagfhkldjlobfncbkbmd` — Q30 from Quetta
 
-It does not remove copies already installed in existing profiles. Remove them through Quetta's extension-management UI, or use a clean profile as appropriate. Static validation is anchored to supplied Quetta `2.0.2-530` Official arm64-v8a APK; this is not broad runtime proof. Future versions may change fingerprints; patch should fail safely rather than modify unrelated methods.
+Analyzed manifests show these extensions have broad page access and background behavior, and can communicate with remote services. Blocking bundled installation/reinstallation reduces bundled background code and remote-service exposure, giving users more privacy and control without claiming what those services collect.
+
+This does not block all Quetta telemetry or every Quetta network connection, and does not remove copies already installed in existing profiles. Remove existing copies through Quetta's extension-management UI, or use a clean profile as appropriate. Static validation is anchored to supplied Quetta `2.0.2-530` Official arm64-v8a APK; this is not broad runtime proof. Future versions may change fingerprints; patch should fail safely rather than modify unrelated methods.
 
 ## Brave Origin support
 
