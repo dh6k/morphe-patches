@@ -1,3 +1,9 @@
+## [1.3.0-dev.1](https://github.com/dh6k/morphe-patches/compare/v1.2.0...v1.3.0-dev.1) (2026-08-15)
+
+### ✨ New Features
+
+* **universal:** disable common analytics SDKs ([5f8e982](https://github.com/dh6k/morphe-patches/commit/5f8e982cfd1e44585a3ee9802518bc4c0f0dd731))
+
 ## [1.2.0](https://github.com/dh6k/morphe-patches/compare/v1.1.0...v1.2.0) (2026-08-12)
 
 ### 🐛 Bug Fixes
