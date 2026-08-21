@@ -1,3 +1,9 @@
+## [1.3.0-dev.2](https://github.com/dh6k/morphe-patches/compare/v1.3.0-dev.1...v1.3.0-dev.2) (2026-08-21)
+
+### 🐛 Bug Fixes
+
+* **brave:** support Origin 1.94.114 ([6c5dfcd](https://github.com/dh6k/morphe-patches/commit/6c5dfcd4d62f42695c6e56e6b3faad50ba871bf9))
+
 ## [1.3.0-dev.1](https://github.com/dh6k/morphe-patches/compare/v1.2.0...v1.3.0-dev.1) (2026-08-15)
 
 ### ✨ New Features
