@@ -43,7 +43,7 @@ private fun braveCompatibility(
 )
 
 private fun braveCompatibilities() = listOf(
-    braveCompatibility("Brave Browser", "com.brave.browser", version = "1.92.140"),
+    braveCompatibility("Brave Browser", "com.brave.browser", version = null),
     braveCompatibility("Brave Beta", "com.brave.browser_beta", experimental = true),
     braveCompatibility("Brave Nightly", "com.brave.browser_nightly", experimental = true),
 )
@@ -136,6 +136,7 @@ val braveOriginPatch = bytecodePatch(
             strings = listOf("brave_origin_credential_summary_cached"),
         ).method.addInstructions(0, "const/4 v0, 0x1\nreturn v0")
 
+        // These purchase-data hooks are optional because their signatures drift across Brave versions.
         // ── 4. v42.a(Profile, String) → skip ──────────────────────────────────────────
         Fingerprint(
             returnType = "V",
@@ -144,10 +145,9 @@ val braveOriginPatch = bytecodePatch(
                 "Ljava/lang/String;",
             ),
             strings = listOf(
-                "brave.origin.package_name_android",
                 "brave.origin.product_id_android",
             ),
-        ).method.addInstructions(0, "return-void")
+        ).methodOrNull?.addInstructions(0, "return-void")
 
         // ── 4b. showOriginSettingsForRestart() → no-op ───────────────────────────────
         Fingerprint(
@@ -168,7 +168,7 @@ val braveOriginPatch = bytecodePatch(
                 "requestCredentialSummary profile is null",
                 "SkusService is null, cannot request credential summary",
             ),
-        ).method.addInstructions(
+        ).methodOrNull?.addInstructions(
             0,
             """
                 sget-object p0, Ljava/lang/Boolean;->TRUE:Ljava/lang/Boolean;

@@ -1,6 +1,6 @@
 {
   "NOTE": "Do NOT manually edit this file. This file is automatically updated when semantic release (release.yml) runs. Manually editing this file can break your releases and break third party tools that use this file.",
-  "version": "1.2.0",
+  "version": "1.3.0-dev.4",
   "patches": [
     {
       "name": "Block Quetta bundled extension installation",
@@ -62,7 +62,7 @@
           "signatures": null,
           "targets": [
             {
-              "version": "1.92.140",
+              "version": null,
               "versionCodes": null,
               "isExperimental": false,
               "minSdk": null,
@@ -142,6 +142,16 @@
           "values": null
         }
       ]
+    },
+    {
+      "name": "Disable analytics",
+      "description": "Disables Firebase Analytics, Crashlytics and Performance through manifest opt-outs and exact runtime setters when present. Other SDK components are disabled only when explicitly declared; custom or server-side telemetry is not covered.",
+      "default": false,
+      "dependencies": [
+        "ResourcePatch"
+      ],
+      "compatiblePackages": null,
+      "options": []
     },
     {
       "name": "Keep Helium Child Processes Alive",
