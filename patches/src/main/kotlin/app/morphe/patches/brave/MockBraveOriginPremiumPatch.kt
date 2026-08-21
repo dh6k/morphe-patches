@@ -144,7 +144,8 @@ val braveOriginPatch = bytecodePatch(
                 "Ljava/lang/String;",
             ),
             strings = listOf(
-                "brave.origin.package_name_android",
+                // Package-name policy key gained a `!` prefix in Brave 1.94.114.
+                // Product-id key remains stable across inspected releases.
                 "brave.origin.product_id_android",
             ),
         ).method.addInstructions(0, "return-void")
