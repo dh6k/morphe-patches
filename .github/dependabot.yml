@@ -6,6 +6,11 @@ updates:
     target-branch: dev
     schedule:
       interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      routine-updates:
+        patterns:
+          - "*"
 
   - package-ecosystem: npm
     labels: []
@@ -13,9 +18,14 @@ updates:
     target-branch: dev
     schedule:
       interval: weekly
+    open-pull-requests-limit: 5
     ignore:
       # version 10.x and later may not generate release notes correctly
       - dependency-name: "conventional-changelog-conventionalcommits"
+    groups:
+      routine-updates:
+        patterns:
+          - "*"
 
   - package-ecosystem: gradle
     labels: []
@@ -23,3 +33,8 @@ updates:
     target-branch: dev
     schedule:
       interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      routine-updates:
+        patterns:
+          - "*"
