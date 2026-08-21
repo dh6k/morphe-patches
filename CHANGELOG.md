@@ -1,3 +1,9 @@
+## [1.3.0-dev.3](https://github.com/dh6k/morphe-patches/compare/v1.3.0-dev.2...v1.3.0-dev.3) (2026-08-21)
+
+### 🐛 Bug Fixes
+
+* **brave:** tolerate optional Origin hooks ([326af9d](https://github.com/dh6k/morphe-patches/commit/326af9d2f7dbd643d620bbc5efc358ff924c0dd0))
+
 ## [1.3.0-dev.2](https://github.com/dh6k/morphe-patches/compare/v1.3.0-dev.1...v1.3.0-dev.2) (2026-08-21)
 
 ### 🐛 Bug Fixes
