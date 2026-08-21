@@ -43,7 +43,7 @@ private fun braveCompatibility(
 )
 
 private fun braveCompatibilities() = listOf(
-    braveCompatibility("Brave Browser", "com.brave.browser", version = "1.92.140"),
+    braveCompatibility("Brave Browser", "com.brave.browser", version = null),
     braveCompatibility("Brave Beta", "com.brave.browser_beta", experimental = true),
     braveCompatibility("Brave Nightly", "com.brave.browser_nightly", experimental = true),
 )
