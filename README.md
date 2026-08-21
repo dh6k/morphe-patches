@@ -39,7 +39,7 @@ Do not use Chromium's GServices WebAPK package/signing-check overrides as an end
 ## Patches
 
 <!-- PATCHES_START EXPANDED -->
-> **[v1.3.0-dev.3](https://github.com/dh6k/morphe-patches/releases/tag/v1.3.0-dev.3)**&nbsp;&nbsp;•&nbsp;&nbsp;`dev`&nbsp;&nbsp;•&nbsp;&nbsp;6 patches total
+> **[v1.3.0-dev.4](https://github.com/dh6k/morphe-patches/releases/tag/v1.3.0-dev.4)**&nbsp;&nbsp;•&nbsp;&nbsp;`dev`&nbsp;&nbsp;•&nbsp;&nbsp;6 patches total
 <details open>
 <summary>📦 Quetta Browser&nbsp;&nbsp;•&nbsp;&nbsp;1 patch</summary>
 <br>
@@ -63,11 +63,6 @@ Do not use Chromium's GServices WebAPK package/signing-check overrides as an end
 <details open>
 <summary>📦 Brave Browser&nbsp;&nbsp;•&nbsp;&nbsp;1 patch</summary>
 <br>
-
-**🎯 Supported versions:**
-
-| 1.92.140 |
-| :---: |
 
 | 💊&nbsp;Patch | 📜&nbsp;Description | ⚙️&nbsp;Options |
 |----------|----------------|-----------|

@@ -1,3 +1,9 @@
+## [1.3.0-dev.4](https://github.com/dh6k/morphe-patches/compare/v1.3.0-dev.3...v1.3.0-dev.4) (2026-08-21)
+
+### 🐛 Bug Fixes
+
+* **brave:** unpin stable compatibility ([ad21d01](https://github.com/dh6k/morphe-patches/commit/ad21d01975d3fe06e12699daad2557f863562342))
+
 ## [1.3.0-dev.3](https://github.com/dh6k/morphe-patches/compare/v1.3.0-dev.2...v1.3.0-dev.3) (2026-08-21)
 
 ### 🐛 Bug Fixes
