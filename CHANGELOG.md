@@ -1,3 +1,15 @@
+## [1.3.0](https://github.com/dh6k/morphe-patches/compare/v1.2.0...v1.3.0) (2026-08-21)
+
+### 🐛 Bug Fixes
+
+* **brave:** support Origin 1.94.114 ([6c5dfcd](https://github.com/dh6k/morphe-patches/commit/6c5dfcd4d62f42695c6e56e6b3faad50ba871bf9))
+* **brave:** tolerate optional Origin hooks ([326af9d](https://github.com/dh6k/morphe-patches/commit/326af9d2f7dbd643d620bbc5efc358ff924c0dd0))
+* **brave:** unpin stable compatibility ([ad21d01](https://github.com/dh6k/morphe-patches/commit/ad21d01975d3fe06e12699daad2557f863562342))
+
+### ✨ New Features
+
+* **universal:** disable common analytics SDKs ([5f8e982](https://github.com/dh6k/morphe-patches/commit/5f8e982cfd1e44585a3ee9802518bc4c0f0dd731))
+
 ## [1.3.0-dev.4](https://github.com/dh6k/morphe-patches/compare/v1.3.0-dev.3...v1.3.0-dev.4) (2026-08-21)
 
 ### 🐛 Bug Fixes
