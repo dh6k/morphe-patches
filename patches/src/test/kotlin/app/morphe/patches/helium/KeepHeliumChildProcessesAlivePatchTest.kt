@@ -8,21 +8,15 @@ import javax.xml.parsers.DocumentBuilderFactory
 
 class KeepHeliumChildProcessesAlivePatchTest {
     @Test
-    fun `compatibility is pinned experimental Helium APK target`() {
+    fun `compatibility is version unpinned experimental Helium APK target`() {
         assertEquals("io.github.jqssun.helium", heliumChildProcessCompatibility.packageName)
-        assertEquals("152.0.7977.54", heliumChildProcessCompatibility.targets.single().version)
+        assertEquals(null, heliumChildProcessCompatibility.targets.single().version)
         assertTrue(heliumChildProcessCompatibility.targets.single().isExperimental)
         assertFalse(keepHeliumChildProcessesAlivePatch.default)
         assertEquals("Lorg/chromium/content/browser/ChildProcessLauncherHelperImpl;", HELIUM_CHILD_PROCESS_CLASS)
         assertEquals("setPriority", HELIUM_SET_PRIORITY_METHOD)
-        assertEquals(listOf("I", "Z", "Z", "Z", "Z", "J", "Z", "Z", "Z", "Z", "I"), HELIUM_SET_PRIORITY_PARAMETERS)
-        assertEquals("const/16 p12, 0x3", HELIUM_PRIORITY_INSTRUCTION)
         assertEquals("const/16 v%s, 0x4", HELIUM_SPAWN_INSTRUCTION)
         assertEquals("ChildProcessLauncher.start", HELIUM_SPAWN_START_ANCHOR)
-        assertEquals("Li92;", HELIUM_BINDING_CLASS)
-        assertEquals("a", HELIUM_BINDING_METHOD)
-        assertEquals("Lx82;", HELIUM_BINDING_RETURN)
-        assertEquals(listOf("La82;", "Ld92;", "I"), HELIUM_BINDING_PARAMETERS)
     }
 
     @Test
