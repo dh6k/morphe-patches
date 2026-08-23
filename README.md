@@ -134,7 +134,7 @@ Do not use Chromium's GServices WebAPK package/signing-check overrides as an end
 
 ## Keep Helium Child Processes Alive
 
-Experimental version-unpinned two-layer mitigation for [issue #57](https://github.com/jqssun/android-titanium-browser/issues/57): child processes receive Chromium STRONG binding (`0x4`) and IMPORTANT/STRONG priority (`0x3`), while one main-process foreground service keeps extension background runtime visible through a persistent low-priority notification. This can raise RAM, battery, and process pressure and only mitigates LMK kills; it does not guarantee survival, bypass force-stop, reload crashed extensions, or run a watchdog. No reliable extension-only discriminator exists in inspected Helium code, so child binding applies to all child processes.
+Experimental version-unpinned two-layer mitigation for [issue #57](https://github.com/jqssun/android-titanium-browser/issues/57): child processes receive Chromium STRONG binding (`0x4`) and IMPORTANT/STRONG priority (`0x3`), while one main-process foreground service keeps extension background runtime visible through a persistent low-priority notification. Structural and local data-flow resolution tolerates routine signature, register, helper-name, and process-launch changes, then fails closed when relevant bytecode is genuinely ambiguous. This can raise RAM, battery, and process pressure and only mitigates LMK kills; it does not guarantee survival, bypass force-stop, reload crashed extensions, or run a watchdog. No reliable extension-only discriminator exists in inspected Helium code, so child binding applies to all child processes.
 
 ## Install
 

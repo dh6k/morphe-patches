@@ -15,7 +15,7 @@ class KeepHeliumChildProcessesAlivePatchTest {
         assertFalse(keepHeliumChildProcessesAlivePatch.default)
         assertEquals("Lorg/chromium/content/browser/ChildProcessLauncherHelperImpl;", HELIUM_CHILD_PROCESS_CLASS)
         assertEquals("setPriority", HELIUM_SET_PRIORITY_METHOD)
-        assertEquals("const/16 v%s, 0x4", HELIUM_SPAWN_INSTRUCTION)
+        assertEquals("const/16 v7, 4", heliumStrongBindingInstruction(7))
         assertEquals("ChildProcessLauncher.start", HELIUM_SPAWN_START_ANCHOR)
     }
 
@@ -32,5 +32,42 @@ class KeepHeliumChildProcessesAlivePatchTest {
         assertEquals("specialUse", service.getAttribute("android:foregroundServiceType"))
         assertEquals("", service.getAttribute("android:process"))
         assertEquals(1, service.getElementsByTagName("property").length)
+    }
+
+    @Test
+    fun `launcher activity resolver handles relative activity and alias names`() {
+        val document = DocumentBuilderFactory.newInstance().apply {
+            isNamespaceAware = true
+        }.newDocumentBuilder().parse(
+            """
+            <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+                package="io.github.jqssun.helium">
+                <application>
+                    <activity android:name=".MainBrowserActivity">
+                        <intent-filter>
+                            <action android:name="android.intent.action.MAIN" />
+                            <category android:name="android.intent.category.LAUNCHER" />
+                        </intent-filter>
+                    </activity>
+                    <activity android:name="io.github.jqssun.helium.RealActivity" />
+                    <activity-alias
+                        android:name=".Alias"
+                        android:targetActivity="io.github.jqssun.helium.RealActivity">
+                        <intent-filter>
+                            <action android:name="android.intent.action.MAIN" />
+                            <category android:name="android.intent.category.LAUNCHER" />
+                        </intent-filter>
+                    </activity-alias>
+                </application>
+            </manifest>
+            """.trimIndent().byteInputStream(),
+        )
+        assertEquals(
+            setOf(
+                "Lio/github/jqssun/helium/MainBrowserActivity;",
+                "Lio/github/jqssun/helium/RealActivity;",
+            ),
+            resolveLauncherActivityClasses(document),
+        )
     }
 }
