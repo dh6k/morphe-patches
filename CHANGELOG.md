@@ -1,3 +1,9 @@
+## [1.4.0-dev.1](https://github.com/dh6k/morphe-patches/compare/v1.3.0...v1.4.0-dev.1) (2026-08-23)
+
+### ✨ New Features
+
+* add Helium foreground keep-alive service ([1b6cc36](https://github.com/dh6k/morphe-patches/commit/1b6cc36a65971b89de44e8fe80bd81f13a69bd03))
+
 ## [1.3.0](https://github.com/dh6k/morphe-patches/compare/v1.2.0...v1.3.0) (2026-08-21)
 
 ### 🐛 Bug Fixes
