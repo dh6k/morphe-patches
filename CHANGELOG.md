@@ -1,3 +1,9 @@
+## [1.4.0-dev.3](https://github.com/dh6k/morphe-patches/compare/v1.4.0-dev.2...v1.4.0-dev.3) (2026-08-23)
+
+### 🐛 Bug Fixes
+
+* **helium:** harden keep-alive structural resolver ([dfd8a0f](https://github.com/dh6k/morphe-patches/commit/dfd8a0f2ca9149a2cc35005f9cfc30ebaddbb7b7))
+
 ## [1.4.0-dev.2](https://github.com/dh6k/morphe-patches/compare/v1.4.0-dev.1...v1.4.0-dev.2) (2026-08-23)
 
 ### ✨ New Features

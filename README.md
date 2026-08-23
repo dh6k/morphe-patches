@@ -57,7 +57,7 @@ Do not use Chromium's GServices WebAPK package/signing-check overrides as an end
 ## Patches
 
 <!-- PATCHES_START EXPANDED -->
-> **[v1.4.0-dev.2](https://github.com/dh6k/morphe-patches/releases/tag/v1.4.0-dev.2)**&nbsp;&nbsp;•&nbsp;&nbsp;`dev`&nbsp;&nbsp;•&nbsp;&nbsp;6 patches total
+> **[v1.4.0-dev.3](https://github.com/dh6k/morphe-patches/releases/tag/v1.4.0-dev.3)**&nbsp;&nbsp;•&nbsp;&nbsp;`dev`&nbsp;&nbsp;•&nbsp;&nbsp;6 patches total
 <details open>
 <summary>📦 Quetta Browser&nbsp;&nbsp;•&nbsp;&nbsp;1 patch</summary>
 <br>
@@ -114,7 +114,7 @@ Do not use Chromium's GServices WebAPK package/signing-check overrides as an end
 
 | 💊&nbsp;Patch | 📜&nbsp;Description | ⚙️&nbsp;Options |
 |----------|----------------|-----------|
-| [Keep Helium Child Processes Alive](#keep-helium-child-processes-alive) | Experimental version-unpinned structural patch: starts one main-process foreground service with persistent low-priority notification and forces child STRONG binding plus IMPORTANT/STRONG priority updates. May increase RAM, battery, and process pressure; mitigates LMK kills only. Ambiguous fingerprints fail safely; no guarantee, force-stop bypass, watchdog, reload, or crash recovery. |  |
+| [Keep Helium Child Processes Alive](#keep-helium-child-processes-alive) | Experimental version-unpinned structural/data-flow patch: starts one main-process foreground service with persistent low-priority notification and forces child STRONG binding plus IMPORTANT/STRONG priority updates. Tolerates routine signature, register, and helper-name changes; ambiguous targets fail closed. May increase RAM, battery, and process pressure; mitigates LMK kills only. |  |
 
 </details>
 
