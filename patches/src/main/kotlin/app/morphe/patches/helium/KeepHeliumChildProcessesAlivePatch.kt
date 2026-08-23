@@ -1,18 +1,12 @@
 package app.morphe.patches.helium
 
-import app.morphe.patcher.Fingerprint
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.ApkFileType
 import app.morphe.patcher.patch.AppTarget
 import app.morphe.patcher.patch.Compatibility
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.patch.resourcePatch
-import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
-import com.android.tools.smali.dexlib2.Opcode
-import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
-import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
-import com.android.tools.smali.dexlib2.iface.reference.MethodReference
-import com.android.tools.smali.dexlib2.iface.reference.StringReference
+import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import org.w3c.dom.Document
 import org.w3c.dom.Element
 
@@ -22,10 +16,6 @@ internal const val HELIUM_KEEP_ALIVE_NOTIFICATION_ID = 0x48454c
 internal const val HELIUM_SPECIAL_USE_SUBTYPE = "Maintain browser extension background runtime"
 internal const val HELIUM_ACTIVITY_CLASS = "Lorg/chromium/chrome/browser/ChromeTabbedActivity;"
 internal const val HELIUM_ACTIVITY_METHOD = "onStart"
-internal const val HELIUM_BINDING_CLASS = "Li92;"
-internal const val HELIUM_BINDING_METHOD = "a"
-internal const val HELIUM_BINDING_RETURN = "Lx82;"
-internal val HELIUM_BINDING_PARAMETERS = listOf("La82;", "Ld92;", "I")
 
 internal fun mutateHeliumKeepAliveManifest(document: Document) {
     val manifest = document.documentElement
@@ -53,17 +43,15 @@ private const val HELIUM_PACKAGE = "io.github.jqssun.helium"
 internal const val HELIUM_CHILD_PROCESS_CLASS =
     "Lorg/chromium/content/browser/ChildProcessLauncherHelperImpl;"
 internal const val HELIUM_SET_PRIORITY_METHOD = "setPriority"
-internal val HELIUM_SET_PRIORITY_PARAMETERS = listOf("I", "Z", "Z", "Z", "Z", "J", "Z", "Z", "Z", "Z", "I")
-internal const val HELIUM_PRIORITY_INSTRUCTION = "const/16 p12, 0x3"
 internal const val HELIUM_SPAWN_INSTRUCTION = "const/16 v%s, 0x4"
 internal const val HELIUM_SPAWN_START_ANCHOR = "ChildProcessLauncher.start"
 
-/** Exact APK target for the experimental Helium child-process binding patch. */
+/** Version-unpinned experimental Helium patch using structural fingerprints; ambiguity fails safely. */
 internal val heliumChildProcessCompatibility = Compatibility(
     name = "Helium Browser",
     packageName = HELIUM_PACKAGE,
     apkFileType = ApkFileType.APK,
-    targets = listOf(AppTarget(version = "152.0.7977.54", isExperimental = true)),
+    targets = listOf(AppTarget(version = null, isExperimental = true)),
 )
 
 /**
@@ -74,7 +62,7 @@ internal val heliumChildProcessCompatibility = Compatibility(
 @Suppress("unused")
 val keepHeliumChildProcessesAlivePatch = bytecodePatch(
     name = "Keep Helium Child Processes Alive",
-    description = "Experimental: starts one main-process foreground service with a persistent low-priority notification and forces child STRONG binding plus IMPORTANT/STRONG priority updates. May increase RAM, battery, and process pressure; mitigates LMK kills only. No guarantee, force-stop bypass, watchdog, reload, or crash recovery.",
+    description = "Experimental version-unpinned structural patch: starts one main-process foreground service with persistent low-priority notification and forces child STRONG binding plus IMPORTANT/STRONG priority updates. May increase RAM, battery, and process pressure; mitigates LMK kills only. Ambiguous fingerprints fail safely; no guarantee, force-stop bypass, watchdog, reload, or crash recovery.",
     default = false,
 ) {
     dependsOn(heliumManifestPatch)
@@ -82,54 +70,32 @@ val keepHeliumChildProcessesAlivePatch = bytecodePatch(
     compatibleWith(heliumChildProcessCompatibility)
 
     execute {
-        val activity = Fingerprint(definingClass = HELIUM_ACTIVITY_CLASS, name = HELIUM_ACTIVITY_METHOD, returnType = "V", parameters = emptyList()).method
-        val activityInstructions = activity.implementation!!.instructions
-        val superCalls = activityInstructions.withIndex().filter { (_, ins) ->
-            val ref = (ins as? ReferenceInstruction)?.reference as? MethodReference
-            ref?.name == "onStart" && ref.returnType == "V" && ref.parameterTypes.isEmpty() && ins.opcode == Opcode.INVOKE_SUPER
-        }
-        require(superCalls.size == 1) { "Helium ChromeTabbedActivity.onStart: expected one Activity.onStart super call, found ${superCalls.size}" }
-        activity.addInstructions(superCalls.single().index + 1, "invoke-static {p0}, Lapp/morphe/extension/helium/HeliumKeepAliveStarter;->start(Landroid/content/Context;)V")
-        val spawn = Fingerprint(
-            definingClass = HELIUM_CHILD_PROCESS_CLASS,
-            name = "createAndStart",
-            returnType = HELIUM_CHILD_PROCESS_CLASS,
-            parameters = listOf("J", "[Ljava/lang/String;", "[Lorg/chromium/base/process_launcher/IFileDescriptorInfo;", "Z", "Z", "Z"),
-            strings = listOf("ChildProcessLauncher.start", "renderer", "gpu-process"),
-        )
-        val spawnInstructions = spawn.method.implementation!!.instructions
-        val startAnchors = spawnInstructions.withIndex().filter { (_, instruction) ->
-            ((instruction as? ReferenceInstruction)?.reference as? StringReference)?.string == HELIUM_SPAWN_START_ANCHOR
-        }.map { it.index }
-        require(startAnchors.size == 1) { "Helium createAndStart: expected one start anchor, found ${startAnchors.size}" }
-        val startIndex = startAnchors.single()
-        val endIndex = spawnInstructions.withIndex().firstOrNull { (index, instruction) ->
-            index > startIndex && (instruction as? ReferenceInstruction)?.reference.let { ref ->
-                ref is MethodReference && ref.definingClass == "Lorg/chromium/base/TraceEvent;" && ref.returnType == "V" && ref.parameterTypes == listOf("Ljava/lang/String;")
+        val helperClass = mutableClassDefBy(HELIUM_CHILD_PROCESS_CLASS)
+        val createMethods = helperClass.methods.filter { it.name == "createAndStart" && it.implementation != null }
+        val resolvedCreate = resolveCreateAndStart(createMethods.map { it.toStructuralMethod() })
+        val resolvedBinding = resolveBindingTarget(resolvedCreate)
+        val targetMethod = createMethods.single { it.toStructuralMethod().descriptor == resolvedCreate.descriptor }
+        val activityMethods = mutableListOf<MutableMethod>()
+        classDefForEach { classDef ->
+            if (classDef.type == HELIUM_ACTIVITY_CLASS || classDef.type.endsWith("/ChromeTabbedActivity;")) {
+                activityMethods += mutableClassDefBy(classDef).methods.filter {
+                    it.name == "onStart" &&
+                        it.returnType == "V" &&
+                        it.parameterTypes.isEmpty() &&
+                        it.implementation != null
+                }
             }
-        }?.index ?: error("Helium createAndStart: TraceEvent end anchor not found")
-        val candidates = (startIndex + 1 until endIndex).mapNotNull { index ->
-            val instruction = spawnInstructions.elementAt(index)
-            val ref = (instruction as? ReferenceInstruction)?.reference as? MethodReference ?: return@mapNotNull null
-            if (ref.definingClass != HELIUM_BINDING_CLASS || ref.name != HELIUM_BINDING_METHOD ||
-                ref.returnType != HELIUM_BINDING_RETURN || ref.parameterTypes != HELIUM_BINDING_PARAMETERS) return@mapNotNull null
-            val register = when (instruction) {
-                is FiveRegisterInstruction -> when (instruction.registerCount) { 1 -> instruction.registerC; 2 -> instruction.registerD; 3 -> instruction.registerE; 4 -> instruction.registerF; 5 -> instruction.registerG; else -> null }
-                is RegisterRangeInstruction -> instruction.startRegister + instruction.registerCount - 1
-                else -> null
-            } ?: return@mapNotNull null
-            register to index
         }
-        require(candidates.size == 1) { "Helium createAndStart: expected one binding call, found ${candidates.size}" }
-        val (bindingRegister, bindingIndex) = candidates.single()
-        require(bindingRegister <= 255) { "Helium createAndStart: binding register out of range: v$bindingRegister" }
-        spawn.method.addInstructions(bindingIndex, HELIUM_SPAWN_INSTRUCTION.format(bindingRegister))
-
-        Fingerprint(
-            definingClass = HELIUM_CHILD_PROCESS_CLASS,
-            name = HELIUM_SET_PRIORITY_METHOD,
-            returnType = "I",
-            parameters = HELIUM_SET_PRIORITY_PARAMETERS,
-        ).method.addInstructions(0, HELIUM_PRIORITY_INSTRUCTION)
+        val activityModel = resolveActivityHook(activityMethods.map { it.toStructuralMethod() })
+        val activity = activityMethods.single { it.toStructuralMethod().descriptor == activityModel.methodDescriptor }
+        val priorities = helperClass.methods.filter { it.name == HELIUM_SET_PRIORITY_METHOD && it.implementation != null }
+        val priorityModel = resolvePriorityTarget(priorities.map { it.toStructuralMethod() })
+        val priorityMethod = priorities.single()
+        activity.addInstructions(
+            activityModel.superIndex + 1,
+            "invoke-static {p0}, Lapp/morphe/extension/helium/HeliumKeepAliveStarter;->start(Landroid/content/Context;)V",
+        )
+        targetMethod.addInstructions(resolvedBinding.index, HELIUM_SPAWN_INSTRUCTION.format(resolvedBinding.register))
+        priorityMethod.addInstructions(0, "const/16 p${priorityModel.pRegister}, 0x3")
     }
 }
