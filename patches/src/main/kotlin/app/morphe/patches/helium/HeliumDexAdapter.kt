@@ -10,6 +10,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.ThreeRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
@@ -84,18 +85,12 @@ internal fun propagateParameterUses(
     }
 }
 
-internal fun expandInvokeRegisters(instruction: Instruction): List<Int> = when (instruction) {
-    is FiveRegisterInstruction -> listOf(
-        instruction.registerC,
-        instruction.registerD,
-        instruction.registerE,
-        instruction.registerF,
-        instruction.registerG,
-    ).take(instruction.registerCount)
-
-    is RegisterRangeInstruction ->
-        (instruction.startRegister until instruction.startRegister + instruction.registerCount).toList()
-
+internal fun instructionRegisters(instruction: Instruction): List<Int> = when (instruction) {
+    is FiveRegisterInstruction -> listOf(instruction.registerC, instruction.registerD, instruction.registerE, instruction.registerF, instruction.registerG).take(instruction.registerCount)
+    is RegisterRangeInstruction -> (instruction.startRegister until instruction.startRegister + instruction.registerCount).toList()
+    is ThreeRegisterInstruction -> listOf(instruction.registerA, instruction.registerB, instruction.registerC)
+    is TwoRegisterInstruction -> listOf(instruction.registerA, instruction.registerB)
+    is OneRegisterInstruction -> listOf(instruction.registerA)
     else -> emptyList()
 }
 
@@ -113,6 +108,7 @@ internal fun Method.toStructuralMethod(): StructuralMethod {
     )
     val facts = mutableListOf<StructuralInstruction>()
     implementation.instructions.forEachIndexed { index, instruction ->
+        val opcodeName = instruction.opcode.name.uppercase().replace('-', '_')
         when {
             instruction is ReferenceInstruction && instruction.reference is StringReference -> {
                 facts += StructuralInstruction.StringLiteral(
@@ -129,7 +125,7 @@ internal fun Method.toStructuralMethod(): StructuralMethod {
                     reference.name,
                     reference.returnType.toString(),
                     reference.parameterTypes.map { it.toString() },
-                    expandInvokeRegisters(instruction),
+                    instructionRegisters(instruction),
                     instruction.opcode == Opcode.INVOKE_STATIC,
                     instruction.opcode == Opcode.INVOKE_SUPER,
                 )
@@ -139,7 +135,19 @@ internal fun Method.toStructuralMethod(): StructuralMethod {
                 facts += StructuralInstruction.MoveResultObject(index, instruction.registerA)
             }
 
-            instruction.opcode.name.startsWith("IGET") &&
+            opcodeName.startsWith("SGET") &&
+                instruction is OneRegisterInstruction &&
+                instruction is ReferenceInstruction -> {
+                val reference = instruction.reference as? FieldReference
+                facts += StructuralInstruction.FieldRead(
+                    index,
+                    instruction.registerA,
+                    null,
+                    reference?.type ?: "",
+                )
+            }
+
+            opcodeName.startsWith("IGET") &&
                 instruction is TwoRegisterInstruction &&
                 instruction is ReferenceInstruction -> {
                 val reference = instruction.reference as? FieldReference
@@ -151,7 +159,7 @@ internal fun Method.toStructuralMethod(): StructuralMethod {
                 )
             }
 
-            instruction.opcode.name.startsWith("IPUT") &&
+            opcodeName.startsWith("IPUT") &&
                 instruction is TwoRegisterInstruction &&
                 instruction is ReferenceInstruction -> {
                 val reference = instruction.reference as? FieldReference
@@ -163,12 +171,38 @@ internal fun Method.toStructuralMethod(): StructuralMethod {
                 )
             }
 
-            instruction.opcode.name.startsWith("MOVE") && instruction is TwoRegisterInstruction -> {
+            opcodeName.startsWith("MOVE") && instruction is TwoRegisterInstruction -> {
                 facts += StructuralInstruction.Move(index, instruction.registerA, instruction.registerB)
             }
 
             instruction is NarrowLiteralInstruction && instruction is OneRegisterInstruction -> {
                 facts += StructuralInstruction.Const(index, instruction.registerA, instruction.narrowLiteral)
+            }
+
+            opcodeName.let { opcode ->
+                opcode.startsWith("IF_") ||
+                    opcode.startsWith("CMP") ||
+                    opcode.startsWith("ADD_") ||
+                    opcode.startsWith("SUB_") ||
+                    opcode.startsWith("MUL_") ||
+                    opcode.startsWith("DIV_") ||
+                    opcode.startsWith("REM_") ||
+                    opcode.startsWith("AND_") ||
+                    opcode.startsWith("OR_") ||
+                    opcode.startsWith("XOR_") ||
+                    opcode.startsWith("SHL_") ||
+                    opcode.startsWith("SHR_") ||
+                    opcode.startsWith("USHR_") ||
+                    opcode.startsWith("AGET") ||
+                    opcode.startsWith("APUT") ||
+                    opcode.startsWith("RETURN") ||
+                    opcode == "CHECK_CAST"
+            } -> {
+                facts += StructuralInstruction.Other(
+                    index,
+                    opcodeName,
+                    instructionRegisters(instruction),
+                )
             }
         }
     }
