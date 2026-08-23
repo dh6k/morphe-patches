@@ -114,7 +114,7 @@ Do not use Chromium's GServices WebAPK package/signing-check overrides as an end
 
 | 💊&nbsp;Patch | 📜&nbsp;Description | ⚙️&nbsp;Options |
 |----------|----------------|-----------|
-| [Keep Helium Child Processes Alive](#keep-helium-child-processes-alive) | Experimental: applies to all Helium child processes; forces STRONG binding at launch and IMPORTANT/STRONG on priority updates. May increase RAM, battery, and process pressure; only reduces LMK probability. Does not detect, reload, or back off crashed extensions. |  |
+| [Keep Helium Child Processes Alive](#keep-helium-child-processes-alive) | Experimental: starts one main-process foreground service with persistent low-priority notification and forces child STRONG binding plus IMPORTANT/STRONG priority updates. May increase RAM, battery, and process pressure; mitigates LMK kills only. No guarantee, force-stop bypass, watchdog, reload, or crash recovery. |  |
 
 </details>
 
@@ -131,6 +131,10 @@ Do not use Chromium's GServices WebAPK package/signing-check overrides as an end
 </details>
 
 <!-- PATCHES_END -->
+
+## Keep Helium Child Processes Alive
+
+Experimental two-layer mitigation for validated Helium `152.0.7977.54` and [issue #57](https://github.com/jqssun/android-titanium-browser/issues/57): child processes receive Chromium STRONG binding (`0x4`) and IMPORTANT/STRONG priority (`0x3`), while one main-process foreground service keeps extension background runtime visible through a persistent low-priority notification. This can raise RAM, battery, and process pressure and only mitigates LMK kills; it does not guarantee survival, bypass force-stop, reload crashed extensions, or run a watchdog. No reliable extension-only discriminator exists in inspected Helium code, so child binding applies to all child processes.
 
 ## Install
 
