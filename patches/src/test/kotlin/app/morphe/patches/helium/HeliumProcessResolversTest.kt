@@ -37,7 +37,9 @@ class HeliumProcessResolversTest {
     @Test
     fun `nearest TraceEvent close excludes later scope`() {
         val first = StructuralInstruction.Invoke(4, "Lx;", "launch", "Ly;", listOf("I"), listOf(1, 3))
-        val instructions = launchInstructions(invoke = first) + listOf(
+        // Provide small-enum evidence for hardened resolver
+        val prefix = listOf(StructuralInstruction.Const(2, 20, 4), StructuralInstruction.Move(3, 3, 20))
+        val instructions = launchInstructions(prefix = prefix, invoke = first) + listOf(
             StructuralInstruction.Invoke(20, "Lorg/chromium/base/TraceEvent;", "begin", "V", listOf("Ljava/lang/String;", "Ljava/lang/String;"), listOf(0, 1), isStatic = true),
             StructuralInstruction.Invoke(21, "Llater;", "noise", "Lz;", listOf("I"), listOf(1, 9)),
             StructuralInstruction.MoveResultObject(22, 10),
@@ -77,7 +79,7 @@ class HeliumProcessResolversTest {
     fun `renamed binding owner and method resolve from semantics`() {
         val resolution = resolveBindingTarget(bindingMethod("Lnew_obfuscation;", "renamed", 7))
         assertEquals(7, resolution.register)
-        assertTrue(resolution.strategy == ResolutionStrategy.SEMANTIC_RELAXED)
+        assertTrue(resolution.strategy == ResolutionStrategy.DATA_FLOW || resolution.strategy == ResolutionStrategy.SEMANTIC_RELAXED)
     }
 
     @Test
@@ -85,6 +87,8 @@ class HeliumProcessResolversTest {
         val instructions = listOf(
             StructuralInstruction.StringLiteral(100, "ChildProcessLauncher.start"),
             StructuralInstruction.Invoke(110, "Lorg/chromium/base/TraceEvent;", "begin", "V", listOf("Ljava/lang/String;", "Ljava/lang/String;"), listOf(0, 1), isStatic = true),
+            StructuralInstruction.Const(120, 20, 5),
+            StructuralInstruction.Move(121, 9, 20),
             StructuralInstruction.Invoke(140, "Lrandom;", "launch", "Lconnection;", listOf("I"), listOf(2, 9)),
             StructuralInstruction.MoveResultObject(141, 4),
             StructuralInstruction.Invoke(180, "Lorg/chromium/base/TraceEvent;", "end", "V", listOf("Ljava/lang/String;"), listOf(0), isStatic = true),
@@ -104,8 +108,10 @@ class HeliumProcessResolversTest {
             StructuralInstruction.StringLiteral(0, "ChildProcessLauncher.start"),
             StructuralInstruction.Invoke(1, "Ljava/lang/Integer;", "valueOf", "Ljava/lang/Integer;", listOf("I"), listOf(4), isStatic = true),
             StructuralInstruction.MoveResultObject(2, 5),
-            StructuralInstruction.Invoke(3, "Lrandom;", "launch", "Lconnection;", listOf("I"), listOf(2, 8)),
-            StructuralInstruction.MoveResultObject(4, 6),
+            StructuralInstruction.Const(2, 20, 2),
+            StructuralInstruction.Move(3, 8, 20),
+            StructuralInstruction.Invoke(5, "Lrandom;", "launch", "Lconnection;", listOf("I"), listOf(2, 8)),
+            StructuralInstruction.MoveResultObject(6, 6),
             StructuralInstruction.Invoke(9, "Lorg/chromium/base/TraceEvent;", "end", "V", emptyList(), emptyList(), isStatic = true),
         )
         assertEquals(8, resolveBindingTarget(method(instructions = instructions)).register)
@@ -114,8 +120,10 @@ class HeliumProcessResolversTest {
     @Test
     fun `ambiguous and missing binding candidates fail`() {
         val ambiguous = bindingMethod("Lx;", "a", 3).instructions.toMutableList().apply {
-            add(3, StructuralInstruction.Invoke(3, "Ly;", "b", "Lconnection;", listOf("I"), listOf(2, 6)))
-            add(4, StructuralInstruction.MoveResultObject(4, 7))
+            add(2, StructuralInstruction.Const(2, 21, 4))
+            add(3, StructuralInstruction.Move(3, 6, 21))
+            add(4, StructuralInstruction.Invoke(4, "Ly;", "b", "Lconnection;", listOf("I"), listOf(2, 6)))
+            add(5, StructuralInstruction.MoveResultObject(5, 7))
         }
         assertFailsWith<HeliumResolutionException> {
             resolveBindingTarget(method(instructions = ambiguous))
@@ -265,6 +273,159 @@ class HeliumProcessResolversTest {
         assertEquals(ResolutionStrategy.HIERARCHY_FALLBACK, result.strategy)
     }
 
+
+    @Test
+    fun `single generic unrelated invoke fails closed`() {
+        // One generic object-returning invoke with one int arg and no binding-specific evidence
+        val instructions = listOf(
+            StructuralInstruction.StringLiteral(0, "ChildProcessLauncher.start"),
+            StructuralInstruction.Invoke(1, "Lorg/chromium/base/TraceEvent;", "begin", "V", listOf("Ljava/lang/String;", "Ljava/lang/String;"), listOf(0, 1), isStatic = true),
+            StructuralInstruction.Invoke(3, "Lgeneric;", "create", "Lgeneric/Some;", listOf("I"), listOf(1, 5)),
+            StructuralInstruction.MoveResultObject(4, 6),
+            StructuralInstruction.Invoke(6, "Lorg/chromium/base/TraceEvent;", "end", "V", listOf("Ljava/lang/String;"), listOf(0), isStatic = true),
+        )
+        assertFailsWith<HeliumResolutionException> {
+            resolveBindingTarget(method(instructions = instructions))
+        }
+    }
+
+    @Test
+    fun `realapk shape small enum constant resolves`() {
+        // Mirrors real 152: const/4 v3,3 -> move v7,v3 -> invoke Li92->a(La82;Ld92;I)Lx82
+        val instructions = listOf(
+            StructuralInstruction.StringLiteral(0, "ChildProcessLauncher.start"),
+            StructuralInstruction.Invoke(1, "Lorg/chromium/base/TraceEvent;", "begin", "V", listOf("Ljava/lang/String;", "Ljava/lang/String;"), listOf(0, 1), isStatic = true),
+            StructuralInstruction.Const(2, 3, 3),
+            StructuralInstruction.Move(3, 7, 3),
+            StructuralInstruction.Invoke(5, "Li92;", "a", "Lx82;", listOf("La82;", "Ld92;", "I"), listOf(2, 3, 0, 7)),
+            StructuralInstruction.MoveResultObject(6, 4),
+            StructuralInstruction.Invoke(7, "Lorg/chromium/base/TraceEvent;", "end", "V", listOf("Ljava/lang/String;"), listOf(0), isStatic = true),
+        )
+        val res = resolveBindingTarget(method(instructions = instructions))
+        assertEquals(7, res.register)
+        assertTrue(res.diagnostics.contains("small-enum"))
+    }
+
+    @Test
+    fun `field origin binding state resolves`() {
+        val instructions = launchInstructions(
+            prefix = listOf(
+                StructuralInstruction.FieldRead(2, 8, null, "I"),
+            ),
+            invoke = StructuralInstruction.Invoke(7, "Lx;", "launch", "Ly;", listOf("I"), listOf(1, 8)),
+        )
+        val res = resolveBindingTarget(method(instructions = instructions))
+        assertEquals(8, res.register)
+        assertTrue(res.diagnostics.contains("field"))
+    }
+
+    @Test
+    fun `move propagated field origin resolves`() {
+        val instructions = launchInstructions(
+            prefix = listOf(
+                StructuralInstruction.FieldRead(2, 8, null, "I"),
+                StructuralInstruction.Move(3, 6, 8),
+            ),
+            invoke = StructuralInstruction.Invoke(7, "Lx;", "launch", "Ly;", listOf("I"), listOf(1, 6)),
+        )
+        val res = resolveBindingTarget(method(instructions = instructions))
+        assertEquals(6, res.register)
+    }
+
+    @Test
+    fun `pid fd like invoke is rejected`() {
+        val instructions = listOf(
+            StructuralInstruction.StringLiteral(0, "ChildProcessLauncher.start"),
+            StructuralInstruction.Invoke(1, "Lorg/chromium/base/TraceEvent;", "begin", "V", listOf("Ljava/lang/String;", "Ljava/lang/String;"), listOf(0, 1), isStatic = true),
+            StructuralInstruction.Invoke(3, "Lchromium/childprocess/FdProvider;", "getPid", "Lx;", listOf("I"), listOf(1, 5)),
+            StructuralInstruction.MoveResultObject(4, 6),
+            StructuralInstruction.Invoke(6, "Lorg/chromium/base/TraceEvent;", "end", "V", listOf("Ljava/lang/String;"), listOf(0), isStatic = true),
+        )
+        assertFailsWith<HeliumResolutionException> {
+            resolveBindingTarget(method(instructions = instructions))
+        }
+    }
+
+    @Test
+    fun `large constant is rejected`() {
+        val instructions = launchInstructions(
+            prefix = listOf(StructuralInstruction.Const(2, 6, 999)),
+            invoke = StructuralInstruction.Invoke(7, "Lx;", "launch", "Ly;", listOf("I"), listOf(1, 6)),
+        )
+        assertFailsWith<HeliumResolutionException> {
+            resolveBindingTarget(method(instructions = instructions))
+        }
+    }
+
+    @Test
+    fun `missing anchor fails closed`() {
+        assertFailsWith<HeliumResolutionException> {
+            resolveBindingTarget(method(instructions = listOf(StructuralInstruction.Other(0, "NOP"))))
+        }
+    }
+
+    @Test
+    fun `bounded fallback requires credible evidence`() {
+        val instructions = listOf(
+            StructuralInstruction.StringLiteral(0, "ChildProcessLauncher.start"),
+            StructuralInstruction.Invoke(3, "Lgeneric;", "create", "Lx;", listOf("I"), listOf(1, 5)),
+            StructuralInstruction.MoveResultObject(4, 6),
+        )
+        assertFailsWith<HeliumResolutionException> {
+            resolveBindingTarget(method(instructions = instructions))
+        }
+    }
+
+    @Test
+    fun `malformed register mapping fails closed`() {
+        val invoke = StructuralInstruction.Invoke(7, "Lx;", "a", "Ly;", listOf("I", "I"), listOf(1))
+        val instructions = launchInstructions(prefix = emptyList(), invoke = invoke)
+        assertFailsWith<HeliumResolutionException> {
+            resolveBindingTarget(method(instructions = instructions))
+        }
+    }
+
+    @Test
+    fun `priority verified shape requires setPriority name`() {
+        // Wrong name with verified-like params but no data-flow must not succeed via shape alone
+        val params = listOf("I", "Z", "Z", "Z", "Z", "J", "Z", "Z", "Z", "Z", "I")
+        assertFailsWith<HeliumResolutionException> {
+            resolvePriorityTarget(listOf(method(name = "other", returnType = "I", params = params, instructions = emptyList())))
+        }
+    }
+
+    @Test
+    fun `priority unrelated two int method without dataflow fails`() {
+        val method2 = method(name = "other", returnType = "I", params = listOf("I", "I"), instructions = emptyList())
+        assertFailsWith<HeliumResolutionException> {
+            resolvePriorityTarget(listOf(method2))
+        }
+    }
+
+    @Test
+    fun `priority wide param offset accounts for J D`() {
+        val params = listOf("I", "J", "I")
+        val m = method(params = params, isStatic = true, name = "other", returnType = "I", instructions = listOf(StructuralInstruction.ParameterUse(1, 2, 5), StructuralInstruction.ParameterUse(2, 2, 1)))
+        // structural fallback viability needs >=2 Z etc, so test offset directly
+        assertEquals(3, m.parameterWordOffset(2))
+        assertEquals(0, m.parameterWordOffset(0))
+    }
+
+    @Test
+    fun `priority ambiguous peaks fail closed`() {
+        val uses = listOf(StructuralInstruction.ParameterUse(1, 0, 5), StructuralInstruction.ParameterUse(2, 1, 5))
+        assertFailsWith<HeliumResolutionException> {
+            resolvePriorityTarget(listOf(method(name = "setPriority", returnType = "I", params = listOf("I", "I"), instructions = uses)))
+        }
+    }
+
+    @Test
+    fun `priority no candidate fails`() {
+        assertFailsWith<HeliumResolutionException> {
+            resolvePriorityTarget(emptyList())
+        }
+    }
+
     private fun lifecycleMethod(descriptor: String, name: String, index: Int) = StructuralMethod(
         descriptor,
         name,
@@ -286,8 +447,12 @@ class HeliumProcessResolversTest {
     )
 
     private fun bindingMethod(owner: String, name: String, register: Int): StructuralMethod {
+        // Include small-enum constant evidence so hardened resolver accepts synthetic fixtures
+        val evidenceReg = 20
         val instructions = listOf(
             StructuralInstruction.StringLiteral(0, "ChildProcessLauncher.start"),
+            StructuralInstruction.Const(2, evidenceReg, 3),
+            StructuralInstruction.Move(3, register, evidenceReg),
             StructuralInstruction.Invoke(5, owner, name, "Lconnection;", listOf("I"), listOf(2, register)),
             StructuralInstruction.MoveResultObject(6, 4),
             StructuralInstruction.Invoke(10, "Lorg/chromium/base/TraceEvent;", "end", "V", emptyList(), emptyList(), isStatic = true),
