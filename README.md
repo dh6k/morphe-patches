@@ -134,25 +134,4 @@ Do not use Chromium's GServices WebAPK package/signing-check overrides as an end
 
 ## Keep Helium Child Processes Alive
 
-Experimental version-unpinned two-layer mitigation for [issue #57](https://github.com/jqssun/android-titanium-browser/issues/57): child processes receive Chromium STRONG binding (`0x4`) and IMPORTANT/STRONG priority (`0x3`), while one main-process foreground service keeps extension background runtime visible through a persistent low-priority notification. Structural and local data-flow resolution tolerates routine signature, register, helper-name, and process-launch changes, then fails closed when relevant bytecode is genuinely ambiguous. This can raise RAM, battery, and process pressure and only mitigates LMK kills; it does not guarantee survival, bypass force-stop, reload crashed extensions, or run a watchdog. No reliable extension-only discriminator exists in inspected Helium code, so child binding applies to all child processes.
-
-## Install
-
-1. Install [Morphe Manager](https://morphe.software) on Android.
-2. Add `https://github.com/dh6k/morphe-patches` as patch source.
-3. Select an app and enable the desired patch. Universal patches are available for any app.
-4. Patch the APK or APKM and install output.
-
-## Build
-
-```bash
-./gradlew :patches:buildAndroid
-```
-
-## License
-
-Licensed under [GPLv3](LICENSE). See [NOTICE](NOTICE) for additional GPLv3 Section 7 conditions.
-
-`Change app name` is adapted from
-[durgesh0505/chiggi_morphe_patches](https://github.com/durgesh0505/chiggi_morphe_patches)
-at commit `6b8a9a36cbd36faa4d5b8ce6e811fb428eb365f9`.
+Experimental, version-unpinned, disabled by default. Applies broadly to Helium child processes (not only extension processes) and only reduces the likelihood of LMK reclaim — it does not guarantee child survival, does not detect or reload crashed extensions, does not defeat OEM task killers, and does not bypass force-stop. Two-layer mitigation for [issue #57](https://github.com/jqssun/android-titanium-browser/issues/57): Chromium child processes are forced to STRONG binding (`0x4`) and IMPORTANT priority (`0x3`) while one main-process foreground service keeps a persistent low-importance notification ("Helium process protection active" / "Reduces likelihood of extension runtime reclaim"). Structural plus local data-flow resolution tolerates routine signature/register/helper-name changes and fails closed with actionable diagnostics when Helium internals no longer match safely. May increase RAM, battery, and process pressure; the foreground notification may be shown (on Android 13+ it may be hidden if POST_NOTIFICATIONS is denied but the service still runs). No watchdog loop, polling, or wake lock is used; START_STICKY is documented and idempotent.

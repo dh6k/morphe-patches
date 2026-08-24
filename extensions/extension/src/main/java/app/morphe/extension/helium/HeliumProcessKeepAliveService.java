@@ -14,9 +14,10 @@ public final class HeliumProcessKeepAliveService extends Service {
     public static final int NOTIFICATION_ID = 0x48454c;
 
     private static final String TAG = "HeliumKeepAlive";
-    private static final String TITLE = "Helium extensions active";
+    // Must not claim guaranteed survival; wording reflects reduced LMK probability only.
+    private static final String TITLE = "Helium process protection active";
     private static final String TEXT =
-            "Reduces likelihood of browser extension runtime reclaim";
+            "Reduces likelihood of extension runtime reclaim";
 
     private boolean foregroundStarted;
 
@@ -80,6 +81,8 @@ public final class HeliumProcessKeepAliveService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        // Idempotent: repeated starts re-promote once; START_STICKY keeps service after kill
+        // without polling or wakelock. If promotion fails (e.g., FGS denied), stop cleanly.
         if (promote()) {
             return START_STICKY;
         }

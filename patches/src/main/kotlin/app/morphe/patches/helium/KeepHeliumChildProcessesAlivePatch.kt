@@ -10,14 +10,16 @@ import app.morphe.patcher.patch.resourcePatch
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import org.w3c.dom.Document
 import org.w3c.dom.Element
-import java.util.IdentityHashMap
 
 internal const val HELIUM_KEEP_ALIVE_SERVICE = "app.morphe.extension.helium.HeliumProcessKeepAliveService"
+// Keep in sync with HeliumProcessKeepAliveService.CHANNEL_ID / NOTIFICATION_ID (extension module).
 internal const val HELIUM_KEEP_ALIVE_CHANNEL = "helium_extension_runtime"
 internal const val HELIUM_KEEP_ALIVE_NOTIFICATION_ID = 0x48454c
 internal const val HELIUM_SPECIAL_USE_SUBTYPE = "Maintain browser extension background runtime"
 internal const val HELIUM_ACTIVITY_CLASS = "Lorg/chromium/chrome/browser/ChromeTabbedActivity;"
-internal const val HELIUM_ACTIVITY_METHOD = "onStart"
+internal const val HELIUM_LIFECYCLE_ON_START = "onStart"
+internal const val HELIUM_LIFECYCLE_ON_RESUME = "onResume"
+internal const val HELIUM_PRIORITY_METHOD = "setPriority"
 private const val ANDROID_NS = "http://schemas.android.com/apk/res/android"
 
 internal fun normalizeManifestClassName(packageName: String, className: String): String {
@@ -59,37 +61,81 @@ internal fun resolveLauncherActivityClasses(document: Document): Set<String> {
     }
     return result
 }
-/** Bridges dependency contexts by package-metadata identity; entries are consumed once. */
+/** Bridges resource and bytecode patch contexts via packageName; avoids IdentityHashMap leak. */
 private object LauncherActivityRegistry {
-    private val entries = IdentityHashMap<PackageMetadata, Set<String>>()
+    private val entries = mutableMapOf<String, Set<String>>()
 
     @Synchronized
     fun put(metadata: PackageMetadata, classes: Set<String>) {
-        entries[metadata] = classes
+        entries[metadata.packageName] = classes
     }
 
     @Synchronized
-    fun take(metadata: PackageMetadata): Set<String> = entries.remove(metadata).orEmpty()
+    fun take(metadata: PackageMetadata): Set<String> = entries.remove(metadata.packageName).orEmpty()
+
+    @Synchronized
+    fun clear(metadata: PackageMetadata) {
+        entries.remove(metadata.packageName)
+    }
 }
 
 internal fun mutateHeliumKeepAliveManifest(document: Document) {
     val manifest = document.documentElement
     val application = document.getElementsByTagName("application").item(0) as? Element
         ?: error("AndroidManifest.xml does not contain an <application> element")
-    fun name(e: Element) = e.getAttributeNS(ANDROID_NS, "name").ifEmpty { e.getAttribute("android:name") }
-    fun permission(value: String) {
-        val nodes = document.getElementsByTagName("uses-permission"); var first: Element? = null
-        for (i in 0 until nodes.length) { val n = nodes.item(i) as Element; if (name(n) == value) { if (first == null) first = n else manifest.removeChild(n) } }
-        if (first == null) manifest.appendChild(document.createElement("uses-permission").apply { setAttribute("android:name", value) })
+
+    fun attrName(e: Element): String =
+        e.getAttributeNS(ANDROID_NS, "name").ifEmpty { e.getAttribute("android:name") }
+
+    fun ensurePermission(value: String) {
+        val nodes = document.getElementsByTagName("uses-permission")
+        var first: Element? = null
+        val duplicates = mutableListOf<Element>()
+        for (i in 0 until nodes.length) {
+            val node = nodes.item(i) as Element
+            if (attrName(node) == value) {
+                if (first == null) first = node else duplicates += node
+            }
+        }
+        duplicates.forEach { manifest.removeChild(it) }
+        if (first == null) {
+            manifest.appendChild(
+                document.createElement("uses-permission").apply { setAttribute("android:name", value) },
+            )
+        }
     }
-    permission("android.permission.FOREGROUND_SERVICE"); permission("android.permission.FOREGROUND_SERVICE_SPECIAL_USE")
-    val services = application.getElementsByTagName("service"); var service: Element? = null
-    for (i in 0 until services.length) { val n = services.item(i) as Element; if (name(n) == HELIUM_KEEP_ALIVE_SERVICE) { if (service == null) service = n else application.removeChild(n) } }
+    ensurePermission("android.permission.FOREGROUND_SERVICE")
+    ensurePermission("android.permission.FOREGROUND_SERVICE_SPECIAL_USE")
+
+    val services = application.getElementsByTagName("service")
+    var service: Element? = null
+    val serviceDups = mutableListOf<Element>()
+    for (i in 0 until services.length) {
+        val node = services.item(i) as Element
+        if (attrName(node) == HELIUM_KEEP_ALIVE_SERVICE) {
+            if (service == null) service = node else serviceDups += node
+        }
+    }
+    serviceDups.forEach { application.removeChild(it) }
     val target = service ?: document.createElement("service").also { application.appendChild(it) }
-    target.setAttribute("android:name", HELIUM_KEEP_ALIVE_SERVICE); target.setAttribute("android:exported", "false"); target.removeAttribute("android:process"); target.setAttribute("android:foregroundServiceType", "specialUse")
-    val props = target.getElementsByTagName("property"); var prop: Element? = null
-    for (i in 0 until props.length) { val n = props.item(i) as Element; if (name(n) == "android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE") { if (prop == null) prop = n else target.removeChild(n) } }
-    (prop ?: document.createElement("property").also { target.appendChild(it) }).apply { setAttribute("android:name", "android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"); setAttribute("android:value", HELIUM_SPECIAL_USE_SUBTYPE) }
+    target.setAttribute("android:name", HELIUM_KEEP_ALIVE_SERVICE)
+    target.setAttribute("android:exported", "false")
+    target.removeAttribute("android:process")
+    target.setAttribute("android:foregroundServiceType", "specialUse")
+
+    val props = target.getElementsByTagName("property")
+    var prop: Element? = null
+    val propDups = mutableListOf<Element>()
+    for (i in 0 until props.length) {
+        val node = props.item(i) as Element
+        if (attrName(node) == "android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE") {
+            if (prop == null) prop = node else propDups += node
+        }
+    }
+    propDups.forEach { target.removeChild(it) }
+    val subtype = prop ?: document.createElement("property").also { target.appendChild(it) }
+    subtype.setAttribute("android:name", "android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE")
+    subtype.setAttribute("android:value", HELIUM_SPECIAL_USE_SUBTYPE)
 }
 private val heliumManifestPatch = resourcePatch(
     name = "Helium keep-alive manifest",
@@ -106,7 +152,8 @@ private val heliumManifestPatch = resourcePatch(
 private const val HELIUM_PACKAGE = "io.github.jqssun.helium"
 internal const val HELIUM_CHILD_PROCESS_CLASS =
     "Lorg/chromium/content/browser/ChildProcessLauncherHelperImpl;"
-internal const val HELIUM_SET_PRIORITY_METHOD = "setPriority"
+@Deprecated("Use HELIUM_PRIORITY_METHOD", ReplaceWith("HELIUM_PRIORITY_METHOD"))
+internal const val HELIUM_SET_PRIORITY_METHOD: String = HELIUM_PRIORITY_METHOD
 // Chromium ChildBindingState values observed across validated Helium 149-152 APKs.
 internal const val HELIUM_STRONG_BINDING_VALUE = 0x4
 internal const val HELIUM_IMPORTANT_PRIORITY_VALUE = 0x3
@@ -139,18 +186,21 @@ val keepHeliumChildProcessesAlivePatch = bytecodePatch(
     compatibleWith(heliumChildProcessCompatibility)
 
     execute {
-        val launcherActivities = LauncherActivityRegistry.take(packageMetadata)
-        val helperClass = mutableClassDefBy(HELIUM_CHILD_PROCESS_CLASS)
+        val launcherActivities: Set<String>
+        try {
+            launcherActivities = LauncherActivityRegistry.take(packageMetadata)
+            val helperClass = mutableClassDefBy(HELIUM_CHILD_PROCESS_CLASS)
         val createMethods = helperClass.methods.filter { it.implementation != null }
         val resolvedCreate = resolveCreateAndStart(createMethods.map { it.toStructuralMethod() })
-        val resolvedBinding = resolveBindingTarget(resolvedCreate)
-        val targetMethod = createMethods.single { it.toStructuralMethod().descriptor == resolvedCreate.descriptor }
+            val resolvedBinding = resolveBindingTarget(resolvedCreate)
+            validateBindingRegisterSafety(resolvedCreate, resolvedBinding)
+            val targetMethod = createMethods.single { it.toStructuralMethod().descriptor == resolvedCreate.descriptor }
         val activityClasses = mutableListOf<ActivityClassModel>()
         val classDefsByType = mutableMapOf<String, ClassDef>()
         classDefForEach { classDef ->
             classDefsByType[classDef.type] = classDef
             val methods = classDef.methods.filter {
-                (it.name == "onStart" || it.name == "onResume") &&
+                (it.name == HELIUM_LIFECYCLE_ON_START || it.name == HELIUM_LIFECYCLE_ON_RESUME) &&
                     it.returnType == "V" &&
                     it.parameterTypes.isEmpty() &&
                     it.implementation != null
@@ -185,6 +235,10 @@ val keepHeliumChildProcessesAlivePatch = bytecodePatch(
             resolvedBinding.index,
             heliumStrongBindingInstruction(resolvedBinding.register),
         )
-        priorityMethod.addInstructions(0, "const/16 p${priorityModel.parameterWordOffset}, ${HELIUM_IMPORTANT_PRIORITY_VALUE}")
+            priorityMethod.addInstructions(0, "const/16 p${priorityModel.parameterWordOffset}, ${HELIUM_IMPORTANT_PRIORITY_VALUE}")
+        } catch (e: HeliumResolutionException) {
+            LauncherActivityRegistry.clear(packageMetadata)
+            throw e
+        }
     }
 }
