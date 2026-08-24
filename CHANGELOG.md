@@ -1,3 +1,9 @@
+## [1.4.0-dev.4](https://github.com/dh6k/morphe-patches/compare/v1.4.0-dev.3...v1.4.0-dev.4) (2026-08-24)
+
+### 🐛 Bug Fixes
+
+* **helium:** trigger prerelease dev.4 publish ([b781ac8](https://github.com/dh6k/morphe-patches/commit/b781ac85ed34c42ae7953613e0148b7ace562d22))
+
 ## [1.4.0-dev.3](https://github.com/dh6k/morphe-patches/compare/v1.4.0-dev.2...v1.4.0-dev.3) (2026-08-23)
 
 ### 🐛 Bug Fixes
