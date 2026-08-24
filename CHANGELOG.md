@@ -1,3 +1,9 @@
+## [1.4.0-dev.4](https://github.com/dh6k/morphe-patches/compare/v1.4.0-dev.3...v1.4.0-dev.4) (2026-08-24)
+
+### 🐛 Bug Fixes
+
+* **helium:** harden keep-alive without breaking apk patching ([1251a14](https://github.com/dh6k/morphe-patches/commit/1251a142658720365a037fce2f8b501d0f4e391c))
+
 ## [1.4.0-dev.3](https://github.com/dh6k/morphe-patches/compare/v1.4.0-dev.2...v1.4.0-dev.3) (2026-08-23)
 
 ### 🐛 Bug Fixes
