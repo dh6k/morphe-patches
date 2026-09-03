@@ -1,3 +1,9 @@
+## [1.5.0-dev.4](https://github.com/dh6k/morphe-patches/compare/v1.5.0-dev.3...v1.5.0-dev.4) (2026-09-03)
+
+### ✨ New Features
+
+* **universal:** broaden Disable analytics to kondratjev parity ([2cb64ac](https://github.com/dh6k/morphe-patches/commit/2cb64ac9ca097b92394b4f558ed9de8685c42656))
+
 ## [1.5.0-dev.3](https://github.com/dh6k/morphe-patches/compare/v1.5.0-dev.2...v1.5.0-dev.3) (2026-09-03)
 
 ### ✨ New Features
