@@ -8,7 +8,11 @@ import app.morphe.patcher.Fingerprint
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.patch.resourcePatch
+import org.w3c.dom.Document
 import org.w3c.dom.Element
+import org.w3c.dom.Node
+
+private const val ANDROID_NS = "http://schemas.android.com/apk/res/android"
 
 internal val analyticsMetadataOff = mapOf(
     "firebase_analytics_collection_deactivated" to "true",
@@ -39,7 +43,49 @@ internal fun isAnalyticsComponent(name: String): Boolean =
         name.startsWith("com.appsflyer.") || name.startsWith("com.moengage.") ||
         name.startsWith("com.comscore.") || name.startsWith("com.amplitude.") ||
         name.startsWith("com.mixpanel.") || name.startsWith("com.google.android.gms.analytics.") ||
+        name.startsWith("com.google.android.gms.measurement.AppMeasurement") ||
         name.startsWith("com.google.android.gms.tagmanager.")
+
+internal fun manifestAttr(element: Element, localName: String): String =
+    element.getAttributeNS(ANDROID_NS, localName).ifEmpty { element.getAttribute("android:$localName") }
+
+internal fun directChildren(parent: Element, tag: String): List<Element> {
+    val out = mutableListOf<Element>()
+    val kids = parent.childNodes
+    for (i in 0 until kids.length) {
+        val node = kids.item(i)
+        if (node.nodeType == Node.ELEMENT_NODE && node.nodeName == tag) out += node as Element
+    }
+    return out
+}
+
+internal fun mutateAnalyticsManifest(document: Document) {
+    val application = document.getElementsByTagName("application").item(0) as? Element
+        ?: error("AndroidManifest.xml does not contain an <application> element")
+    val existing = mutableSetOf<String>()
+    for (node in directChildren(application, "meta-data")) {
+        val name = manifestAttr(node, "name")
+        if (name in analyticsMetadataOff) {
+            node.setAttribute("android:value", analyticsMetadataOff.getValue(name))
+            existing += name
+        }
+    }
+    analyticsMetadataOff.forEach { (name, value) ->
+        if (name !in existing) {
+            application.appendChild(document.createElement("meta-data").apply {
+                setAttribute("android:name", name)
+                setAttribute("android:value", value)
+            })
+        }
+    }
+    listOf("activity", "provider", "service", "receiver").forEach { tag ->
+        for (node in directChildren(application, tag)) {
+            if (isAnalyticsComponent(manifestAttr(node, "name"))) {
+                node.setAttribute("android:enabled", "false")
+            }
+        }
+    }
+}
 
 private val analyticsManifestPatch = resourcePatch(
     name = "Disable analytics manifest collection",
@@ -47,39 +93,14 @@ private val analyticsManifestPatch = resourcePatch(
     default = false,
 ) {
     execute {
-        document("AndroidManifest.xml").use { document ->
-            val application = document.getElementsByTagName("application").item(0) as? Element
-                ?: error("AndroidManifest.xml does not contain an <application> element")
-            val existing = mutableSetOf<String>()
-            val metadata = application.getElementsByTagName("meta-data")
-            for (i in 0 until metadata.length) {
-                val node = metadata.item(i) as Element
-                val name = node.getAttribute("android:name")
-                if (name in analyticsMetadataOff) {
-                    node.setAttribute("android:value", analyticsMetadataOff.getValue(name))
-                    existing += name
-                }
-            }
-            analyticsMetadataOff.forEach { (name, value) ->
-                if (name !in existing) {
-                    application.appendChild(document.createElement("meta-data").apply {
-                        setAttribute("android:name", name)
-                        setAttribute("android:value", value)
-                    })
-                }
-            }
-            listOf("activity", "provider", "service", "receiver").forEach { tag ->
-                val nodes = application.getElementsByTagName(tag)
-                for (i in 0 until nodes.length) {
-                    val node = nodes.item(i) as Element
-                    if (isAnalyticsComponent(node.getAttribute("android:name"))) {
-                        node.setAttribute("android:enabled", "false")
-                    }
-                }
-            }
-        }
+        document("AndroidManifest.xml").use(::mutateAnalyticsManifest)
     }
 }
+
+internal object FirebaseAnalyticsSetter : Fingerprint(
+    definingClass = "Lcom/google/firebase/analytics/FirebaseAnalytics;",
+    name = "setAnalyticsCollectionEnabled", returnType = "V", parameters = listOf("Z"),
+)
 
 internal object FirebaseCrashlyticsSetter : Fingerprint(
     definingClass = "Lcom/google/firebase/crashlytics/FirebaseCrashlytics;",
@@ -102,6 +123,7 @@ val disableAnalyticsPatch = bytecodePatch(
 ) {
     dependsOn(analyticsManifestPatch)
     execute {
+        FirebaseAnalyticsSetter.methodOrNull?.addInstructions(0, "const/4 p1, 0x0")
         FirebaseCrashlyticsSetter.methodOrNull?.addInstructions(0, "const/4 p1, 0x0")
         FirebasePerformanceSetter.methodOrNull?.addInstructions(0, "const/4 p1, 0x0")
         MyTrackerInitializer.methodOrNull?.addInstructions(0, "return-void")
