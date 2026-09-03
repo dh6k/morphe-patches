@@ -1,3 +1,9 @@
+## [1.5.0-dev.2](https://github.com/dh6k/morphe-patches/compare/v1.5.0-dev.1...v1.5.0-dev.2) (2026-09-03)
+
+### ✨ New Features
+
+* **universal:** cover screen reporting, crashlytics/perf providers and Adjust init ([42baa67](https://github.com/dh6k/morphe-patches/commit/42baa6770542275c175ac75ec6a514d10b84ea81))
+
 ## [1.5.0-dev.1](https://github.com/dh6k/morphe-patches/compare/v1.4.0...v1.5.0-dev.1) (2026-09-03)
 
 ### ✨ New Features
