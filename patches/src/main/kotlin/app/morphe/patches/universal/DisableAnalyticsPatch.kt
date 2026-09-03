@@ -110,6 +110,10 @@ internal object FirebaseCrashlyticsSetter : Fingerprint(
     definingClass = "Lcom/google/firebase/crashlytics/FirebaseCrashlytics;",
     name = "setCrashlyticsCollectionEnabled", returnType = "V", parameters = listOf("Z"),
 )
+internal object FirebaseCrashlyticsBoxedSetter : Fingerprint(
+    definingClass = "Lcom/google/firebase/crashlytics/FirebaseCrashlytics;",
+    name = "setCrashlyticsCollectionEnabled", returnType = "V", parameters = listOf("Ljava/lang/Boolean;"),
+)
 internal object FirebasePerformanceSetter : Fingerprint(
     definingClass = "Lcom/google/firebase/perf/FirebasePerformance;",
     name = "setPerformanceCollectionEnabled", returnType = "V", parameters = listOf("Z"),
@@ -120,6 +124,10 @@ internal object MyTrackerInitializer : Fingerprint(
 )
 internal object AdjustInitializer : Fingerprint(
     definingClass = "Lcom/adjust/sdk/Adjust;", name = "onCreate", returnType = "V",
+    parameters = listOf("Lcom/adjust/sdk/AdjustConfig;"),
+)
+internal object AdjustV5Initializer : Fingerprint(
+    definingClass = "Lcom/adjust/sdk/Adjust;", name = "initSdk", returnType = "V",
     parameters = listOf("Lcom/adjust/sdk/AdjustConfig;"),
 )
 
@@ -134,7 +142,6 @@ val disableAnalyticsPatch = bytecodePatch(
         FirebaseAnalyticsSetter.methodOrNull?.addInstructions(0, "const/4 p1, 0x0")
         FirebaseCrashlyticsSetter.methodOrNull?.addInstructions(0, "const/4 p1, 0x0")
         FirebasePerformanceSetter.methodOrNull?.addInstructions(0, "const/4 p1, 0x0")
-        MyTrackerInitializer.methodOrNull?.addInstructions(0, "return-void")
-        AdjustInitializer.methodOrNull?.addInstructions(0, "return-void")
+        FirebaseCrashlyticsBoxedSetter.methodOrNull?.addInstructions(0, "return-void")
     }
 }

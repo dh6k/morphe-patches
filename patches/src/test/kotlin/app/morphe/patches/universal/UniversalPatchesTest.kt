@@ -81,4 +81,16 @@ class UniversalPatchesTest {
         assertEquals("V", AdjustInitializer.returnType)
         assertEquals(listOf("Lcom/adjust/sdk/AdjustConfig;"), AdjustInitializer.parameters)
     }
+
+    @Test fun `adjust v5 initializer targets initSdk entry point`() {
+        assertEquals("Lcom/adjust/sdk/Adjust;", AdjustV5Initializer.definingClass)
+        assertEquals("initSdk", AdjustV5Initializer.name)
+        assertEquals("V", AdjustV5Initializer.returnType)
+        assertEquals(listOf("Lcom/adjust/sdk/AdjustConfig;"), AdjustV5Initializer.parameters)
+    }
+
+    @Test fun `crashlytics boxed overload is covered`() {
+        assertEquals("setCrashlyticsCollectionEnabled", FirebaseCrashlyticsBoxedSetter.name)
+        assertEquals(listOf("Ljava/lang/Boolean;"), FirebaseCrashlyticsBoxedSetter.parameters)
+    }
 }
