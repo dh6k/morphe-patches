@@ -1,3 +1,9 @@
+## [1.5.0-dev.3](https://github.com/dh6k/morphe-patches/compare/v1.5.0-dev.2...v1.5.0-dev.3) (2026-09-03)
+
+### ✨ New Features
+
+* **universal:** cover Adjust v5 initSdk and Crashlytics boxed overload ([aaba54a](https://github.com/dh6k/morphe-patches/commit/aaba54a195cc6adae3c3ea6aa1479b62a5ac9dd7))
+
 ## [1.5.0-dev.2](https://github.com/dh6k/morphe-patches/compare/v1.5.0-dev.1...v1.5.0-dev.2) (2026-09-03)
 
 ### ✨ New Features
