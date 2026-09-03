@@ -12,16 +12,21 @@ class UniversalPatchesTest {
         assertEquals("true", analyticsMetadataOffValue("firebase_analytics_collection_deactivated"))
         assertEquals("false", analyticsMetadataOffValue("firebase_analytics_collection_enabled"))
         assertEquals("false", analyticsMetadataOffValue("firebase_crashlytics_collection_enabled"))
+        assertEquals("false", analyticsMetadataOffValue("google_analytics_automatic_screen_reporting_enabled"))
         assertEquals("false", analyticsMetadataOffValue("google_analytics_default_allow_analytics_storage"))
+        assertEquals("false", analyticsMetadataOffValue("io.sentry.auto-init"))
     }
 
     @Test fun `component classifiers are narrow`() {
         assertTrue(isAnalyticsComponent("com.google.android.gms.analytics.AnalyticsService"))
         assertTrue(isAnalyticsComponent("com.google.android.gms.measurement.AppMeasurementService"))
         assertTrue(isAnalyticsComponent("com.google.android.gms.measurement.AppMeasurementReceiver"))
+        assertTrue(isAnalyticsComponent("com.google.firebase.crashlytics.CrashlyticsInitProvider"))
+        assertTrue(isAnalyticsComponent("com.google.firebase.perf.provider.FirebasePerfProvider"))
         assertFalse(isAnalyticsComponent("com.example.analytics.SettingsActivity"))
         assertFalse(isAnalyticsComponent("com.example.ads.SettingsActivity"))
         assertFalse(isAnalyticsComponent("com.google.android.gms.measurement.Settings"))
+        assertFalse(isAnalyticsComponent("com.google.firebase.FirebaseInitProvider"))
     }
 
     @Test fun `manifest mutation only touches application-level nodes`() {
@@ -68,5 +73,12 @@ class UniversalPatchesTest {
         assertEquals("setAnalyticsCollectionEnabled", FirebaseAnalyticsSetter.name)
         assertEquals("V", FirebaseAnalyticsSetter.returnType)
         assertEquals(listOf("Z"), FirebaseAnalyticsSetter.parameters)
+    }
+
+    @Test fun `adjust initializer targets v4 entry point`() {
+        assertEquals("Lcom/adjust/sdk/Adjust;", AdjustInitializer.definingClass)
+        assertEquals("onCreate", AdjustInitializer.name)
+        assertEquals("V", AdjustInitializer.returnType)
+        assertEquals(listOf("Lcom/adjust/sdk/AdjustConfig;"), AdjustInitializer.parameters)
     }
 }

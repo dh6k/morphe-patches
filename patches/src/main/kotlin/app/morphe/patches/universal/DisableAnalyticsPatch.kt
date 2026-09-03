@@ -23,6 +23,7 @@ internal val analyticsMetadataOff = mapOf(
     "firebase_performance_logcat_enabled" to "false",
     "firebase_data_collection_default_enabled" to "false",
     "google_analytics_adid_collection_enabled" to "false",
+    "google_analytics_automatic_screen_reporting_enabled" to "false",
     "google_analytics_ssaid_collection_enabled" to "false",
     "google_analytics_default_allow_analytics_storage" to "false",
     "google_analytics_default_allow_ad_storage" to "false",
@@ -30,6 +31,7 @@ internal val analyticsMetadataOff = mapOf(
     "google_analytics_default_allow_ad_personalization_signals" to "false",
     "io.appmetrica.analytics.auto_tracking_enabled" to "false",
     "io.appmetrica.analytics.location_tracking_enabled" to "false",
+    "io.sentry.auto-init" to "false",
     "io.sentry.enabled" to "false",
     "io.sentry.dsn" to "",
 )
@@ -44,7 +46,9 @@ internal fun isAnalyticsComponent(name: String): Boolean =
         name.startsWith("com.comscore.") || name.startsWith("com.amplitude.") ||
         name.startsWith("com.mixpanel.") || name.startsWith("com.google.android.gms.analytics.") ||
         name.startsWith("com.google.android.gms.measurement.AppMeasurement") ||
-        name.startsWith("com.google.android.gms.tagmanager.")
+        name.startsWith("com.google.android.gms.tagmanager.") ||
+        name.startsWith("com.google.firebase.crashlytics.") ||
+        name.startsWith("com.google.firebase.perf.") || name.startsWith("com.crashlytics.android.")
 
 internal fun manifestAttr(element: Element, localName: String): String =
     element.getAttributeNS(ANDROID_NS, localName).ifEmpty { element.getAttribute("android:$localName") }
@@ -78,7 +82,7 @@ internal fun mutateAnalyticsManifest(document: Document) {
             })
         }
     }
-    listOf("activity", "provider", "service", "receiver").forEach { tag ->
+    listOf("activity", "activity-alias", "provider", "service", "receiver").forEach { tag ->
         for (node in directChildren(application, tag)) {
             if (isAnalyticsComponent(manifestAttr(node, "name"))) {
                 node.setAttribute("android:enabled", "false")
@@ -114,6 +118,10 @@ internal object MyTrackerInitializer : Fingerprint(
     definingClass = "Lcom/my/tracker/MyTracker;", name = "initTracker", returnType = "V",
     custom = { method, _ -> method.name != "<init>" && method.implementation != null },
 )
+internal object AdjustInitializer : Fingerprint(
+    definingClass = "Lcom/adjust/sdk/Adjust;", name = "onCreate", returnType = "V",
+    parameters = listOf("Lcom/adjust/sdk/AdjustConfig;"),
+)
 
 @Suppress("unused")
 val disableAnalyticsPatch = bytecodePatch(
@@ -127,5 +135,6 @@ val disableAnalyticsPatch = bytecodePatch(
         FirebaseCrashlyticsSetter.methodOrNull?.addInstructions(0, "const/4 p1, 0x0")
         FirebasePerformanceSetter.methodOrNull?.addInstructions(0, "const/4 p1, 0x0")
         MyTrackerInitializer.methodOrNull?.addInstructions(0, "return-void")
+        AdjustInitializer.methodOrNull?.addInstructions(0, "return-void")
     }
 }
