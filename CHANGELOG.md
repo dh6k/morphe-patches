@@ -1,3 +1,9 @@
+## [1.5.0-dev.1](https://github.com/dh6k/morphe-patches/compare/v1.4.0...v1.5.0-dev.1) (2026-09-03)
+
+### ✨ New Features
+
+* **universal:** harden Disable analytics manifest scope and runtime backstop ([1f27512](https://github.com/dh6k/morphe-patches/commit/1f275125aa6db5dcb05fccebb38474c68cd0adbd))
+
 ## [1.4.0](https://github.com/dh6k/morphe-patches/compare/v1.3.0...v1.4.0) (2026-08-24)
 
 ### 🐛 Bug Fixes
