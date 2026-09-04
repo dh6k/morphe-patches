@@ -14,11 +14,13 @@ import app.morphe.patcher.patch.Compatibility
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.patch.resourcePatch
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.iface.reference.StringReference
 import org.w3c.dom.Element
 
 private const val ORIGIN_PREFERENCES_CLASS =
@@ -28,6 +30,13 @@ private const val ORIGIN_PREFERENCES_CLASS =
 // and read by the feature gatekeeper methods.
 // Key: "brave_origin_off_<policyKey>", value: true = user disabled this feature.
 private const val PREF_PREFIX = "brave_origin_off_"
+// Const-string literals referenced by a method body. Used for custom matchers
+// that must tolerate Brave's log-string drift (e.g. "... profile is null" →
+// "... prefs are unavailable") while still anchoring on stable pref keys.
+private fun Method.constStrings(): List<String> =
+    implementation?.instructions?.mapNotNull { instruction ->
+        ((instruction as? ReferenceInstruction)?.reference as? StringReference)?.string
+    } ?: emptyList()
 
 private fun braveCompatibility(
     name: String,
@@ -108,14 +117,19 @@ val braveOriginPatch = bytecodePatch(
 
     execute {
 
-        // ── 1. v42.c(Profile) → true ──────────────────────────────────────────────────
+        // ── 1. getIsSubscriptionActive(Profile) → true ──────────────────────────────
+        // Brave 1.97.x rotated the null-profile log literal
+        // ("getIsSubscriptionActive profile is null" →
+        // "getIsSubscriptionActive prefs are unavailable"), so anchor on the stable
+        // pref fragment and deprioritize the log literal.
         Fingerprint(
             returnType = "Z",
             parameters = listOf("Lorg/chromium/chrome/browser/profiles/Profile;"),
-            strings = listOf(
-                "getIsSubscriptionActive profile is null",
-                "brave.origin.subscription_active_android",
-            ),
+            custom = { method, _ ->
+                val consts = method.constStrings()
+                consts.any { it == "brave.origin.subscription_active_android" } &&
+                    consts.any { it.contains("getIsSubscriptionActive") }
+            },
         ).method.addInstructions(0, "const/4 v0, 0x1\nreturn v0")
 
         // ── 2. v42.d(Profile) → true ──────────────────────────────────────────────────
@@ -157,17 +171,20 @@ val braveOriginPatch = bytecodePatch(
             parameters = emptyList(),
         ).method.addInstructions(0, "return-void")
 
-        // ── 5. v42.f(Profile, Callback) → fire TRUE immediately ──────────────────────
+        // ── 5. requestCredentialSummary(Profile, Callback) → fire TRUE immediately ──
+        // Same log-literal drift family as step 1 (1.97.x: "... profile is null" →
+        // "... profile is null or destroyed"), so match on the stable fragment.
         Fingerprint(
             returnType = "V",
             parameters = listOf(
                 "Lorg/chromium/chrome/browser/profiles/Profile;",
                 "Lorg/chromium/base/Callback;",
             ),
-            strings = listOf(
-                "requestCredentialSummary profile is null",
-                "SkusService is null, cannot request credential summary",
-            ),
+            custom = { method, _ ->
+                val consts = method.constStrings()
+                consts.any { it.contains("requestCredentialSummary") } &&
+                    consts.any { it == "SkusService is null, cannot request credential summary" }
+            },
         ).methodOrNull?.addInstructions(
             0,
             """
