@@ -1,3 +1,9 @@
+## [1.5.0-dev.5](https://github.com/dh6k/morphe-patches/compare/v1.5.0-dev.4...v1.5.0-dev.5) (2026-09-04)
+
+### 🐛 Bug Fixes
+
+* **brave:** tolerate Origin log-literal drift on 1.97.x ([86755f2](https://github.com/dh6k/morphe-patches/commit/86755f20a37a75546af646cd7c0f3acd684ca674)), closes [#1](https://github.com/dh6k/morphe-patches/issues/1) [#5](https://github.com/dh6k/morphe-patches/issues/5)
+
 ## [1.5.0-dev.4](https://github.com/dh6k/morphe-patches/compare/v1.5.0-dev.3...v1.5.0-dev.4) (2026-09-03)
 
 ### ✨ New Features
