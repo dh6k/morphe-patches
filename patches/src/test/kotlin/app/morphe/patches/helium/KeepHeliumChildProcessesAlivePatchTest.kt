@@ -8,7 +8,7 @@ import javax.xml.parsers.DocumentBuilderFactory
 
 class KeepHeliumChildProcessesAlivePatchTest {
     @Test
-    fun `compatibility is version unpinned experimental Helium APK target`() {
+    fun `compatibility is version unpinned experimental Titanium APK target`() {
         assertEquals("io.github.jqssun.helium", heliumChildProcessCompatibility.packageName)
         assertEquals(null, heliumChildProcessCompatibility.targets.single().version)
         assertTrue(heliumChildProcessCompatibility.targets.single().isExperimental)

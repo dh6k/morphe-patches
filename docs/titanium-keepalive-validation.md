@@ -1,8 +1,8 @@
-# Helium keep-alive validation
+# Titanium keep-alive validation
 
-Validation used official arm64 Helium release APKs and Morphe Desktop CLI 1.13.2 (`morphe-desktop-1.13.2-all.jar` via `MorpheCliWrapper`/`MainCommand`). APKs are not stored in this repository. Local APK paths are not recorded.
+Validation used official arm64 Titanium release APKs and Morphe Desktop CLI 1.13.2 (`morphe-desktop-1.13.2-all.jar` via `MorpheCliWrapper`/`MainCommand`). APKs are not stored in this repository. Local APK paths are not recorded.
 
-| Helium | Patch/rebuild | Create method | Launch region | Binding argument | Priority method | Activity hook |
+| Titanium | Patch/rebuild | Create method | Launch region | Binding argument | Priority method | Activity hook |
 | --- | --- | --- | --- | --- | --- | --- |
 | 152.0.7977.54 | PASS (`--unsigned`, zipalign 4) | `SEMANTIC_EXACT` (`createAndStart`) | `SEMANTIC_EXACT` ordered TraceEvent scope | `DATA_FLOW` small-enum `3` → `v7` before `Li92->a(La82;Ld92;I)Lx82` + `move-result-object` (field/small-enum credible, weak hints ignored) | `SEMANTIC_EXACT` `setPriority(IZZZZJZZZZI)I` → `p12` (`v29`, word offset 12) `const/16 0x3` | `ChromeTabbedActivity.onStart` @5 → `HeliumKeepAliveStarter` |
 | 151.0.7922.71 | PASS (`--unsigned`, zipalign 4) | `SEMANTIC_EXACT` | `SEMANTIC_EXACT` | `DATA_FLOW` | `SEMANTIC_EXACT`, `p12` | exact Chromium activity |
@@ -15,7 +15,7 @@ Hardening delta from reverted `95522d6`: the reverted binding `credible` gate re
 
 These are static patch/rebuild results. Device behavior under memory pressure, foreground-service notification, and process importance/oom-adj adjustments remain separate runtime tests and were not performed here.
 
-Command (validated): `java -cp "morphe-desktop-1.13.2-all.jar;C:\tmp" MorpheCliWrapper patch -p <mpp> -e "Keep Helium Child Processes Alive" --exclusive --unsigned -o <out.apk> -r <result.json> -t <scratch> <input.apk>` — signing the CLI output would require a separate `apksigner` step with a valid keystore.
+Command (validated): `java -cp "morphe-desktop-1.13.2-all.jar;C:\tmp" MorpheCliWrapper patch -p <mpp> -e "Keep Titanium Extensions Child Processes Alive" --exclusive --unsigned -o <out.apk> -r <result.json> -t <scratch> <input.apk>` — signing the CLI output would require a separate `apksigner` step with a valid keystore.
 
 APK SHA-256 (for reproducibility, validated against `aapt dump badging` package `io.github.jqssun.helium`):
 
