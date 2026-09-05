@@ -1,22 +1,139 @@
 package app.morphe.patches.universal
 
+import javax.xml.parsers.DocumentBuilderFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import org.w3c.dom.Element
 
 class UniversalPatchesTest {
     @Test fun `analytics metadata uses off polarity`() {
         assertEquals("true", analyticsMetadataOffValue("firebase_analytics_collection_deactivated"))
         assertEquals("false", analyticsMetadataOffValue("firebase_analytics_collection_enabled"))
         assertEquals("false", analyticsMetadataOffValue("firebase_crashlytics_collection_enabled"))
+        assertEquals("false", analyticsMetadataOffValue("google_analytics_automatic_screen_reporting_enabled"))
+        assertEquals("false", analyticsMetadataOffValue("google_analytics_deferred_deep_link_enabled"))
         assertEquals("false", analyticsMetadataOffValue("google_analytics_default_allow_analytics_storage"))
+        assertEquals("false", analyticsMetadataOffValue("com.facebook.sdk.AutoLogAppEventsEnabled"))
+        assertEquals("false", analyticsMetadataOffValue("com.facebook.sdk.AdvertiserIDCollectionEnabled"))
+        assertEquals("false", analyticsMetadataOffValue("com.facebook.sdk.AutoInitEnabled"))
+        assertEquals("false", analyticsMetadataOffValue("com_moengage_core_background_data_sync_enabled"))
+        assertEquals("false", analyticsMetadataOffValue("com_moengage_fcm_registration_enabled"))
+        assertEquals("false", analyticsMetadataOffValue("io.sentry.auto-init"))
     }
 
     @Test fun `component classifiers are narrow`() {
         assertTrue(isAnalyticsComponent("com.google.android.gms.analytics.AnalyticsService"))
+        assertTrue(isAnalyticsComponent("com.google.android.gms.measurement.AppMeasurementService"))
+        assertTrue(isAnalyticsComponent("com.google.android.gms.measurement.AppMeasurementReceiver"))
+        assertTrue(isAnalyticsComponent("com.google.firebase.crashlytics.CrashlyticsInitProvider"))
+        assertTrue(isAnalyticsComponent("com.google.firebase.perf.provider.FirebasePerfProvider"))
+        assertTrue(isAnalyticsComponent("com.facebook.appevents.AppEventsLogger"))
+        assertTrue(isAnalyticsComponent("ru.mail.mytracker.MyTrackerService"))
+        assertTrue(isAnalyticsComponent("com.yandex.preinstallsatellite.appmetrica.PreinstallService"))
+        assertTrue("com.google.firebase.sessions.SessionLifecycleService" in analyticsComponentsByName)
+        assertTrue("com.google.android.datatransport.runtime.scheduling.jobscheduling.JobInfoSchedulerService" in analyticsComponentsByName)
         assertFalse(isAnalyticsComponent("com.example.analytics.SettingsActivity"))
         assertFalse(isAnalyticsComponent("com.example.ads.SettingsActivity"))
         assertFalse(isAnalyticsComponent("com.google.android.gms.measurement.Settings"))
+        assertFalse(isAnalyticsComponent("com.google.firebase.FirebaseInitProvider"))
+    }
+
+    @Test fun `manifest mutation removes tracker permissions and named components`() {
+        val document = DocumentBuilderFactory.newInstance().apply {
+            isNamespaceAware = true
+        }.newDocumentBuilder().parse(
+            """
+            <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.example">
+                <uses-permission android:name="com.adjust.SOME_PERMISSION" />
+                <uses-permission android:name="com.appsflyer.referrer.INSTALL_PROVIDER" />
+                <uses-permission android:name="android.permission.INTERNET" />
+                <application>
+                    <provider android:name="com.google.firebase.sessions.SessionLifecycleService" />
+                    <service android:name="com.google.android.datatransport.runtime.scheduling.jobscheduling.JobInfoSchedulerService" />
+                    <service android:name="com.example.SyncService" />
+                </application>
+            </manifest>
+            """.trimIndent().byteInputStream(),
+        )
+        mutateAnalyticsManifest(document)
+        val remaining = directChildren(document.documentElement, "uses-permission")
+            .map { manifestAttr(it, "name") }
+        assertEquals(listOf("android.permission.INTERNET"), remaining)
+        val application = document.getElementsByTagName("application").item(0) as Element
+        assertEquals("false", directChildren(application, "provider").single().getAttribute("android:enabled"))
+        val services = directChildren(application, "service")
+        assertEquals("false", services.first {
+            manifestAttr(it, "name").startsWith("com.google.android.datatransport")
+        }.getAttribute("android:enabled"))
+        assertEquals("", services.first {
+            manifestAttr(it, "name") == "com.example.SyncService"
+        }.getAttribute("android:enabled"))
+    }
+
+    @Test fun `manifest mutation only touches application-level nodes`() {
+        val document = DocumentBuilderFactory.newInstance().apply {
+            isNamespaceAware = true
+        }.newDocumentBuilder().parse(
+            """
+            <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.example">
+                <application>
+                    <meta-data android:name="firebase_analytics_collection_enabled" android:value="true" />
+                    <activity android:name="com.example.MainActivity">
+                        <meta-data android:name="firebase_analytics_collection_enabled" android:value="true" />
+                    </activity>
+                    <service android:name="com.google.android.gms.measurement.AppMeasurementService" />
+                    <service android:name="com.example.SyncService" />
+                </application>
+            </manifest>
+            """.trimIndent().byteInputStream(),
+        )
+        mutateAnalyticsManifest(document)
+        val application = document.getElementsByTagName("application").item(0) as Element
+        assertEquals(analyticsMetadataOff.size, directChildren(application, "meta-data").size)
+        val appMeta = directChildren(application, "meta-data").first {
+            manifestAttr(it, "name") == "firebase_analytics_collection_enabled"
+        }
+        assertEquals("false", appMeta.getAttribute("android:value"))
+        val activity = directChildren(application, "activity").single() as Element
+        val nestedMeta = (activity.getElementsByTagName("meta-data").item(0) as Element)
+        assertEquals("true", nestedMeta.getAttribute("android:value"))
+        val services = directChildren(application, "service")
+        assertEquals("false", services.first {
+            manifestAttr(it, "name") == "com.google.android.gms.measurement.AppMeasurementService"
+        }.getAttribute("android:enabled"))
+        assertEquals("", services.first {
+            manifestAttr(it, "name") == "com.example.SyncService"
+        }.getAttribute("android:enabled"))
+    }
+
+    @Test fun `firebase analytics setter targets collection switch`() {
+        assertEquals(
+            "Lcom/google/firebase/analytics/FirebaseAnalytics;",
+            FirebaseAnalyticsSetter.definingClass,
+        )
+        assertEquals("setAnalyticsCollectionEnabled", FirebaseAnalyticsSetter.name)
+        assertEquals("V", FirebaseAnalyticsSetter.returnType)
+        assertEquals(listOf("Z"), FirebaseAnalyticsSetter.parameters)
+    }
+
+    @Test fun `adjust initializer targets v4 entry point`() {
+        assertEquals("Lcom/adjust/sdk/Adjust;", AdjustInitializer.definingClass)
+        assertEquals("onCreate", AdjustInitializer.name)
+        assertEquals("V", AdjustInitializer.returnType)
+        assertEquals(listOf("Lcom/adjust/sdk/AdjustConfig;"), AdjustInitializer.parameters)
+    }
+
+    @Test fun `adjust v5 initializer targets initSdk entry point`() {
+        assertEquals("Lcom/adjust/sdk/Adjust;", AdjustV5Initializer.definingClass)
+        assertEquals("initSdk", AdjustV5Initializer.name)
+        assertEquals("V", AdjustV5Initializer.returnType)
+        assertEquals(listOf("Lcom/adjust/sdk/AdjustConfig;"), AdjustV5Initializer.parameters)
+    }
+
+    @Test fun `crashlytics boxed overload is covered`() {
+        assertEquals("setCrashlyticsCollectionEnabled", FirebaseCrashlyticsBoxedSetter.name)
+        assertEquals(listOf("Ljava/lang/Boolean;"), FirebaseCrashlyticsBoxedSetter.parameters)
     }
 }
