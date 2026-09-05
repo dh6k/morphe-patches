@@ -14,7 +14,7 @@ public final class HeliumProcessKeepAliveService extends Service {
     public static final int NOTIFICATION_ID = 0x48454c;
 
     private static final String TAG = "HeliumKeepAlive";
-    private static final String TITLE = "Helium process protection active";
+    private static final String TITLE = "Titanium process protection active";
     private static final String TEXT = "Reduces likelihood of extension runtime reclaim";
 
     private boolean foregroundStarted;

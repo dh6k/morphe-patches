@@ -137,7 +137,7 @@ internal fun mutateHeliumKeepAliveManifest(document: Document) {
     subtype.setAttribute("android:value", HELIUM_SPECIAL_USE_SUBTYPE)
 }
 private val heliumManifestPatch = resourcePatch(
-    name = "Helium keep-alive manifest",
+    name = "Titanium keep-alive manifest",
     description = "Declares one safe foreground service.",
     default = false,
 ) {
@@ -152,7 +152,7 @@ private const val HELIUM_PACKAGE = "io.github.jqssun.helium"
 internal const val HELIUM_CHILD_PROCESS_CLASS =
     "Lorg/chromium/content/browser/ChildProcessLauncherHelperImpl;"
 internal const val HELIUM_SET_PRIORITY_METHOD: String = HELIUM_PRIORITY_METHOD
-// Chromium ChildBindingState values observed across validated Helium 149-152 APKs.
+// Chromium ChildBindingState values observed across validated Titanium 149-152 APKs.
 internal const val HELIUM_STRONG_BINDING_VALUE = 0x4
 internal const val HELIUM_IMPORTANT_PRIORITY_VALUE = 0x3
 internal const val HELIUM_SPAWN_START_ANCHOR = "ChildProcessLauncher.start"
@@ -160,9 +160,9 @@ internal const val HELIUM_SPAWN_START_ANCHOR = "ChildProcessLauncher.start"
 internal fun heliumStrongBindingInstruction(register: Int) =
     "const/16 v$register, $HELIUM_STRONG_BINDING_VALUE"
 
-/** Version-unpinned experimental Helium patch using structural fingerprints; ambiguity fails safely. */
+/** Version-unpinned experimental Titanium patch using structural fingerprints; ambiguity fails safely. */
 internal val heliumChildProcessCompatibility = Compatibility(
-    name = "Helium Browser",
+    name = "Titanium Browser for Android",
     packageName = HELIUM_PACKAGE,
     apkFileType = ApkFileType.APK,
     targets = listOf(AppTarget(version = null, isExperimental = true)),
@@ -171,11 +171,11 @@ internal val heliumChildProcessCompatibility = Compatibility(
 /**
  * Forces Chromium child processes into strongest binding state. This can reduce LMK kills,
  * but may increase RAM, battery, and process pressure. It does not identify or reload
- * crashed extensions; recovery remains native to Helium/Chromium.
+ * crashed extensions; recovery remains native to Titanium/Chromium.
  */
 @Suppress("unused")
 val keepHeliumChildProcessesAlivePatch = bytecodePatch(
-    name = "Keep Helium Child Processes Alive",
+    name = "Keep Titanium Extensions Child Processes Alive",
     description = "Experimental version-unpinned structural/data-flow patch: starts one main-process foreground service with persistent low-priority notification and forces child STRONG binding plus IMPORTANT/STRONG priority updates. Tolerates routine signature, register, and helper-name changes; ambiguous targets fail closed. May increase RAM, battery, and process pressure; mitigates LMK kills only.",
     default = false,
 ) {
@@ -220,7 +220,7 @@ val keepHeliumChildProcessesAlivePatch = bytecodePatch(
         val activityModel = resolveActivityHook(activityClasses)
         val activityOwner = activityModel.methodDescriptor.substringBefore("->")
         val activityClass = classDefsByType[activityOwner]
-            ?: error("Helium activity lifecycle owner missing: $activityOwner")
+            ?: error("Titanium activity lifecycle owner missing: $activityOwner")
         val activity = mutableClassDefBy(activityClass).methods.single {
             it.toStructuralMethod().descriptor == activityModel.methodDescriptor
         }
