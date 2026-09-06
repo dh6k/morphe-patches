@@ -1,3 +1,13 @@
+## [1.6.0-dev.5](https://github.com/dh6k/morphe-patches/compare/v1.6.0-dev.4...v1.6.0-dev.5) (2026-09-06)
+
+### 🐛 Bug Fixes
+
+* **build:** keep patchLocalApk providers lazy for CI configure ([d8f97ee](https://github.com/dh6k/morphe-patches/commit/d8f97eea2f6c648eff6a08f5c7f984709805964b))
+
+### ✨ New Features
+
+* **titanium:** force highest refresh rate ([473eaae](https://github.com/dh6k/morphe-patches/commit/473eaaeadd5b1a7cff701153cb4573353354a9ac))
+
 ## [1.6.0-dev.4](https://github.com/dh6k/morphe-patches/compare/v1.6.0-dev.3...v1.6.0-dev.4) (2026-09-06)
 
 ### 🐛 Bug Fixes
