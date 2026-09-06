@@ -28,10 +28,20 @@ public final class HeliumProcessKeepAliveService extends Service {
     private boolean foregroundStarted;
 
     private static String line(Bundle meta, String key, String fallback) {
-        String value = meta != null ? meta.getString(key) : null;
-        if (value == null) return fallback;
+        if (meta == null || !meta.containsKey(key)) return fallback;
+        // ponytail: manifest meta-data lands as String ("false"), never Boolean —
+        // Bundle.getBoolean() on a String always returns its default, so parse manually.
+        String value = String.valueOf(meta.get(key));
+        if (value == null || "null".equals(value)) return fallback;
         value = value.trim();
         return value.isEmpty() ? fallback : value;
+    }
+
+    private static boolean showFlag(Bundle meta) {
+        if (meta == null || !meta.containsKey(META_ENABLED)) return true;
+        Object raw = meta.get(META_ENABLED);
+        if (raw instanceof Boolean) return (Boolean) raw;
+        return Boolean.parseBoolean(String.valueOf(raw));
     }
 
     private synchronized boolean promote() {
@@ -48,7 +58,7 @@ public final class HeliumProcessKeepAliveService extends Service {
                 ServiceInfo info = getPackageManager().getServiceInfo(component, PackageManager.GET_META_DATA);
                 Bundle meta = info.metaData;
                 if (meta != null) {
-                    show = meta.getBoolean(META_ENABLED, true);
+                    show = showFlag(meta);
                     title = line(meta, META_TITLE, DEFAULT_TITLE);
                     text = line(meta, META_TEXT, DEFAULT_TEXT);
                 }

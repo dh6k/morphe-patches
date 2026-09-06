@@ -7,8 +7,10 @@ import app.morphe.patcher.patch.Compatibility
 import app.morphe.patcher.PackageMetadata
 import app.morphe.patcher.patch.booleanOption
 import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.BytecodePatch
 import app.morphe.patcher.patch.resourcePatch
 import app.morphe.patcher.patch.stringOption
+import app.morphe.patcher.patch.ResourcePatch
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import org.w3c.dom.Document
 import org.w3c.dom.Element
@@ -34,15 +36,6 @@ internal data class HeliumNotificationConfig(
 
 internal fun sanitizeHeliumNotificationLine(value: String?, fallback: String): String =
     value?.trim().orEmpty().ifEmpty { fallback }
-
-internal fun heliumNotificationConfigFromOptions(): HeliumNotificationConfig {
-    val options = keepHeliumChildProcessesAlivePatch.options
-    return HeliumNotificationConfig(
-        showNotification = options["showNotification"]?.value as? Boolean ?: true,
-        title = sanitizeHeliumNotificationLine(options["notificationTitle"]?.value as? String, HELIUM_DEFAULT_NOTIFICATION_TITLE),
-        text = sanitizeHeliumNotificationLine(options["notificationText"]?.value as? String, HELIUM_DEFAULT_NOTIFICATION_TEXT),
-    )
-}
 internal const val HELIUM_ACTIVITY_CLASS = "Lorg/chromium/chrome/browser/ChromeTabbedActivity;"
 internal const val HELIUM_LIFECYCLE_ON_START = "onStart"
 internal const val HELIUM_LIFECYCLE_ON_RESUME = "onResume"
@@ -186,7 +179,7 @@ internal fun mutateHeliumKeepAliveManifest(
     ensureMetaData(HELIUM_META_NOTIFICATION_TITLE, config.title)
     ensureMetaData(HELIUM_META_NOTIFICATION_TEXT, config.text)
 }
-private val heliumManifestPatch = resourcePatch(
+internal val heliumManifestPatch: ResourcePatch = resourcePatch(
     name = "Titanium keep-alive manifest",
     description = "Declares one safe foreground service.",
     default = false,
@@ -194,7 +187,17 @@ private val heliumManifestPatch = resourcePatch(
     execute {
         document("AndroidManifest.xml").use { manifest ->
             LauncherActivityRegistry.put(packageMetadata, resolveLauncherActivityClasses(manifest))
-            mutateHeliumKeepAliveManifest(manifest, heliumNotificationConfigFromOptions())
+            // Options live on the public patch (manager UI only lists those);
+            // values are set before any execute runs, so reading them here is safe.
+            val options = keepHeliumChildProcessesAlivePatch.options
+            mutateHeliumKeepAliveManifest(
+                manifest,
+                HeliumNotificationConfig(
+                    showNotification = options["showNotification"]?.value as? Boolean ?: true,
+                    title = sanitizeHeliumNotificationLine(options["notificationTitle"]?.value as? String, HELIUM_DEFAULT_NOTIFICATION_TITLE),
+                    text = sanitizeHeliumNotificationLine(options["notificationText"]?.value as? String, HELIUM_DEFAULT_NOTIFICATION_TEXT),
+                ),
+            )
         }
     }
 }
@@ -206,7 +209,6 @@ internal const val HELIUM_SET_PRIORITY_METHOD: String = HELIUM_PRIORITY_METHOD
 internal const val HELIUM_STRONG_BINDING_VALUE = 0x4
 internal const val HELIUM_IMPORTANT_PRIORITY_VALUE = 0x3
 internal const val HELIUM_SPAWN_START_ANCHOR = "ChildProcessLauncher.start"
-
 internal fun heliumStrongBindingInstruction(register: Int) =
     "const/16 v$register, $HELIUM_STRONG_BINDING_VALUE"
 
@@ -224,7 +226,7 @@ internal val heliumChildProcessCompatibility = Compatibility(
  * crashed extensions; recovery remains native to Titanium/Chromium.
  */
 @Suppress("unused")
-val keepHeliumChildProcessesAlivePatch = bytecodePatch(
+val keepHeliumChildProcessesAlivePatch: BytecodePatch = bytecodePatch(
     name = "Keep Titanium Extensions Child Processes Alive",
     description = "Experimental version-unpinned structural/data-flow patch: starts one main-process foreground service with persistent low-priority notification and forces child STRONG binding plus IMPORTANT/STRONG priority updates. Tolerates routine signature, register, and helper-name changes; ambiguous targets fail closed. May increase RAM, battery, and process pressure; mitigates LMK kills only.",
     default = false,
@@ -234,7 +236,8 @@ val keepHeliumChildProcessesAlivePatch = bytecodePatch(
     compatibleWith(heliumChildProcessCompatibility)
 
     // Toggle only hides the foreground notification; the keep-alive service and
-    // STRONG/IMPORTANT pins stay active either way.
+    // STRONG/IMPORTANT pins stay active either way. Declared here so the manager
+    // UI shows them; the manifest patch reads their values directly.
     val showNotification by booleanOption(
         key = "showNotification",
         default = true,
