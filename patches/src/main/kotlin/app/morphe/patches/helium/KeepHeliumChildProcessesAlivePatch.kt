@@ -6,15 +6,31 @@ import app.morphe.patcher.patch.AppTarget
 import app.morphe.patcher.patch.Compatibility
 import app.morphe.patcher.PackageMetadata
 import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.BytecodePatch
 import app.morphe.patcher.patch.resourcePatch
+import app.morphe.patcher.patch.stringOption
+import app.morphe.patcher.patch.ResourcePatch
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import org.w3c.dom.Document
 import org.w3c.dom.Element
-
 internal const val HELIUM_KEEP_ALIVE_SERVICE = "app.morphe.extension.helium.HeliumProcessKeepAliveService"
 internal const val HELIUM_KEEP_ALIVE_CHANNEL = "helium_extension_runtime"
 internal const val HELIUM_KEEP_ALIVE_NOTIFICATION_ID = 0x48454c
 internal const val HELIUM_SPECIAL_USE_SUBTYPE = "Maintain browser extension background runtime"
+internal const val HELIUM_META_NOTIFICATION_TITLE =
+    "app.morphe.extension.helium.NOTIFICATION_TITLE"
+internal const val HELIUM_META_NOTIFICATION_TEXT =
+    "app.morphe.extension.helium.NOTIFICATION_TEXT"
+internal const val HELIUM_DEFAULT_NOTIFICATION_TITLE = "Titanium process protection active"
+internal const val HELIUM_DEFAULT_NOTIFICATION_TEXT = "Reduces likelihood of extension runtime reclaim"
+
+internal data class HeliumNotificationConfig(
+    val title: String = HELIUM_DEFAULT_NOTIFICATION_TITLE,
+    val text: String = HELIUM_DEFAULT_NOTIFICATION_TEXT,
+)
+
+internal fun sanitizeHeliumNotificationLine(value: String?, fallback: String): String =
+    value?.trim().orEmpty().ifEmpty { fallback }
 internal const val HELIUM_ACTIVITY_CLASS = "Lorg/chromium/chrome/browser/ChromeTabbedActivity;"
 internal const val HELIUM_LIFECYCLE_ON_START = "onStart"
 internal const val HELIUM_LIFECYCLE_ON_RESUME = "onResume"
@@ -78,7 +94,10 @@ private object LauncherActivityRegistry {
     }
 }
 
-internal fun mutateHeliumKeepAliveManifest(document: Document) {
+internal fun mutateHeliumKeepAliveManifest(
+    document: Document,
+    config: HeliumNotificationConfig = HeliumNotificationConfig(),
+) {
     val manifest = document.documentElement
     val application = document.getElementsByTagName("application").item(0) as? Element
         ?: error("AndroidManifest.xml does not contain an <application> element")
@@ -135,8 +154,35 @@ internal fun mutateHeliumKeepAliveManifest(document: Document) {
     val subtype = prop ?: document.createElement("property").also { target.appendChild(it) }
     subtype.setAttribute("android:name", "android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE")
     subtype.setAttribute("android:value", HELIUM_SPECIAL_USE_SUBTYPE)
+
+    fun ensureMetaData(name: String, value: String) {
+        val nodes = target.getElementsByTagName("meta-data")
+        var first: Element? = null
+        val duplicates = mutableListOf<Element>()
+        for (i in 0 until nodes.length) {
+            val node = nodes.item(i) as Element
+            if (attrName(node) == name) {
+                if (first == null) first = node else duplicates += node
+            }
+        }
+        duplicates.forEach { target.removeChild(it) }
+        val entry = first ?: document.createElement("meta-data").also { target.appendChild(it) }
+        entry.setAttribute("android:name", name)
+        entry.setAttribute("android:value", value)
+    }
+    fun removeMetaData(name: String) {
+        val nodes = target.getElementsByTagName("meta-data")
+        for (i in nodes.length - 1 downTo 0) {
+            val node = nodes.item(i) as Element
+            if (attrName(node) == name) target.removeChild(node)
+        }
+    }
+    // ponytail: dropped toggle key; remove stale entry from APKs patched with it.
+    removeMetaData("app.morphe.extension.helium.NOTIFICATION_ENABLED")
+    ensureMetaData(HELIUM_META_NOTIFICATION_TITLE, config.title)
+    ensureMetaData(HELIUM_META_NOTIFICATION_TEXT, config.text)
 }
-private val heliumManifestPatch = resourcePatch(
+private val heliumManifestPatch: ResourcePatch = resourcePatch(
     name = "Titanium keep-alive manifest",
     description = "Declares one safe foreground service.",
     default = false,
@@ -144,7 +190,16 @@ private val heliumManifestPatch = resourcePatch(
     execute {
         document("AndroidManifest.xml").use { manifest ->
             LauncherActivityRegistry.put(packageMetadata, resolveLauncherActivityClasses(manifest))
-            mutateHeliumKeepAliveManifest(manifest)
+            // Options live on the public patch (manager UI only lists those);
+            // values are set before any execute runs, so reading them here is safe.
+            val options = keepHeliumChildProcessesAlivePatch.options
+            mutateHeliumKeepAliveManifest(
+                manifest,
+                HeliumNotificationConfig(
+                    title = sanitizeHeliumNotificationLine(options["notificationTitle"]?.value as? String, HELIUM_DEFAULT_NOTIFICATION_TITLE),
+                    text = sanitizeHeliumNotificationLine(options["notificationText"]?.value as? String, HELIUM_DEFAULT_NOTIFICATION_TEXT),
+                ),
+            )
         }
     }
 }
@@ -156,7 +211,6 @@ internal const val HELIUM_SET_PRIORITY_METHOD: String = HELIUM_PRIORITY_METHOD
 internal const val HELIUM_STRONG_BINDING_VALUE = 0x4
 internal const val HELIUM_IMPORTANT_PRIORITY_VALUE = 0x3
 internal const val HELIUM_SPAWN_START_ANCHOR = "ChildProcessLauncher.start"
-
 internal fun heliumStrongBindingInstruction(register: Int) =
     "const/16 v$register, $HELIUM_STRONG_BINDING_VALUE"
 
@@ -174,14 +228,34 @@ internal val heliumChildProcessCompatibility = Compatibility(
  * crashed extensions; recovery remains native to Titanium/Chromium.
  */
 @Suppress("unused")
-val keepHeliumChildProcessesAlivePatch = bytecodePatch(
+val keepHeliumChildProcessesAlivePatch: BytecodePatch = bytecodePatch(
     name = "Keep Titanium Extensions Child Processes Alive",
-    description = "Experimental version-unpinned structural/data-flow patch: starts one main-process foreground service with persistent low-priority notification and forces child STRONG binding plus IMPORTANT/STRONG priority updates. Tolerates routine signature, register, and helper-name changes; ambiguous targets fail closed. May increase RAM, battery, and process pressure; mitigates LMK kills only.",
+    description = "Experimental version-unpinned structural/data-flow patch: starts one main-process foreground service with persistent low-priority notification and forces child STRONG binding plus IMPORTANT/STRONG priority updates. Tolerates routine signature, register, and helper-name changes; ambiguous targets fail closed. May increase RAM, battery, and process pressure; mitigates LMK kills only. To hide the notification, use Android Settings > Apps > Titanium > Notifications (the keep-alive service stays active either way).",
     default = false,
 ) {
     dependsOn(heliumManifestPatch)
     extendWith("extensions/extension.mpe")
     compatibleWith(heliumChildProcessCompatibility)
+
+    // Notification title/text only change what the foreground notification says.
+    // To hide it, use Android Settings > Apps > Titanium > Notifications
+    // (per-channel toggle) — the keep-alive service stays active either way.
+    val notificationTitle by stringOption(
+        key = "notificationTitle",
+        default = HELIUM_DEFAULT_NOTIFICATION_TITLE,
+        title = "Notification title",
+        description = "First line of the keep-alive notification. Blank falls back to default.",
+        required = false,
+        validator = { value -> value == null || value.length <= 200 },
+    )
+    val notificationText by stringOption(
+        key = "notificationText",
+        default = HELIUM_DEFAULT_NOTIFICATION_TEXT,
+        title = "Notification text",
+        description = "Second line of the keep-alive notification. Blank falls back to default.",
+        required = false,
+        validator = { value -> value == null || value.length <= 200 },
+    )
 
     execute {
         val launcherActivities: Set<String>
@@ -233,6 +307,8 @@ val keepHeliumChildProcessesAlivePatch = bytecodePatch(
             activityModel.superIndex + 1,
             "invoke-static {p0}, Lapp/morphe/extension/helium/HeliumKeepAliveStarter;->start(Landroid/content/Context;)V",
         )
+        // ponytail: unconditional floor — if-lt needs two registers and we own
+        // no spare here; one const write is cheaper than a spare-register hunt.
         targetMethod.addInstructions(
             resolvedBinding.index,
             heliumStrongBindingInstruction(resolvedBinding.register),

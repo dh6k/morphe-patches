@@ -1,3 +1,43 @@
+## [1.6.0-dev.6](https://github.com/dh6k/morphe-patches/compare/v1.6.0-dev.5...v1.6.0-dev.6) (2026-09-06)
+
+### 🐛 Bug Fixes
+
+* **titanium:** replace crashing D() tail hook with nearest-mode head const ([1432277](https://github.com/dh6k/morphe-patches/commit/1432277e053edbdddd417e529917153ee4c9ddc6))
+
+## [1.6.0-dev.5](https://github.com/dh6k/morphe-patches/compare/v1.6.0-dev.4...v1.6.0-dev.5) (2026-09-06)
+
+### 🐛 Bug Fixes
+
+* **build:** keep patchLocalApk providers lazy for CI configure ([d8f97ee](https://github.com/dh6k/morphe-patches/commit/d8f97eea2f6c648eff6a08f5c7f984709805964b))
+
+### ✨ New Features
+
+* **titanium:** force highest refresh rate ([473eaae](https://github.com/dh6k/morphe-patches/commit/473eaaeadd5b1a7cff701153cb4573353354a9ac))
+
+## [1.6.0-dev.4](https://github.com/dh6k/morphe-patches/compare/v1.6.0-dev.3...v1.6.0-dev.4) (2026-09-06)
+
+### 🐛 Bug Fixes
+
+* **titanium:** revert conditional pins that break smali parsing ([f76ab92](https://github.com/dh6k/morphe-patches/commit/f76ab92913cacc4d009f5484a3ab1be9f0ac090d))
+
+## [1.6.0-dev.3](https://github.com/dh6k/morphe-patches/compare/v1.6.0-dev.2...v1.6.0-dev.3) (2026-09-06)
+
+### 🔧 Improvements
+
+* **titanium:** conditionalize keep-alive pins and streamline notification ([8ad79b1](https://github.com/dh6k/morphe-patches/commit/8ad79b1b7ca7203b1dc1479ce6fe81454502f31b))
+
+## [1.6.0-dev.2](https://github.com/dh6k/morphe-patches/compare/v1.6.0-dev.1...v1.6.0-dev.2) (2026-09-06)
+
+### 🐛 Bug Fixes
+
+* **titanium:** make notification toggle actually hide ([f295b0e](https://github.com/dh6k/morphe-patches/commit/f295b0e39300248be67620713c3073c64ce62a3b))
+
+## [1.6.0-dev.1](https://github.com/dh6k/morphe-patches/compare/v1.5.0...v1.6.0-dev.1) (2026-09-06)
+
+### ✨ New Features
+
+* **titanium:** notification options for keep-alive patch ([c6b5620](https://github.com/dh6k/morphe-patches/commit/c6b5620da46cd9d6f33e1d7f64bb6467ab311260))
+
 ## [1.5.0](https://github.com/dh6k/morphe-patches/compare/v1.4.0...v1.5.0) (2026-09-05)
 
 ### 🐛 Bug Fixes

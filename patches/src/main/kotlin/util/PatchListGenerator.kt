@@ -14,14 +14,14 @@ import java.net.URLClassLoader
 import java.util.jar.Manifest
 
 fun main() {
-    val patchFiles = setOf(
-        File("build/libs/").listFiles { file ->
-            val fileName = file.name
-            !fileName.contains("javadoc") &&
-                    !fileName.contains("sources") &&
-                    fileName.endsWith(".mpp")
-        }!!.first()
-    )
+    val candidates = File("build/libs/").listFiles { file ->
+        val fileName = file.name
+        !fileName.contains("javadoc") &&
+            !fileName.contains("sources") &&
+            fileName.endsWith(".mpp")
+    } ?: error("patch output dir build/libs is missing; run :patches:buildAndroid first")
+    // Fail closed on ambiguity: stale artifacts must never silently pick the wrong bundle.
+    val patchFiles = setOf(candidates.single())
     val loadedPatches = loadPatchesFromJar(patchFiles)
     val patchClassLoader = URLClassLoader(patchFiles.map { it.toURI().toURL() }.toTypedArray())
     val manifest = patchClassLoader.getResources("META-INF/MANIFEST.MF")
