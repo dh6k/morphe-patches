@@ -1,3 +1,9 @@
+## [1.6.0-dev.6](https://github.com/dh6k/morphe-patches/compare/v1.6.0-dev.5...v1.6.0-dev.6) (2026-09-06)
+
+### 🐛 Bug Fixes
+
+* **titanium:** replace crashing D() tail hook with nearest-mode head const ([1432277](https://github.com/dh6k/morphe-patches/commit/1432277e053edbdddd417e529917153ee4c9ddc6))
+
 ## [1.6.0-dev.5](https://github.com/dh6k/morphe-patches/compare/v1.6.0-dev.4...v1.6.0-dev.5) (2026-09-06)
 
 ### 🐛 Bug Fixes
