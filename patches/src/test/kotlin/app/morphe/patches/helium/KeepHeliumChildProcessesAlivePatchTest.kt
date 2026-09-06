@@ -18,6 +18,15 @@ class KeepHeliumChildProcessesAlivePatchTest {
         assertEquals("const/16 v7, 4", heliumStrongBindingInstruction(7))
         assertEquals("ChildProcessLauncher.start", HELIUM_SPAWN_START_ANCHOR)
     }
+    @Test
+    fun `conditional pins only raise below floor never lower`() {
+        val binding = heliumConditionalBindingSmali(7)
+        assertTrue(binding.contains("if-lt v7, 4, :helium_raise_binding"))
+        assertTrue(binding.contains("const/16 v7, 4"))
+        val priority = heliumConditionalPrioritySmali(12)
+        assertTrue(priority.contains("if-lt p12, 3, :helium_raise_priority"))
+        assertTrue(priority.contains("const/16 p12, 3"))
+    }
 
     @Test
     fun `manifest helper is idempotent`() {
@@ -34,9 +43,8 @@ class KeepHeliumChildProcessesAlivePatchTest {
         assertEquals(1, service.getElementsByTagName("property").length)
     }
     @Test
-    fun `notification options default to visible with default lines`() {
-        assertEquals(setOf("showNotification", "notificationTitle", "notificationText"), keepHeliumChildProcessesAlivePatch.options.keys)
-        assertEquals(true, keepHeliumChildProcessesAlivePatch.options["showNotification"]?.default)
+    fun `notification options default to default lines`() {
+        assertEquals(setOf("notificationTitle", "notificationText"), keepHeliumChildProcessesAlivePatch.options.keys)
         assertEquals(HELIUM_DEFAULT_NOTIFICATION_TITLE, keepHeliumChildProcessesAlivePatch.options["notificationTitle"]?.default)
         assertEquals(HELIUM_DEFAULT_NOTIFICATION_TEXT, keepHeliumChildProcessesAlivePatch.options["notificationText"]?.default)
         assertEquals("fallback", sanitizeHeliumNotificationLine("   ", "fallback"))
@@ -49,16 +57,15 @@ class KeepHeliumChildProcessesAlivePatchTest {
         val d = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(
             "<manifest xmlns:android=\"http://schemas.android.com/apk/res/android\"><application/></manifest>".byteInputStream()
         )
-        val config = HeliumNotificationConfig(showNotification = false, title = "T", text = "B")
+        val config = HeliumNotificationConfig(title = "T", text = "B")
         mutateHeliumKeepAliveManifest(d, config); mutateHeliumKeepAliveManifest(d, config)
         val service = d.getElementsByTagName("service").item(0) as org.w3c.dom.Element
         val metas = service.getElementsByTagName("meta-data")
-        assertEquals(3, metas.length)
+        assertEquals(2, metas.length)
         val values = (0 until metas.length).associate {
             val e = metas.item(it) as org.w3c.dom.Element
             e.getAttribute("android:name") to e.getAttribute("android:value")
         }
-        assertEquals("false", values[HELIUM_META_NOTIFICATION_ENABLED])
         assertEquals("T", values[HELIUM_META_NOTIFICATION_TITLE])
         assertEquals("B", values[HELIUM_META_NOTIFICATION_TEXT])
     }
