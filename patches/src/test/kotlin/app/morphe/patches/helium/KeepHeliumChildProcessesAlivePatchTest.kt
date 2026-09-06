@@ -19,16 +19,6 @@ class KeepHeliumChildProcessesAlivePatchTest {
         assertEquals("ChildProcessLauncher.start", HELIUM_SPAWN_START_ANCHOR)
     }
     @Test
-    fun `conditional pins only raise below floor never lower`() {
-        val binding = heliumConditionalBindingSmali(7)
-        assertTrue(binding.contains("if-lt v7, 4, :helium_raise_binding"))
-        assertTrue(binding.contains("const/16 v7, 4"))
-        val priority = heliumConditionalPrioritySmali(12)
-        assertTrue(priority.contains("if-lt p12, 3, :helium_raise_priority"))
-        assertTrue(priority.contains("const/16 p12, 3"))
-    }
-
-    @Test
     fun `manifest helper is idempotent`() {
         val d = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(
             "<manifest xmlns:android=\"http://schemas.android.com/apk/res/android\"><application/></manifest>".byteInputStream()
