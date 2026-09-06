@@ -43,7 +43,30 @@ tasks {
         classpath = sourceSets["main"].runtimeClasspath + patchListGeneratorClasspath
         mainClass.set("util.PatchListGeneratorKt")
     }
-    // Used by gradle-semantic-release-plugin.
+    // Temporary local-only task: patch a real APK with the CLI to validate a patch.
+    register<JavaExec>("patchLocalApk") {
+        description = "Patch a local APK with MorpheCliWrapper (local validation only)"
+        val mpp = providers.gradleProperty("mpp").orElse("build/libs/patches-1.6.0-dev.3.mpp")
+        val patchName = providers.gradleProperty("patch").orElse("Force highest refresh rate")
+        val apk = providers.gradleProperty("apk")
+        val outDir = providers.gradleProperty("out").orElse("build/local-apk-test")
+        classpath = files(rootDir.resolve("morphe-desktop-1.15.0-all.jar"))
+        mainClass.set("app.morphe.MorpheLauncherKt")
+        args(
+            "patch",
+            "-p", mpp.get(),
+            "-e", patchName.get(),
+            "--exclusive", "--unsigned",
+            "-o", "${outDir.get()}/out.apk",
+            "-r", "${outDir.get()}/result.json",
+            "-t", "${outDir.get()}/scratch",
+            apk.get(),
+        )
+        doFirst {
+            require(apk.isPresent) { "Pass -Papk=<input apk path>" }
+            mkdir(outDir.get())
+        }
+    }
     publish {
         dependsOn("generatePatchesList")
     }

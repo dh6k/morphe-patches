@@ -182,7 +182,7 @@ internal fun mutateHeliumKeepAliveManifest(
     ensureMetaData(HELIUM_META_NOTIFICATION_TITLE, config.title)
     ensureMetaData(HELIUM_META_NOTIFICATION_TEXT, config.text)
 }
-internal val heliumManifestPatch: ResourcePatch = resourcePatch(
+private val heliumManifestPatch: ResourcePatch = resourcePatch(
     name = "Titanium keep-alive manifest",
     description = "Declares one safe foreground service.",
     default = false,
