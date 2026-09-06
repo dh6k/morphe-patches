@@ -5,8 +5,10 @@ import app.morphe.patcher.patch.ApkFileType
 import app.morphe.patcher.patch.AppTarget
 import app.morphe.patcher.patch.Compatibility
 import app.morphe.patcher.PackageMetadata
+import app.morphe.patcher.patch.booleanOption
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.patch.resourcePatch
+import app.morphe.patcher.patch.stringOption
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import org.w3c.dom.Document
 import org.w3c.dom.Element
@@ -15,6 +17,32 @@ internal const val HELIUM_KEEP_ALIVE_SERVICE = "app.morphe.extension.helium.Heli
 internal const val HELIUM_KEEP_ALIVE_CHANNEL = "helium_extension_runtime"
 internal const val HELIUM_KEEP_ALIVE_NOTIFICATION_ID = 0x48454c
 internal const val HELIUM_SPECIAL_USE_SUBTYPE = "Maintain browser extension background runtime"
+internal const val HELIUM_META_NOTIFICATION_ENABLED =
+    "app.morphe.extension.helium.NOTIFICATION_ENABLED"
+internal const val HELIUM_META_NOTIFICATION_TITLE =
+    "app.morphe.extension.helium.NOTIFICATION_TITLE"
+internal const val HELIUM_META_NOTIFICATION_TEXT =
+    "app.morphe.extension.helium.NOTIFICATION_TEXT"
+internal const val HELIUM_DEFAULT_NOTIFICATION_TITLE = "Titanium process protection active"
+internal const val HELIUM_DEFAULT_NOTIFICATION_TEXT = "Reduces likelihood of extension runtime reclaim"
+
+internal data class HeliumNotificationConfig(
+    val showNotification: Boolean = true,
+    val title: String = HELIUM_DEFAULT_NOTIFICATION_TITLE,
+    val text: String = HELIUM_DEFAULT_NOTIFICATION_TEXT,
+)
+
+internal fun sanitizeHeliumNotificationLine(value: String?, fallback: String): String =
+    value?.trim().orEmpty().ifEmpty { fallback }
+
+internal fun heliumNotificationConfigFromOptions(): HeliumNotificationConfig {
+    val options = keepHeliumChildProcessesAlivePatch.options
+    return HeliumNotificationConfig(
+        showNotification = options["showNotification"]?.value as? Boolean ?: true,
+        title = sanitizeHeliumNotificationLine(options["notificationTitle"]?.value as? String, HELIUM_DEFAULT_NOTIFICATION_TITLE),
+        text = sanitizeHeliumNotificationLine(options["notificationText"]?.value as? String, HELIUM_DEFAULT_NOTIFICATION_TEXT),
+    )
+}
 internal const val HELIUM_ACTIVITY_CLASS = "Lorg/chromium/chrome/browser/ChromeTabbedActivity;"
 internal const val HELIUM_LIFECYCLE_ON_START = "onStart"
 internal const val HELIUM_LIFECYCLE_ON_RESUME = "onResume"
@@ -78,7 +106,10 @@ private object LauncherActivityRegistry {
     }
 }
 
-internal fun mutateHeliumKeepAliveManifest(document: Document) {
+internal fun mutateHeliumKeepAliveManifest(
+    document: Document,
+    config: HeliumNotificationConfig = HeliumNotificationConfig(),
+) {
     val manifest = document.documentElement
     val application = document.getElementsByTagName("application").item(0) as? Element
         ?: error("AndroidManifest.xml does not contain an <application> element")
@@ -135,6 +166,25 @@ internal fun mutateHeliumKeepAliveManifest(document: Document) {
     val subtype = prop ?: document.createElement("property").also { target.appendChild(it) }
     subtype.setAttribute("android:name", "android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE")
     subtype.setAttribute("android:value", HELIUM_SPECIAL_USE_SUBTYPE)
+
+    fun ensureMetaData(name: String, value: String) {
+        val nodes = target.getElementsByTagName("meta-data")
+        var first: Element? = null
+        val duplicates = mutableListOf<Element>()
+        for (i in 0 until nodes.length) {
+            val node = nodes.item(i) as Element
+            if (attrName(node) == name) {
+                if (first == null) first = node else duplicates += node
+            }
+        }
+        duplicates.forEach { target.removeChild(it) }
+        val entry = first ?: document.createElement("meta-data").also { target.appendChild(it) }
+        entry.setAttribute("android:name", name)
+        entry.setAttribute("android:value", value)
+    }
+    ensureMetaData(HELIUM_META_NOTIFICATION_ENABLED, config.showNotification.toString())
+    ensureMetaData(HELIUM_META_NOTIFICATION_TITLE, config.title)
+    ensureMetaData(HELIUM_META_NOTIFICATION_TEXT, config.text)
 }
 private val heliumManifestPatch = resourcePatch(
     name = "Titanium keep-alive manifest",
@@ -144,7 +194,7 @@ private val heliumManifestPatch = resourcePatch(
     execute {
         document("AndroidManifest.xml").use { manifest ->
             LauncherActivityRegistry.put(packageMetadata, resolveLauncherActivityClasses(manifest))
-            mutateHeliumKeepAliveManifest(manifest)
+            mutateHeliumKeepAliveManifest(manifest, heliumNotificationConfigFromOptions())
         }
     }
 }
@@ -182,6 +232,32 @@ val keepHeliumChildProcessesAlivePatch = bytecodePatch(
     dependsOn(heliumManifestPatch)
     extendWith("extensions/extension.mpe")
     compatibleWith(heliumChildProcessCompatibility)
+
+    // Toggle only hides the foreground notification; the keep-alive service and
+    // STRONG/IMPORTANT pins stay active either way.
+    val showNotification by booleanOption(
+        key = "showNotification",
+        default = true,
+        title = "Show keep-alive notification",
+        description = "When off, the foreground service still runs but posts to a silent channel. Keep-alive is unaffected.",
+        required = false,
+    )
+    val notificationTitle by stringOption(
+        key = "notificationTitle",
+        default = HELIUM_DEFAULT_NOTIFICATION_TITLE,
+        title = "Notification title",
+        description = "First line of the keep-alive notification. Blank falls back to default. Only used when the notification is shown.",
+        required = false,
+        validator = { value -> value == null || value.length <= 200 },
+    )
+    val notificationText by stringOption(
+        key = "notificationText",
+        default = HELIUM_DEFAULT_NOTIFICATION_TEXT,
+        title = "Notification text",
+        description = "Second line of the keep-alive notification. Blank falls back to default. Only used when the notification is shown.",
+        required = false,
+        validator = { value -> value == null || value.length <= 200 },
+    )
 
     execute {
         val launcherActivities: Set<String>
