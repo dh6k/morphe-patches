@@ -1,3 +1,9 @@
+## [1.6.0-dev.1](https://github.com/dh6k/morphe-patches/compare/v1.5.0...v1.6.0-dev.1) (2026-09-06)
+
+### ✨ New Features
+
+* **titanium:** notification options for keep-alive patch ([c6b5620](https://github.com/dh6k/morphe-patches/commit/c6b5620da46cd9d6f33e1d7f64bb6467ab311260))
+
 ## [1.5.0](https://github.com/dh6k/morphe-patches/compare/v1.4.0...v1.5.0) (2026-09-05)
 
 ### 🐛 Bug Fixes
