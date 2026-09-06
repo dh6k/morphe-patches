@@ -1,3 +1,9 @@
+## [1.6.0-dev.2](https://github.com/dh6k/morphe-patches/compare/v1.6.0-dev.1...v1.6.0-dev.2) (2026-09-06)
+
+### 🐛 Bug Fixes
+
+* **titanium:** make notification toggle actually hide ([f295b0e](https://github.com/dh6k/morphe-patches/commit/f295b0e39300248be67620713c3073c64ce62a3b))
+
 ## [1.6.0-dev.1](https://github.com/dh6k/morphe-patches/compare/v1.5.0...v1.6.0-dev.1) (2026-09-06)
 
 ### ✨ New Features
