@@ -1,7 +1,6 @@
 package app.morphe.patches.helium
 
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
-import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.patch.ApkFileType
 import app.morphe.patcher.patch.AppTarget
 import app.morphe.patcher.patch.Compatibility
@@ -215,24 +214,6 @@ internal const val HELIUM_SPAWN_START_ANCHOR = "ChildProcessLauncher.start"
 internal fun heliumStrongBindingInstruction(register: Int) =
     "const/16 v$register, $HELIUM_STRONG_BINDING_VALUE"
 
-// ponytail: floor, not ceiling — only raise values below the floor, never lower
-// a STRONG (0x4) Chromium already assigned. Same mitigation, fewer clobbers.
-internal fun heliumConditionalBindingSmali(register: Int) = """
-    if-lt v$register, $HELIUM_STRONG_BINDING_VALUE, :helium_raise_binding
-    goto :helium_keep_binding
-    :helium_raise_binding
-    const/16 v$register, $HELIUM_STRONG_BINDING_VALUE
-    :helium_keep_binding
-    """.trimIndent()
-
-internal fun heliumConditionalPrioritySmali(parameterWordOffset: Int) = """
-    if-lt p$parameterWordOffset, $HELIUM_IMPORTANT_PRIORITY_VALUE, :helium_raise_priority
-    goto :helium_keep_priority
-    :helium_raise_priority
-    const/16 p$parameterWordOffset, $HELIUM_IMPORTANT_PRIORITY_VALUE
-    :helium_keep_priority
-    """.trimIndent()
-
 /** Version-unpinned experimental Titanium patch using structural fingerprints; ambiguity fails safely. */
 internal val heliumChildProcessCompatibility = Compatibility(
     name = "Titanium Browser for Android",
@@ -326,11 +307,13 @@ val keepHeliumChildProcessesAlivePatch: BytecodePatch = bytecodePatch(
             activityModel.superIndex + 1,
             "invoke-static {p0}, Lapp/morphe/extension/helium/HeliumKeepAliveStarter;->start(Landroid/content/Context;)V",
         )
-        targetMethod.addInstructionsWithLabels(
+        // ponytail: unconditional floor — if-lt needs two registers and we own
+        // no spare here; one const write is cheaper than a spare-register hunt.
+        targetMethod.addInstructions(
             resolvedBinding.index,
-            heliumConditionalBindingSmali(resolvedBinding.register),
+            heliumStrongBindingInstruction(resolvedBinding.register),
         )
-        priorityMethod.addInstructionsWithLabels(0, heliumConditionalPrioritySmali(priorityModel.parameterWordOffset))
+        priorityMethod.addInstructions(0, "const/16 p${priorityModel.parameterWordOffset}, ${HELIUM_IMPORTANT_PRIORITY_VALUE}")
         } catch (e: HeliumResolutionException) {
             LauncherActivityRegistry.clear(packageMetadata)
             throw e
