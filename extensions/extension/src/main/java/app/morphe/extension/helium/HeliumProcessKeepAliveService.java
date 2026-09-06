@@ -15,11 +15,9 @@ import android.util.Log;
 
 public final class HeliumProcessKeepAliveService extends Service {
     public static final String CHANNEL_ID = "helium_extension_runtime";
-    public static final String SILENT_CHANNEL_ID = "helium_extension_runtime_silent";
     public static final int NOTIFICATION_ID = 0x48454c;
 
     private static final String TAG = "HeliumKeepAlive";
-    private static final String META_ENABLED = "app.morphe.extension.helium.NOTIFICATION_ENABLED";
     private static final String META_TITLE = "app.morphe.extension.helium.NOTIFICATION_TITLE";
     private static final String META_TEXT = "app.morphe.extension.helium.NOTIFICATION_TEXT";
     private static final String DEFAULT_TITLE = "Titanium process protection active";
@@ -29,19 +27,12 @@ public final class HeliumProcessKeepAliveService extends Service {
 
     private static String line(Bundle meta, String key, String fallback) {
         if (meta == null || !meta.containsKey(key)) return fallback;
-        // ponytail: manifest meta-data lands as String ("false"), never Boolean —
-        // Bundle.getBoolean() on a String always returns its default, so parse manually.
+        // ponytail: manifest meta-data lands as String, never its boxed type —
+        // read via get() so custom title/text survive regardless of how aapt encodes them.
         String value = String.valueOf(meta.get(key));
         if (value == null || "null".equals(value)) return fallback;
         value = value.trim();
         return value.isEmpty() ? fallback : value;
-    }
-
-    private static boolean showFlag(Bundle meta) {
-        if (meta == null || !meta.containsKey(META_ENABLED)) return true;
-        Object raw = meta.get(META_ENABLED);
-        if (raw instanceof Boolean) return (Boolean) raw;
-        return Boolean.parseBoolean(String.valueOf(raw));
     }
 
     private synchronized boolean promote() {
@@ -50,7 +41,6 @@ public final class HeliumProcessKeepAliveService extends Service {
         }
 
         try {
-            boolean show = true;
             String title = DEFAULT_TITLE;
             String text = DEFAULT_TEXT;
             try {
@@ -58,7 +48,6 @@ public final class HeliumProcessKeepAliveService extends Service {
                 ServiceInfo info = getPackageManager().getServiceInfo(component, PackageManager.GET_META_DATA);
                 Bundle meta = info.metaData;
                 if (meta != null) {
-                    show = showFlag(meta);
                     title = line(meta, META_TITLE, DEFAULT_TITLE);
                     text = line(meta, META_TEXT, DEFAULT_TEXT);
                 }
@@ -74,20 +63,18 @@ public final class HeliumProcessKeepAliveService extends Service {
                     return false;
                 }
 
-                // ponytail: toggle only swaps to an IMPORTANCE_NONE channel; startForeground
-                // still runs so keep-alive strength is identical whether shown or not.
-                String channelId = show ? CHANNEL_ID : SILENT_CHANNEL_ID;
-                int importance = show ? NotificationManager.IMPORTANCE_LOW : NotificationManager.IMPORTANCE_NONE;
-                NotificationChannel channel = new NotificationChannel(channelId, title, importance);
+                NotificationChannel channel = new NotificationChannel(
+                        CHANNEL_ID,
+                        title,
+                        NotificationManager.IMPORTANCE_LOW);
                 channel.setSound(null, null);
                 channel.enableVibration(false);
                 channel.setShowBadge(false);
                 manager.createNotificationChannel(channel);
-                manager.deleteNotificationChannel(show ? SILENT_CHANNEL_ID : CHANNEL_ID);
 
                 startForeground(
                         NOTIFICATION_ID,
-                        new Notification.Builder(this, channelId)
+                        new Notification.Builder(this, CHANNEL_ID)
                                 .setContentTitle(title)
                                 .setContentText(text)
                                 .setSmallIcon(android.R.drawable.stat_notify_sync_noanim)

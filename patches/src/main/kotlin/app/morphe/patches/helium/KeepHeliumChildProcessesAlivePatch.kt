@@ -1,11 +1,11 @@
 package app.morphe.patches.helium
 
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
+import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.patch.ApkFileType
 import app.morphe.patcher.patch.AppTarget
 import app.morphe.patcher.patch.Compatibility
 import app.morphe.patcher.PackageMetadata
-import app.morphe.patcher.patch.booleanOption
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.patch.BytecodePatch
 import app.morphe.patcher.patch.resourcePatch
@@ -14,13 +14,10 @@ import app.morphe.patcher.patch.ResourcePatch
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import org.w3c.dom.Document
 import org.w3c.dom.Element
-
 internal const val HELIUM_KEEP_ALIVE_SERVICE = "app.morphe.extension.helium.HeliumProcessKeepAliveService"
 internal const val HELIUM_KEEP_ALIVE_CHANNEL = "helium_extension_runtime"
 internal const val HELIUM_KEEP_ALIVE_NOTIFICATION_ID = 0x48454c
 internal const val HELIUM_SPECIAL_USE_SUBTYPE = "Maintain browser extension background runtime"
-internal const val HELIUM_META_NOTIFICATION_ENABLED =
-    "app.morphe.extension.helium.NOTIFICATION_ENABLED"
 internal const val HELIUM_META_NOTIFICATION_TITLE =
     "app.morphe.extension.helium.NOTIFICATION_TITLE"
 internal const val HELIUM_META_NOTIFICATION_TEXT =
@@ -29,7 +26,6 @@ internal const val HELIUM_DEFAULT_NOTIFICATION_TITLE = "Titanium process protect
 internal const val HELIUM_DEFAULT_NOTIFICATION_TEXT = "Reduces likelihood of extension runtime reclaim"
 
 internal data class HeliumNotificationConfig(
-    val showNotification: Boolean = true,
     val title: String = HELIUM_DEFAULT_NOTIFICATION_TITLE,
     val text: String = HELIUM_DEFAULT_NOTIFICATION_TEXT,
 )
@@ -175,7 +171,15 @@ internal fun mutateHeliumKeepAliveManifest(
         entry.setAttribute("android:name", name)
         entry.setAttribute("android:value", value)
     }
-    ensureMetaData(HELIUM_META_NOTIFICATION_ENABLED, config.showNotification.toString())
+    fun removeMetaData(name: String) {
+        val nodes = target.getElementsByTagName("meta-data")
+        for (i in nodes.length - 1 downTo 0) {
+            val node = nodes.item(i) as Element
+            if (attrName(node) == name) target.removeChild(node)
+        }
+    }
+    // ponytail: dropped toggle key; remove stale entry from APKs patched with it.
+    removeMetaData("app.morphe.extension.helium.NOTIFICATION_ENABLED")
     ensureMetaData(HELIUM_META_NOTIFICATION_TITLE, config.title)
     ensureMetaData(HELIUM_META_NOTIFICATION_TEXT, config.text)
 }
@@ -193,7 +197,6 @@ internal val heliumManifestPatch: ResourcePatch = resourcePatch(
             mutateHeliumKeepAliveManifest(
                 manifest,
                 HeliumNotificationConfig(
-                    showNotification = options["showNotification"]?.value as? Boolean ?: true,
                     title = sanitizeHeliumNotificationLine(options["notificationTitle"]?.value as? String, HELIUM_DEFAULT_NOTIFICATION_TITLE),
                     text = sanitizeHeliumNotificationLine(options["notificationText"]?.value as? String, HELIUM_DEFAULT_NOTIFICATION_TEXT),
                 ),
@@ -212,6 +215,24 @@ internal const val HELIUM_SPAWN_START_ANCHOR = "ChildProcessLauncher.start"
 internal fun heliumStrongBindingInstruction(register: Int) =
     "const/16 v$register, $HELIUM_STRONG_BINDING_VALUE"
 
+// ponytail: floor, not ceiling — only raise values below the floor, never lower
+// a STRONG (0x4) Chromium already assigned. Same mitigation, fewer clobbers.
+internal fun heliumConditionalBindingSmali(register: Int) = """
+    if-lt v$register, $HELIUM_STRONG_BINDING_VALUE, :helium_raise_binding
+    goto :helium_keep_binding
+    :helium_raise_binding
+    const/16 v$register, $HELIUM_STRONG_BINDING_VALUE
+    :helium_keep_binding
+    """.trimIndent()
+
+internal fun heliumConditionalPrioritySmali(parameterWordOffset: Int) = """
+    if-lt p$parameterWordOffset, $HELIUM_IMPORTANT_PRIORITY_VALUE, :helium_raise_priority
+    goto :helium_keep_priority
+    :helium_raise_priority
+    const/16 p$parameterWordOffset, $HELIUM_IMPORTANT_PRIORITY_VALUE
+    :helium_keep_priority
+    """.trimIndent()
+
 /** Version-unpinned experimental Titanium patch using structural fingerprints; ambiguity fails safely. */
 internal val heliumChildProcessCompatibility = Compatibility(
     name = "Titanium Browser for Android",
@@ -228,28 +249,21 @@ internal val heliumChildProcessCompatibility = Compatibility(
 @Suppress("unused")
 val keepHeliumChildProcessesAlivePatch: BytecodePatch = bytecodePatch(
     name = "Keep Titanium Extensions Child Processes Alive",
-    description = "Experimental version-unpinned structural/data-flow patch: starts one main-process foreground service with persistent low-priority notification and forces child STRONG binding plus IMPORTANT/STRONG priority updates. Tolerates routine signature, register, and helper-name changes; ambiguous targets fail closed. May increase RAM, battery, and process pressure; mitigates LMK kills only.",
+    description = "Experimental version-unpinned structural/data-flow patch: starts one main-process foreground service with persistent low-priority notification and forces child STRONG binding plus IMPORTANT/STRONG priority updates. Tolerates routine signature, register, and helper-name changes; ambiguous targets fail closed. May increase RAM, battery, and process pressure; mitigates LMK kills only. To hide the notification, use Android Settings > Apps > Titanium > Notifications (the keep-alive service stays active either way).",
     default = false,
 ) {
     dependsOn(heliumManifestPatch)
     extendWith("extensions/extension.mpe")
     compatibleWith(heliumChildProcessCompatibility)
 
-    // Toggle only hides the foreground notification; the keep-alive service and
-    // STRONG/IMPORTANT pins stay active either way. Declared here so the manager
-    // UI shows them; the manifest patch reads their values directly.
-    val showNotification by booleanOption(
-        key = "showNotification",
-        default = true,
-        title = "Show keep-alive notification",
-        description = "When off, the foreground service still runs but posts to a silent channel. Keep-alive is unaffected.",
-        required = false,
-    )
+    // Notification title/text only change what the foreground notification says.
+    // To hide it, use Android Settings > Apps > Titanium > Notifications
+    // (per-channel toggle) — the keep-alive service stays active either way.
     val notificationTitle by stringOption(
         key = "notificationTitle",
         default = HELIUM_DEFAULT_NOTIFICATION_TITLE,
         title = "Notification title",
-        description = "First line of the keep-alive notification. Blank falls back to default. Only used when the notification is shown.",
+        description = "First line of the keep-alive notification. Blank falls back to default.",
         required = false,
         validator = { value -> value == null || value.length <= 200 },
     )
@@ -257,7 +271,7 @@ val keepHeliumChildProcessesAlivePatch: BytecodePatch = bytecodePatch(
         key = "notificationText",
         default = HELIUM_DEFAULT_NOTIFICATION_TEXT,
         title = "Notification text",
-        description = "Second line of the keep-alive notification. Blank falls back to default. Only used when the notification is shown.",
+        description = "Second line of the keep-alive notification. Blank falls back to default.",
         required = false,
         validator = { value -> value == null || value.length <= 200 },
     )
@@ -312,11 +326,11 @@ val keepHeliumChildProcessesAlivePatch: BytecodePatch = bytecodePatch(
             activityModel.superIndex + 1,
             "invoke-static {p0}, Lapp/morphe/extension/helium/HeliumKeepAliveStarter;->start(Landroid/content/Context;)V",
         )
-        targetMethod.addInstructions(
+        targetMethod.addInstructionsWithLabels(
             resolvedBinding.index,
-            heliumStrongBindingInstruction(resolvedBinding.register),
+            heliumConditionalBindingSmali(resolvedBinding.register),
         )
-        priorityMethod.addInstructions(0, "const/16 p${priorityModel.parameterWordOffset}, ${HELIUM_IMPORTANT_PRIORITY_VALUE}")
+        priorityMethod.addInstructionsWithLabels(0, heliumConditionalPrioritySmali(priorityModel.parameterWordOffset))
         } catch (e: HeliumResolutionException) {
             LauncherActivityRegistry.clear(packageMetadata)
             throw e
