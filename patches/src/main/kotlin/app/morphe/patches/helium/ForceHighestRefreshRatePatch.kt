@@ -32,14 +32,15 @@ internal object SetPreferredRefreshRateFingerprint : Fingerprint(
     parameters = listOf("F"),
 )
 
-internal object RebuildDisplayModesFingerprint : Fingerprint(
+internal object NearestDisplayModeFingerprint : Fingerprint(
     definingClass = WINDOW_ANDROID_CLASS,
     returnType = "V",
+    parameters = listOf("F"),
     custom = { method, classDef ->
         classDef.type == WINDOW_ANDROID_CLASS &&
-            method.name.length <= 2 &&
-            method.parameterTypes.isEmpty() &&
-            method.callsTo(GET_SUPPORTED_REFRESH_RATES).isNotEmpty()
+            method.name != SET_PREFERRED_REFRESH_RATE &&
+            method.callsTo("getRefreshRate").any { it.definingClass == "Landroid/view/Display\$Mode;" } &&
+            method.stringLiterals().contains("Refresh rate not supported : ")
     },
 )
 
@@ -49,6 +50,13 @@ internal fun Method.callsTo(name: String): List<MethodReference> {
         val ref = (it as? ReferenceInstruction)?.reference as? MethodReference
         if (ref?.name == name) ref else null
     }
+}
+
+internal fun Method.stringLiterals(): List<String> {
+    val impl = implementation ?: return emptyList()
+    return impl.instructions.mapNotNull {
+        (it as? ReferenceInstruction)?.reference as? com.android.tools.smali.dexlib2.iface.reference.StringReference
+    }.map { it.string }
 }
 
 internal val forceRefreshRateCompatibility = Compatibility(
@@ -68,24 +76,17 @@ val forceHighestRefreshRatePatch = bytecodePatch(
 
     execute {
         // 1. Any caller-supplied rate becomes MAX, so l() settles on the top mode.
+        NearestDisplayModeFingerprint.methodOrNull?.addInstructions(
+            0,
+            maxRefreshConstInstruction("p1"),
+        ) ?: error("nearest-display-mode method not found in WindowAndroid")
+
+        // 2. Same guard on the public setter in case native code calls it directly.
+        // Both writes target the float param at method head (no spare register,
+        // no clobber of `this`), the pattern validated since v1.5.0.
         SetPreferredRefreshRateFingerprint.methodOrNull?.addInstructions(
             0,
             maxRefreshConstInstruction("p1"),
         ) ?: error("setPreferredRefreshRate(F) not found in WindowAndroid")
-
-        // 2. After every display-mode rebuild, actively request MAX so the stored
-        // preference F is max even if nobody ever called the setter.
-        val rebuild = RebuildDisplayModesFingerprint.methodOrNull
-            ?: error("display-mode rebuild method not found in WindowAndroid")
-        val impl = rebuild.implementation
-            ?: error("display-mode rebuild has no implementation")
-        val lastIndex = impl.instructions.count() - 1
-        require(lastIndex >= 0) { "display-mode rebuild is empty" }
-        // v0 is dead right before a void return; p0 (this) is still live.
-        rebuild.addInstructions(
-            lastIndex,
-            "const v0, $MAX_REFRESH_BITS\n" +
-                "invoke-virtual {p0, v0}, $WINDOW_ANDROID_CLASS->$SET_PREFERRED_REFRESH_RATE(F)V",
-        )
     }
 }

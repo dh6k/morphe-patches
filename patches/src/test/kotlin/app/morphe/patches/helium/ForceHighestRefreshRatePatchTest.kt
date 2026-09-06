@@ -26,6 +26,12 @@ class ForceHighestRefreshRatePatchTest {
         assertEquals("V", SetPreferredRefreshRateFingerprint.returnType)
         assertEquals(listOf("F"), SetPreferredRefreshRateFingerprint.parameters)
     }
+    @Test
+    fun `nearest-mode fingerprint excludes setter and pins float param`() {
+        assertEquals("Lorg/chromium/ui/base/WindowAndroid;", NearestDisplayModeFingerprint.definingClass)
+        assertEquals("V", NearestDisplayModeFingerprint.returnType)
+        assertEquals(listOf("F"), NearestDisplayModeFingerprint.parameters)
+    }
 
     @Test
     fun `patch is opt-in`() {
