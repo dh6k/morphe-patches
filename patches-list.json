@@ -1,6 +1,6 @@
 {
   "NOTE": "Do NOT manually edit this file. This file is automatically updated when semantic release (release.yml) runs. Manually editing this file can break your releases and break third party tools that use this file.",
-  "version": "1.6.0-dev.1",
+  "version": "1.6.0-dev.2",
   "patches": [
     {
       "name": "Block Quetta bundled extension installation",
@@ -208,6 +208,14 @@
           "values": null
         }
       ]
+    },
+    {
+      "name": "Titanium keep-alive manifest",
+      "description": "Declares one safe foreground service.",
+      "default": false,
+      "dependencies": [],
+      "compatiblePackages": null,
+      "options": []
     }
   ]
 }
