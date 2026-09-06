@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-09-06T02:43:27",
-  "description": "## [1.6.0-dev.2](https://github.com/dh6k/morphe-patches/compare/v1.6.0-dev.1...v1.6.0-dev.2) (2026-09-06)\n\n### 🐛 Bug Fixes\n\n* **titanium:** make notification toggle actually hide ([f295b0e](https://github.com/dh6k/morphe-patches/commit/f295b0e39300248be67620713c3073c64ce62a3b))",
-  "download_url": "https://github.com/dh6k/morphe-patches/releases/download/v1.6.0-dev.2/patches-1.6.0-dev.2.mpp",
+  "created_at": "2026-09-06T03:16:45",
+  "description": "## [1.6.0-dev.3](https://github.com/dh6k/morphe-patches/compare/v1.6.0-dev.2...v1.6.0-dev.3) (2026-09-06)\n\n### 🔧 Improvements\n\n* **titanium:** conditionalize keep-alive pins and streamline notification ([8ad79b1](https://github.com/dh6k/morphe-patches/commit/8ad79b1b7ca7203b1dc1479ce6fe81454502f31b))",
+  "download_url": "https://github.com/dh6k/morphe-patches/releases/download/v1.6.0-dev.3/patches-1.6.0-dev.3.mpp",
   "signature_download_url": "",
-  "version": "1.6.0-dev.2"
+  "version": "1.6.0-dev.3"
 }
