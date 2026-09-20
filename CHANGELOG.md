@@ -1,3 +1,9 @@
+## [1.6.0-dev.7](https://github.com/dh6k/morphe-patches/compare/v1.6.0-dev.6...v1.6.0-dev.7) (2026-09-20)
+
+### 🐛 Bug Fixes
+
+* **brave:** tolerate Origin restart-callback signature drift on 1.98.x ([63d88bc](https://github.com/dh6k/morphe-patches/commit/63d88bce30601c792c701cdc56482305189ac8b7)), closes [#18](https://github.com/dh6k/morphe-patches/issues/18) [#18](https://github.com/dh6k/morphe-patches/issues/18)
+
 ## [1.6.0-dev.6](https://github.com/dh6k/morphe-patches/compare/v1.6.0-dev.5...v1.6.0-dev.6) (2026-09-06)
 
 ### 🐛 Bug Fixes
