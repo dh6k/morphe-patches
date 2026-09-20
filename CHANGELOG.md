@@ -1,3 +1,23 @@
+## [1.6.0](https://github.com/dh6k/morphe-patches/compare/v1.5.0...v1.6.0) (2026-09-20)
+
+### 🐛 Bug Fixes
+
+* **brave:** tolerate Origin restart-callback signature drift on 1.98.x ([63d88bc](https://github.com/dh6k/morphe-patches/commit/63d88bce30601c792c701cdc56482305189ac8b7)), closes [#18](https://github.com/dh6k/morphe-patches/issues/18) [#18](https://github.com/dh6k/morphe-patches/issues/18)
+* **build:** keep patchLocalApk providers lazy for CI configure ([d8f97ee](https://github.com/dh6k/morphe-patches/commit/d8f97eea2f6c648eff6a08f5c7f984709805964b))
+* **titanium:** make notification toggle actually hide ([f295b0e](https://github.com/dh6k/morphe-patches/commit/f295b0e39300248be67620713c3073c64ce62a3b))
+* **titanium:** replace crashing D() tail hook with nearest-mode head const ([1432277](https://github.com/dh6k/morphe-patches/commit/1432277e053edbdddd417e529917153ee4c9ddc6))
+* **titanium:** revert conditional pins that break smali parsing ([f76ab92](https://github.com/dh6k/morphe-patches/commit/f76ab92913cacc4d009f5484a3ab1be9f0ac090d))
+
+### ✨ New Features
+
+* **quetta:** force highest refresh rate with local fingerprints ([52f2c6f](https://github.com/dh6k/morphe-patches/commit/52f2c6f2a6b310b41dba3df99b12b8d5f713a439))
+* **titanium:** force highest refresh rate ([473eaae](https://github.com/dh6k/morphe-patches/commit/473eaaeadd5b1a7cff701153cb4573353354a9ac))
+* **titanium:** notification options for keep-alive patch ([c6b5620](https://github.com/dh6k/morphe-patches/commit/c6b5620da46cd9d6f33e1d7f64bb6467ab311260))
+
+### 🔧 Improvements
+
+* **titanium:** conditionalize keep-alive pins and streamline notification ([8ad79b1](https://github.com/dh6k/morphe-patches/commit/8ad79b1b7ca7203b1dc1479ce6fe81454502f31b))
+
 ## [1.6.0-dev.8](https://github.com/dh6k/morphe-patches/compare/v1.6.0-dev.7...v1.6.0-dev.8) (2026-09-20)
 
 ### ✨ New Features
