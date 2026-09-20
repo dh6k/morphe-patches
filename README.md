@@ -6,10 +6,13 @@ Morphe patch bundle for Brave Browser, Quetta browser plus app-independent Andro
 
 | Build | Package name | Support status |
 | --- | --- | --- |
-| Quetta Browser (Play Store edition) | `net.quetta.browser` | version-unpinned, Should work normally |
-| Quetta Browser (Direct APK edition) | `net.quetta.browser.official` | version-unpinned, tested on `2.0.2 (5307)` |
+| Quetta Browser (Play Store edition) | `net.quetta.browser` | version-unpinned; refresh-rate patch statically validated on `2.0.5` |
+| Quetta Browser (Direct APK edition) | `net.quetta.browser.official` | version-unpinned; extension patch tested on `2.0.2 (5307)` |
 
-Supports both versions of Quetta Browser through the **Block Quetta bundled extension installation** patch. Compatibility is version-unpinned and experimental, intended for arm64-v8a APKs (armeabi-v7a might work too, but currently not planned atm); the framework does not enforce ABI.
+Supports both versions of Quetta Browser through two Quetta-local patches:
+
+- **Block Quetta bundled extension installation** — bundled extension install/reinstall block.
+- **Force highest refresh rate** — Quetta-adapted sibling of the Titanium patch. Separate fingerprints: Quetta 2.0.5 keeps `WindowAndroid.setPreferredRefreshRate(F)V` but obfuscates the nearest-mode worker and drops the Titanium log literal; this patch matches the structural shape (`getRefreshRate` + `getModeId` + `Window.setAttributes`) instead of editing the helium/Titanium implementation. Version-unpinned, experimental, fail-closed on ambiguity. Intended for arm64-v8a APKs; the framework does not enforce ABI.
 
 Patch blocks bundled installation/reinstallation for these exact extensions:
 
