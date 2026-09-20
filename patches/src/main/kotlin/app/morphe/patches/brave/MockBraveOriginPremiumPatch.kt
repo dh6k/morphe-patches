@@ -278,20 +278,30 @@ val braveOriginPatch = bytecodePatch(
             }
             .let { (it as ReferenceInstruction).reference as FieldReference }
 
+        // 1.98.x: bl2.a(Z)V still logs "Failed to set policy value for ", but the
+        // follow-up call on BraveOriginPreferences drifted from a no-arg void to
+        // p5(II)V (resource-id snackbar). Resolve the void invoke from that site
+        // without pinning the parameter list; only emit a call when the signature
+        // is safely writable (no-arg). UI-only arg variants are skipped - feature
+        // state is already persisted via SharedPreferences above.
         val restartPromptFingerprint = Fingerprint(
             strings = listOf("Failed to set policy value for "),
-            filters = listOf(
-                methodCall(
-                    definingClass = ORIGIN_PREFERENCES_CLASS,
-                    returnType = "V",
-                    parameters = emptyList(),
-                ),
-            ),
         )
-        val restartPromptMethod = restartPromptFingerprint.instructionMatches
-            .first()
-            .getInstruction<ReferenceInstruction>()
-            .reference as MethodReference
+        val restartPromptMethod = restartPromptFingerprint.originalMethod
+            .implementation
+            ?.instructions
+            ?.mapNotNull { instruction ->
+                (instruction as? ReferenceInstruction)?.reference as? MethodReference
+            }
+            ?.firstOrNull {
+                it.definingClass == ORIGIN_PREFERENCES_CLASS && it.returnType == "V"
+            }
+            ?: error("Failed to resolve Brave Origin restart/UI helper")
+        val restartInvokeSmali = if (restartPromptMethod.parameterTypes.isEmpty()) {
+            "invoke-virtual {p0}, ${restartPromptMethod.definingClass}->${restartPromptMethod.name}()V"
+        } else {
+            ""
+        }
 
         d1Fingerprint.method.apply {
             removeInstructions(0, implementation!!.instructions.count())
@@ -329,7 +339,7 @@ val braveOriginPatch = bytecodePatch(
                     move-result-object v2
                     :write_done
                     invoke-interface {v2}, Landroid/content/SharedPreferences${'$'}Editor;->apply()V
-                    invoke-virtual {p0}, ${restartPromptMethod.definingClass}->${restartPromptMethod.name}()V
+                    $restartInvokeSmali
                     :no_key
                     const/4 v0, 0x1
                     return v0
