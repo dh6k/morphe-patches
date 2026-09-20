@@ -1,3 +1,9 @@
+## [1.6.0-dev.8](https://github.com/dh6k/morphe-patches/compare/v1.6.0-dev.7...v1.6.0-dev.8) (2026-09-20)
+
+### ✨ New Features
+
+* **quetta:** force highest refresh rate with local fingerprints ([52f2c6f](https://github.com/dh6k/morphe-patches/commit/52f2c6f2a6b310b41dba3df99b12b8d5f713a439))
+
 ## [1.6.0-dev.7](https://github.com/dh6k/morphe-patches/compare/v1.6.0-dev.6...v1.6.0-dev.7) (2026-09-20)
 
 ### 🐛 Bug Fixes
