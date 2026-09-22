@@ -138,6 +138,10 @@ Do not use Chromium's GServices WebAPK package/signing-check overrides as an end
 
 <!-- PATCHES_END -->
 
+## Custom NTP wallpaper
+
+Alpha experimental patch for [issue #13](https://github.com/dh6k/morphe-patches/issues/13). Brave's **New tab page** settings only expose **Show background images**; this patch injects a patch-time PNG into `NTPBackgroundImagesBridge.createWallpaper` / `createBrandedWallpaper` so the NTP background becomes that image. Default off. Rendering remains in `libchrome.so` — if a future build bypasses those factories the image is ignored and the rest of the APK is untouched. Ambiguous targets fail closed. Intended for arm64-v8a APKs; the framework does not enforce ABI.
+
 ## Keep Titanium Extensions Child Processes Alive
 
 Experimental version-unpinned two-layer mitigation for [issue #57](https://github.com/jqssun/android-titanium-browser/issues/57): child processes receive Chromium STRONG binding (`0x4`) and IMPORTANT/STRONG priority (`0x3`), while one main-process foreground service keeps extension background runtime visible through a persistent low-priority notification. Structural and local data-flow resolution tolerates routine signature, register, helper-name, and process-launch changes, then fails closed when relevant bytecode is genuinely ambiguous. Disabled by default and version-unpinned (no pinned Titanium version). Affects all relevant Titanium child processes, not only extensions. This can raise RAM, battery, and process pressure and only mitigates LMK kills; it does not guarantee survival, bypass force-stop or OEM task killers, detect or reload crashed extensions, or run a watchdog/polling loop/wake lock. A persistent low-importance foreground-service notification may appear. Future incompatible APKs may fail during patching. No reliable extension-only discriminator exists in inspected Titanium code, so child binding applies to all child processes.
