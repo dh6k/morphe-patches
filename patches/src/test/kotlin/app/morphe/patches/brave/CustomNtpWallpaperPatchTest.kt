@@ -6,6 +6,7 @@ import kotlin.io.path.createTempDirectory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class CustomNtpWallpaperPatchTest {
@@ -48,19 +49,34 @@ class CustomNtpWallpaperPatchTest {
     }
 
     @Test
-    fun `factory prologues reference wallpaper drawable and package uri`() {
-        val create = forceCreateWallpaperParamsSmali()
-        val branded = forceCreateBrandedWallpaperParamsSmali()
+    fun `factory prologues bake package resource uri into string params only`() {
+        val pkg = "vip.dh6k.brave.origin.nightly"
+        val uri = ntpWallpaperResourceUri(pkg)
+        assertEquals(
+            "android.resource://vip.dh6k.brave.origin.nightly/drawable/$NTP_WALLPAPER_RESOURCE_NAME",
+            uri,
+        )
 
-        assertTrue("android.resource://" in create)
-        assertTrue("/drawable/$NTP_WALLPAPER_RESOURCE_NAME" in create)
+        val create = forceCreateWallpaperParamsSmali(pkg)
         assertTrue("const-string p0, \"$NTP_WALLPAPER_RESOURCE_NAME\"" in create)
-        assertTrue("move-object p1, v0" in create)
+        assertTrue("const-string p1, \"$uri\"" in create)
+        assertTrue("const-string p2, \"Custom\"" in create)
 
-        assertTrue("android.resource://" in branded)
-        assertTrue("/drawable/$NTP_WALLPAPER_RESOURCE_NAME" in branded)
-        assertTrue("move-object p3, v0" in branded)
-        assertTrue("move-object p6, v0" in branded)
+        val branded = forceCreateBrandedWallpaperParamsSmali(pkg)
+        assertTrue("const-string p0, \"$NTP_WALLPAPER_RESOURCE_NAME\"" in branded)
+        assertTrue("const-string p3, \"$uri\"" in branded)
+        assertTrue("move-object p4, p3" in branded)
+        assertTrue("move-object p6, p3" in branded)
+        assertTrue("move-object p7, p3" in branded)
+    }
+
+    @Test
+    fun `branded prologue must not clobber int or boolean params`() {
+        val smali = forceCreateBrandedWallpaperParamsSmali("com.brave.browser_nightly")
+        // createBrandedWallpaper is static with 10 params; v0/v1 alias p0/p1.
+        // Touching v1 put a String into the int slot and failed ART verification.
+        assertFalse(Regex("""\bv[0-9]+\b""").containsMatchIn(smali))
+        assertFalse(Regex("""\bp[12589]\b""").containsMatchIn(smali))
     }
 
     private fun createPngHeaderFile(width: Int, height: Int): File {

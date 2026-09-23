@@ -68,44 +68,35 @@ internal object CreateBrandedWallpaperFingerprint : Fingerprint(
 )
 
 /**
- * Builds `android.resource://<package>/drawable/morphe_custom_ntp_wallpaper` into v0.
- * Package name comes from the running app so Beta/Nighty suffixes work.
+ * `android.resource://<package>/drawable/morphe_custom_ntp_wallpaper`.
+ * Package name is baked at patch time (apps may be renamed, e.g. Origin Nightly).
  */
-internal fun ntpWallpaperUriSmali(): String = """
-    invoke-static {}, Landroid/app/ActivityThread;->currentApplication()Landroid/app/Application;
-    move-result-object v0
-    invoke-virtual {v0}, Landroid/content/Context;->getPackageName()Ljava/lang/String;
-    move-result-object v0
-    const-string v1, "android.resource://"
-    invoke-virtual {v1, v0}, Ljava/lang/String;->concat(Ljava/lang/String;)Ljava/lang/String;
-    move-result-object v0
-    const-string v1, "/drawable/$NTP_WALLPAPER_RESOURCE_NAME"
-    invoke-virtual {v0, v1}, Ljava/lang/String;->concat(Ljava/lang/String;)Ljava/lang/String;
-    move-result-object v0
-"""
-
-/** Overwrites createWallpaper(String, String, String) params then falls through. */
-internal fun forceCreateWallpaperParamsSmali(): String =
-    ntpWallpaperUriSmali() +
-        """
-        const-string p0, "$NTP_WALLPAPER_RESOURCE_NAME"
-        move-object p1, v0
-        const-string p2, "Custom"
-        """.trimIndent()
+internal fun ntpWallpaperResourceUri(packageName: String): String =
+    "android.resource://$packageName/drawable/$NTP_WALLPAPER_RESOURCE_NAME"
 
 /**
- * Overwrites createBrandedWallpaper string params (id + every URL/credit slot)
- * so whichever field the model treats as the image source points at our drawable.
+ * Overwrites createWallpaper(String, String, String) params then falls through.
+ * Only touches p0-p2 (all String) — never v0/v1, which alias params on tight methods.
  */
-internal fun forceCreateBrandedWallpaperParamsSmali(): String =
-    ntpWallpaperUriSmali() +
-        """
-        const-string p0, "$NTP_WALLPAPER_RESOURCE_NAME"
-        move-object p3, v0
-        move-object p4, v0
-        move-object p6, v0
-        move-object p7, v0
-        """.trimIndent()
+internal fun forceCreateWallpaperParamsSmali(packageName: String): String = """
+    const-string p0, "$NTP_WALLPAPER_RESOURCE_NAME"
+    const-string p1, "${ntpWallpaperResourceUri(packageName)}"
+    const-string p2, "Custom"
+"""
+
+/**
+ * Overwrites createBrandedWallpaper string params (id + URL/credit slots) then
+ * falls through. CRITICAL: p1/p2/p5/p8/p9 are int/boolean and on a 10-param
+ * static method they alias v1.. — a prior prologue that used v0/v1 caused
+ * VerifyError (String in Integer register) and a native SIGTRAP on class load.
+ */
+internal fun forceCreateBrandedWallpaperParamsSmali(packageName: String): String = """
+    const-string p0, "$NTP_WALLPAPER_RESOURCE_NAME"
+    const-string p3, "${ntpWallpaperResourceUri(packageName)}"
+    move-object p4, p3
+    move-object p6, p3
+    move-object p7, p3
+"""
 
 internal fun validateWallpaperFile(file: File): WallpaperDimensions {
     if (!file.exists()) {
@@ -252,14 +243,19 @@ val customNtpWallpaperPatch: BytecodePatch = bytecodePatch(
         }
         validateWallpaperFile(File(sourcePath))
 
+        val packageName = packageMetadata.packageName
+        if (packageName.isNullOrBlank()) {
+            error("package name unavailable; cannot build wallpaper resource URI")
+        }
+
         CreateWallpaperFingerprint.methodOrNull?.addInstructions(
             0,
-            forceCreateWallpaperParamsSmali(),
+            forceCreateWallpaperParamsSmali(packageName),
         ) ?: error("NTPBackgroundImagesBridge.createWallpaper not found")
 
         CreateBrandedWallpaperFingerprint.methodOrNull?.addInstructions(
             0,
-            forceCreateBrandedWallpaperParamsSmali(),
+            forceCreateBrandedWallpaperParamsSmali(packageName),
         ) ?: error("NTPBackgroundImagesBridge.createBrandedWallpaper not found")
     }
 }
