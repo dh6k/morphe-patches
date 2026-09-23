@@ -289,8 +289,10 @@ val customNtpWallpaperPatch: BytecodePatch = bytecodePatch(
     description = "Alpha experimental version-unpinned patch (issue #13): forces the Brave " +
         "new-tab background to a custom PNG chosen at patch time. Rewrites the Java ambient " +
         "wallpaper catalog (BackgroundImage drawable resource id) and makes wallpaper " +
-        "callbacks use it instead of native branded/URL images. Brave's New tab page " +
-        "settings only toggle \"Show background images\". Default off.",
+        "callbacks use it instead of native branded/URL images. IMPORTANT: crop the image " +
+        "to your current screen resolution first, then select that file in the patch " +
+        "options. Brave's New tab page settings only toggle \"Show background images\". " +
+        "Default off.",
     default = false,
 ) {
     dependsOn(customNtpWallpaperResourcePatch)
@@ -301,6 +303,7 @@ val customNtpWallpaperPatch: BytecodePatch = bytecodePatch(
         key = "customWallpaper",
         title = "Custom NTP wallpaper",
         description = "PNG wallpaper used as the Brave new-tab background. " +
+            "Crop it to your current screen resolution first, then select that file here. " +
             "480-8192 px on each side, maximum 8 MiB.",
         required = true,
         allowedExtensions = listOf("png"),
