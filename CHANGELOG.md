@@ -1,3 +1,9 @@
+## [1.7.0-dev.4](https://github.com/dh6k/morphe-patches/compare/v1.7.0-dev.3...v1.7.0-dev.4) (2026-09-23)
+
+### 🐛 Bug Fixes
+
+* **brave:** fit NTP catalog factory in 3 registers via R.drawable ([bb3e4df](https://github.com/dh6k/morphe-patches/commit/bb3e4dff5a0983d1e2a4fe2d4286ddcc5d1a7a89))
+
 ## [1.7.0-dev.3](https://github.com/dh6k/morphe-patches/compare/v1.7.0-dev.2...v1.7.0-dev.3) (2026-09-23)
 
 ### 🐛 Bug Fixes
