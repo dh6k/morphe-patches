@@ -80,25 +80,19 @@ class CustomNtpWallpaperPatchTest {
     }
 
     @Test
-    fun `ambient catalog factory uses sget rdrawable and only v0 v1`() {
+    fun `ambient catalog factory calls helper and only uses v0 v1`() {
         val field =
             "Lorg/chromium/chrome/browser/ntp_background_images/model/BackgroundImage;->a:I"
-        val smali = forceAmbientCatalogAccessorSmali(field, "vip.dh6k.brave.origin.nightly")
+        val smali = forceAmbientCatalogAccessorSmali(field)
 
-        assertTrue("sget v0, Lvip/dh6k/brave/origin/nightly/R\$drawable;->$NTP_WALLPAPER_RESOURCE_NAME:I" in smali)
+        assertTrue("invoke-static {}, $NTP_WALLPAPER_HELPER->drawableId()I" in smali)
         assertTrue("iput v0, v1, $field" in smali)
         assertTrue("return-object v1" in smali)
         // edi.a() has only 3 registers (v0–v2). v3+ triggers ART VerifyError.
         assertFalse(Regex("""\bv[3-9]\d*\b""").containsMatchIn(smali))
-    }
-
-    @Test
-    fun `r drawable type maps package name`() {
-        assertEquals("Lcom/brave/browser/R\$drawable;", rDrawableType("com.brave.browser"))
-        assertEquals(
-            "Lvip/dh6k/brave/origin/nightly/R\$drawable;",
-            rDrawableType("vip.dh6k.brave.origin.nightly"),
-        )
+        // R$drawable is stripped / wrong package after rename — must not use it.
+        assertFalse("R\$drawable" in smali)
+        assertFalse("getIdentifier" in smali)
     }
 
     @Test

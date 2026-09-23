@@ -107,30 +107,24 @@ internal fun backgroundImageResourceIdField(classDef: ClassDef): String {
     return "${field.definingClass}->${field.name}:${field.type}"
 }
 
+internal const val NTP_WALLPAPER_HELPER =
+    "Lapp/morphe/extension/brave/NtpWallpaperIds;"
+
 /**
  * Replaces the ambient catalog accessor. MUST fit in the original tiny
- * register file (inspected `edi.a()` has only 3 regs: v0–v2). `getIdentifier`
- * needs 4 invoke args and blew up with "register index out of range (3 >= 3)".
- * `sget R$drawable` is a 2-reg path; package is baked at patch time (apps may
- * be renamed, e.g. Origin Nightly).
+ * register file (inspected `edi.a()` has only 3 regs: v0–v2).
+ * `getIdentifier` is 4-arg and `R$drawable` is stripped / wrong package after
+ * rename — both crashed. Extension helper + 2-reg invoke-static is the only
+ * path that fits and resolves at runtime.
  */
-internal fun forceAmbientCatalogAccessorSmali(
-    resourceIdField: String,
-    packageName: String,
-): String {
-    val rDrawable = rDrawableType(packageName)
-    return """
-    sget v0, $rDrawable->$NTP_WALLPAPER_RESOURCE_NAME:I
+internal fun forceAmbientCatalogAccessorSmali(resourceIdField: String): String = """
+    invoke-static {}, $NTP_WALLPAPER_HELPER->drawableId()I
+    move-result v0
     new-instance v1, $BACKGROUND_IMAGE_MODEL
     invoke-direct {v1}, $BACKGROUND_IMAGE_MODEL-><init>()V
     iput v0, v1, $resourceIdField
     return-object v1
 """
-}
-
-/** `vip.dh6k.brave.origin.nightly` → `Lvip/dh6k/brave/origin/nightly/R$drawable;` */
-internal fun rDrawableType(packageName: String): String =
-    "L" + packageName.trim().trimEnd('.').replace('.', '/') + "/R\$drawable;"
 
 /**
  * Callback.onResult(Object) on wallpaper delivery sites: replace the native
@@ -300,6 +294,7 @@ val customNtpWallpaperPatch: BytecodePatch = bytecodePatch(
     default = false,
 ) {
     dependsOn(customNtpWallpaperResourcePatch)
+    extendWith("extensions/extension.mpe")
     compatibleWith(*customNtpWallpaperCompatibilities().toTypedArray())
 
     val customWallpaperPath by imageOption(
@@ -328,14 +323,10 @@ val customNtpWallpaperPatch: BytecodePatch = bytecodePatch(
         val resourceIdField = backgroundImageResourceIdField(
             AmbientCatalogAccessorFingerprint.originalClassDef,
         )
-        val packageName = packageMetadata.packageName?.trim().orEmpty()
-        if (packageName.isEmpty()) {
-            error("package name unavailable; cannot reference R\$drawable")
-        }
 
         accessorMethod.apply {
             removeInstructions(0, implementation!!.instructions.count())
-            addInstructions(0, forceAmbientCatalogAccessorSmali(resourceIdField, packageName))
+            addInstructions(0, forceAmbientCatalogAccessorSmali(resourceIdField))
         }
 
         var forcedCallbacks = 0
