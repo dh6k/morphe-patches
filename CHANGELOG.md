@@ -1,3 +1,9 @@
+## [1.7.0-dev.5](https://github.com/dh6k/morphe-patches/compare/v1.7.0-dev.4...v1.7.0-dev.5) (2026-09-23)
+
+### 🐛 Bug Fixes
+
+* **brave:** resolve NTP wallpaper via extension helper (2-reg invoke) ([33a3c93](https://github.com/dh6k/morphe-patches/commit/33a3c934f126d76a1bf96dcd6ffb99f331767d62))
+
 ## [1.7.0-dev.4](https://github.com/dh6k/morphe-patches/compare/v1.7.0-dev.3...v1.7.0-dev.4) (2026-09-23)
 
 ### 🐛 Bug Fixes
