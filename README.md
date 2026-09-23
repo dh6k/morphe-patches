@@ -144,6 +144,28 @@ Do not use Chromium's GServices WebAPK package/signing-check overrides as an end
 
 <!-- PATCHES_END -->
 
+## Brave Startup Performance Optimization
+
+New patch for [issue #16](https://github.com/dh6k/morphe-patches/issues/16). Brave runs OEM/carrier **partner customizations** (`org.chromium.chrome.browser.partnercustomizations.PartnerBrowserCustomizations`) during browser startup. On devices with no partner package this still performs main-thread `SharedPreferences` reads, spawns a background resolver, and schedules a **10-second `PostTask` timeout** that re-runs pending callbacks — pure CPU/disk overhead on the launch path.
+
+The patch marks the component initialized immediately and forces every partner gate closed:
+
+| Hook | Fingerprint anchor | Effect |
+| --- | --- | --- |
+| `initializeAsync(Context)V` | `Chrome.Homepage.PartnerCustomizedDefaultGurl` / `...DefaultUri` preference keys | writes `Boolean.TRUE` into the init flag and returns; the original 12 calls (2x prefs reads, async resolver, timeout task) become dead code |
+| `setOnInitializeAsyncFinished(Runnable)V` | `setOnInitializeAsyncFinished` literal | runs the pending `Runnable` inline via `invoke-interface` instead of queuing it behind the (now skipped) init |
+| `isIncognitoDisabled()Z` | exact method name | always `false` — a carrier can no longer disable Incognito |
+| homepage accept `(GURL)Z` | `is too long.` literal | always `false` — partner homepage URLs are rejected |
+| homepage delegate `(...)Z` | `Partner homepage delegate URL read failed : ` literal | always `false` — no delegate URL is accepted |
+
+It depends on **Brave Native Library Extraction Compatibility**, which sets `android:extractNativeLibs="true"` for 16 KB-page and BTI compatibility on modern ARM64 devices.
+
+Supported on `com.brave.browser` (APK and APKM), `com.brave.browser_beta` (APK), and `com.brave.browser_nightly` (APK and APKM); version-unpinned, enabled by default.
+
+**Validation:** statically validated on Brave Nightly `1.98.21` (`com.brave.browser_nightly`, arm64-v8a universal standalone APK) — 5/5 hooks applied, 0 fingerprint mismatches. Bytecode comparison confirms the original init path is unreachable after the prologue (`sget-object` / `iput-object` / `return-void`). No on-device cold-start timing was measured; the eliminated work is startup-path disk I/O plus a 10 s timeout wakeup, so the gain is device-dependent.
+
+By design this disables OEM partner homepage and Incognito-lockdown behavior. On non-carrier devices these were already inert.
+
 ## Custom NTP wallpaper
 
 Alpha experimental patch for [issue #13](https://github.com/dh6k/morphe-patches/issues/13). Brave's **New tab page** settings only expose **Show background images**; this patch forces the NTP background to a patch-time PNG by rewriting the Java ambient wallpaper catalog (`BackgroundImage` drawable resource id) and making wallpaper callbacks use it instead of native branded/URL images.
