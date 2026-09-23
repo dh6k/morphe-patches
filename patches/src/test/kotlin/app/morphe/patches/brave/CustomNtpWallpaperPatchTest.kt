@@ -79,6 +79,28 @@ class CustomNtpWallpaperPatchTest {
         assertFalse(Regex("""\bp[12589]\b""").containsMatchIn(smali))
     }
 
+    @Test
+    fun `ambient catalog factory resolves drawable and sets resource id field`() {
+        val field =
+            "Lorg/chromium/chrome/browser/ntp_background_images/model/BackgroundImage;->a:I"
+        val smali = forceAmbientCatalogAccessorSmali(field)
+
+        assertTrue("getIdentifier" in smali)
+        assertTrue("const-string v2, \"$NTP_WALLPAPER_RESOURCE_NAME\"" in smali)
+        assertTrue("const-string v3, \"drawable\"" in smali)
+        assertTrue("iput v1, v2, $field" in smali)
+        assertTrue("return-object v2" in smali)
+    }
+
+    @Test
+    fun `callback force replaces native wallpaper object with catalog result`() {
+        val smali = forceUseAmbientCatalogSmali("Lt9i;", "a")
+
+        assertTrue("invoke-static {}, Lt9i;->a()" in smali)
+        assertTrue(BACKGROUND_IMAGE_MODEL in smali)
+        assertTrue("move-result-object p1" in smali)
+    }
+
     private fun createPngHeaderFile(width: Int, height: Int): File {
         val file = kotlin.io.path.createTempFile("ntp-wallpaper", ".png").toFile()
         DataOutputStream(file.outputStream()).use { output ->
