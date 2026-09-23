@@ -108,26 +108,29 @@ internal fun backgroundImageResourceIdField(classDef: ClassDef): String {
 }
 
 /**
- * Replaces the ambient catalog accessor with a factory that resolves
- * `morphe_custom_ntp_wallpaper` at runtime (package may be renamed) and
- * writes that drawable id into BackgroundImage's resource-id field.
+ * Replaces the ambient catalog accessor. MUST fit in the original tiny
+ * register file (inspected `edi.a()` has only 3 regs: v0–v2). `getIdentifier`
+ * needs 4 invoke args and blew up with "register index out of range (3 >= 3)".
+ * `sget R$drawable` is a 2-reg path; package is baked at patch time (apps may
+ * be renamed, e.g. Origin Nightly).
  */
-internal fun forceAmbientCatalogAccessorSmali(resourceIdField: String): String = """
-    invoke-static {}, Landroid/app/ActivityThread;->currentApplication()Landroid/app/Application;
-    move-result-object v0
-    invoke-virtual {v0}, Landroid/content/Context;->getResources()Landroid/content/res/Resources;
-    move-result-object v1
-    const-string v2, "$NTP_WALLPAPER_RESOURCE_NAME"
-    const-string v3, "drawable"
-    invoke-virtual {v0}, Landroid/content/Context;->getPackageName()Ljava/lang/String;
-    move-result-object v4
-    invoke-virtual {v1, v2, v3, v4}, Landroid/content/res/Resources;->getIdentifier(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)I
-    move-result v1
-    new-instance v2, $BACKGROUND_IMAGE_MODEL
-    invoke-direct {v2}, $BACKGROUND_IMAGE_MODEL-><init>()V
-    iput v1, v2, $resourceIdField
-    return-object v2
+internal fun forceAmbientCatalogAccessorSmali(
+    resourceIdField: String,
+    packageName: String,
+): String {
+    val rDrawable = rDrawableType(packageName)
+    return """
+    sget v0, $rDrawable->$NTP_WALLPAPER_RESOURCE_NAME:I
+    new-instance v1, $BACKGROUND_IMAGE_MODEL
+    invoke-direct {v1}, $BACKGROUND_IMAGE_MODEL-><init>()V
+    iput v0, v1, $resourceIdField
+    return-object v1
 """
+}
+
+/** `vip.dh6k.brave.origin.nightly` → `Lvip/dh6k/brave/origin/nightly/R$drawable;` */
+internal fun rDrawableType(packageName: String): String =
+    "L" + packageName.trim().trimEnd('.').replace('.', '/') + "/R\$drawable;"
 
 /**
  * Callback.onResult(Object) on wallpaper delivery sites: replace the native
@@ -325,10 +328,14 @@ val customNtpWallpaperPatch: BytecodePatch = bytecodePatch(
         val resourceIdField = backgroundImageResourceIdField(
             AmbientCatalogAccessorFingerprint.originalClassDef,
         )
+        val packageName = packageMetadata.packageName?.trim().orEmpty()
+        if (packageName.isEmpty()) {
+            error("package name unavailable; cannot reference R\$drawable")
+        }
 
         accessorMethod.apply {
             removeInstructions(0, implementation!!.instructions.count())
-            addInstructions(0, forceAmbientCatalogAccessorSmali(resourceIdField))
+            addInstructions(0, forceAmbientCatalogAccessorSmali(resourceIdField, packageName))
         }
 
         var forcedCallbacks = 0
