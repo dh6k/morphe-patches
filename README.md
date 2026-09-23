@@ -60,7 +60,7 @@ Do not use Chromium's GServices WebAPK package/signing-check overrides as an end
 ## Patches
 
 <!-- PATCHES_START EXPANDED -->
-> **[v1.7.0-dev.5](https://github.com/dh6k/morphe-patches/releases/tag/v1.7.0-dev.5)**&nbsp;&nbsp;•&nbsp;&nbsp;`dev`&nbsp;&nbsp;•&nbsp;&nbsp;8 patches total
+> **[v1.7.0-dev.6](https://github.com/dh6k/morphe-patches/releases/tag/v1.7.0-dev.6)**&nbsp;&nbsp;•&nbsp;&nbsp;`dev`&nbsp;&nbsp;•&nbsp;&nbsp;9 patches total
 <details open>
 <summary>📦 Quetta Browser&nbsp;&nbsp;•&nbsp;&nbsp;2 patches</summary>
 <br>
@@ -84,35 +84,38 @@ Do not use Chromium's GServices WebAPK package/signing-check overrides as an end
 </details>
 
 <details open>
-<summary>📦 Brave Browser&nbsp;&nbsp;•&nbsp;&nbsp;2 patches</summary>
+<summary>📦 Brave Browser&nbsp;&nbsp;•&nbsp;&nbsp;3 patches</summary>
 <br>
 
 | 💊&nbsp;Patch | 📜&nbsp;Description | ⚙️&nbsp;Options |
 |----------|----------------|-----------|
 | [Brave Origin](#brave-origin) | Unlocks Brave Origin and enables feature toggle controls. |  |
-| [Custom NTP wallpaper](#custom-ntp-wallpaper) | Alpha experimental version-unpinned patch (issue #13): forces the Brave new-tab background to a custom PNG chosen at patch time. Rewrites the Java ambient wallpaper catalog (BackgroundImage drawable resource id) and makes wallpaper callbacks use it instead of native branded/URL images. Brave's New tab page settings only toggle "Show background images". Default off. | • Custom NTP wallpaper |
+| [Brave Startup Performance Optimization](#brave-startup-performance-optimization) | Optimizes startup time and eliminates background CPU/disk overhead by disabling unused OEM carrier partner customizations. Marks PartnerBrowserCustomizations initialized without SharedPreferences/ContentResolver/ThreadPool/timeout work, drains init callbacks immediately, and forces partner homepage and incognito lockdown gates closed. |  |
+| [Custom NTP wallpaper](#custom-ntp-wallpaper) | Alpha experimental version-unpinned patch (issue #13): forces the Brave new-tab background to a custom PNG chosen at patch time. Rewrites the Java ambient wallpaper catalog (BackgroundImage drawable resource id) and makes wallpaper callbacks use it instead of native branded/URL images. IMPORTANT: crop the image to your current screen resolution first, then select that file in the patch options. Brave's New tab page settings only toggle "Show background images". Default off. | • Custom NTP wallpaper |
 
 </details>
 
 <details open>
-<summary>📦 Brave Beta&nbsp;&nbsp;•&nbsp;&nbsp;2 patches</summary>
+<summary>📦 Brave Beta&nbsp;&nbsp;•&nbsp;&nbsp;3 patches</summary>
 <br>
 
 | 💊&nbsp;Patch | 📜&nbsp;Description | ⚙️&nbsp;Options |
 |----------|----------------|-----------|
 | [Brave Origin](#brave-origin) | Unlocks Brave Origin and enables feature toggle controls. |  |
-| [Custom NTP wallpaper](#custom-ntp-wallpaper) | Alpha experimental version-unpinned patch (issue #13): forces the Brave new-tab background to a custom PNG chosen at patch time. Rewrites the Java ambient wallpaper catalog (BackgroundImage drawable resource id) and makes wallpaper callbacks use it instead of native branded/URL images. Brave's New tab page settings only toggle "Show background images". Default off. | • Custom NTP wallpaper |
+| [Brave Startup Performance Optimization](#brave-startup-performance-optimization) | Optimizes startup time and eliminates background CPU/disk overhead by disabling unused OEM carrier partner customizations. Marks PartnerBrowserCustomizations initialized without SharedPreferences/ContentResolver/ThreadPool/timeout work, drains init callbacks immediately, and forces partner homepage and incognito lockdown gates closed. |  |
+| [Custom NTP wallpaper](#custom-ntp-wallpaper) | Alpha experimental version-unpinned patch (issue #13): forces the Brave new-tab background to a custom PNG chosen at patch time. Rewrites the Java ambient wallpaper catalog (BackgroundImage drawable resource id) and makes wallpaper callbacks use it instead of native branded/URL images. IMPORTANT: crop the image to your current screen resolution first, then select that file in the patch options. Brave's New tab page settings only toggle "Show background images". Default off. | • Custom NTP wallpaper |
 
 </details>
 
 <details open>
-<summary>📦 Brave Nightly&nbsp;&nbsp;•&nbsp;&nbsp;2 patches</summary>
+<summary>📦 Brave Nightly&nbsp;&nbsp;•&nbsp;&nbsp;3 patches</summary>
 <br>
 
 | 💊&nbsp;Patch | 📜&nbsp;Description | ⚙️&nbsp;Options |
 |----------|----------------|-----------|
 | [Brave Origin](#brave-origin) | Unlocks Brave Origin and enables feature toggle controls. |  |
-| [Custom NTP wallpaper](#custom-ntp-wallpaper) | Alpha experimental version-unpinned patch (issue #13): forces the Brave new-tab background to a custom PNG chosen at patch time. Rewrites the Java ambient wallpaper catalog (BackgroundImage drawable resource id) and makes wallpaper callbacks use it instead of native branded/URL images. Brave's New tab page settings only toggle "Show background images". Default off. | • Custom NTP wallpaper |
+| [Brave Startup Performance Optimization](#brave-startup-performance-optimization) | Optimizes startup time and eliminates background CPU/disk overhead by disabling unused OEM carrier partner customizations. Marks PartnerBrowserCustomizations initialized without SharedPreferences/ContentResolver/ThreadPool/timeout work, drains init callbacks immediately, and forces partner homepage and incognito lockdown gates closed. |  |
+| [Custom NTP wallpaper](#custom-ntp-wallpaper) | Alpha experimental version-unpinned patch (issue #13): forces the Brave new-tab background to a custom PNG chosen at patch time. Rewrites the Java ambient wallpaper catalog (BackgroundImage drawable resource id) and makes wallpaper callbacks use it instead of native branded/URL images. IMPORTANT: crop the image to your current screen resolution first, then select that file in the patch options. Brave's New tab page settings only toggle "Show background images". Default off. | • Custom NTP wallpaper |
 
 </details>
 
