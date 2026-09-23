@@ -1,3 +1,9 @@
+## [1.7.0-dev.2](https://github.com/dh6k/morphe-patches/compare/v1.7.0-dev.1...v1.7.0-dev.2) (2026-09-23)
+
+### 🐛 Bug Fixes
+
+* **brave:** avoid param-register clobber in NTP wallpaper prologue ([62132b9](https://github.com/dh6k/morphe-patches/commit/62132b919f54d5cd6194cb29de87fce38f12a41c))
+
 ## [1.7.0-dev.1](https://github.com/dh6k/morphe-patches/compare/v1.6.0...v1.7.0-dev.1) (2026-09-22)
 
 ### ✨ New Features
