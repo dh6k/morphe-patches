@@ -60,7 +60,7 @@ Do not use Chromium's GServices WebAPK package/signing-check overrides as an end
 ## Patches
 
 <!-- PATCHES_START EXPANDED -->
-> **[v1.7.0-dev.2](https://github.com/dh6k/morphe-patches/releases/tag/v1.7.0-dev.2)**&nbsp;&nbsp;•&nbsp;&nbsp;`dev`&nbsp;&nbsp;•&nbsp;&nbsp;8 patches total
+> **[v1.7.0-dev.3](https://github.com/dh6k/morphe-patches/releases/tag/v1.7.0-dev.3)**&nbsp;&nbsp;•&nbsp;&nbsp;`dev`&nbsp;&nbsp;•&nbsp;&nbsp;8 patches total
 <details open>
 <summary>📦 Quetta Browser&nbsp;&nbsp;•&nbsp;&nbsp;2 patches</summary>
 <br>
@@ -90,7 +90,7 @@ Do not use Chromium's GServices WebAPK package/signing-check overrides as an end
 | 💊&nbsp;Patch | 📜&nbsp;Description | ⚙️&nbsp;Options |
 |----------|----------------|-----------|
 | [Brave Origin](#brave-origin) | Unlocks Brave Origin and enables feature toggle controls. |  |
-| [Custom NTP wallpaper](#custom-ntp-wallpaper) | Alpha experimental version-unpinned patch (issue #13): forces Brave NTP background factories (NTPBackgroundImagesBridge.createWallpaper / createBrandedWallpaper) to a custom PNG chosen at patch time. Brave's New tab page settings only toggle "Show background images" — this patch supplies the missing custom wallpaper path. Rendering remains in libchrome.so; if a build bypasses these factories the image is ignored. Ambiguous targets fail closed. Default off. | • Custom NTP wallpaper |
+| [Custom NTP wallpaper](#custom-ntp-wallpaper) | Alpha experimental version-unpinned patch (issue #13): forces the Brave new-tab background to a custom PNG chosen at patch time. Rewrites the Java ambient wallpaper catalog (BackgroundImage drawable resource id) and makes wallpaper callbacks use it instead of native branded/URL images. Brave's New tab page settings only toggle "Show background images". Default off. | • Custom NTP wallpaper |
 
 </details>
 
@@ -101,7 +101,7 @@ Do not use Chromium's GServices WebAPK package/signing-check overrides as an end
 | 💊&nbsp;Patch | 📜&nbsp;Description | ⚙️&nbsp;Options |
 |----------|----------------|-----------|
 | [Brave Origin](#brave-origin) | Unlocks Brave Origin and enables feature toggle controls. |  |
-| [Custom NTP wallpaper](#custom-ntp-wallpaper) | Alpha experimental version-unpinned patch (issue #13): forces Brave NTP background factories (NTPBackgroundImagesBridge.createWallpaper / createBrandedWallpaper) to a custom PNG chosen at patch time. Brave's New tab page settings only toggle "Show background images" — this patch supplies the missing custom wallpaper path. Rendering remains in libchrome.so; if a build bypasses these factories the image is ignored. Ambiguous targets fail closed. Default off. | • Custom NTP wallpaper |
+| [Custom NTP wallpaper](#custom-ntp-wallpaper) | Alpha experimental version-unpinned patch (issue #13): forces the Brave new-tab background to a custom PNG chosen at patch time. Rewrites the Java ambient wallpaper catalog (BackgroundImage drawable resource id) and makes wallpaper callbacks use it instead of native branded/URL images. Brave's New tab page settings only toggle "Show background images". Default off. | • Custom NTP wallpaper |
 
 </details>
 
@@ -112,7 +112,7 @@ Do not use Chromium's GServices WebAPK package/signing-check overrides as an end
 | 💊&nbsp;Patch | 📜&nbsp;Description | ⚙️&nbsp;Options |
 |----------|----------------|-----------|
 | [Brave Origin](#brave-origin) | Unlocks Brave Origin and enables feature toggle controls. |  |
-| [Custom NTP wallpaper](#custom-ntp-wallpaper) | Alpha experimental version-unpinned patch (issue #13): forces Brave NTP background factories (NTPBackgroundImagesBridge.createWallpaper / createBrandedWallpaper) to a custom PNG chosen at patch time. Brave's New tab page settings only toggle "Show background images" — this patch supplies the missing custom wallpaper path. Rendering remains in libchrome.so; if a build bypasses these factories the image is ignored. Ambiguous targets fail closed. Default off. | • Custom NTP wallpaper |
+| [Custom NTP wallpaper](#custom-ntp-wallpaper) | Alpha experimental version-unpinned patch (issue #13): forces the Brave new-tab background to a custom PNG chosen at patch time. Rewrites the Java ambient wallpaper catalog (BackgroundImage drawable resource id) and makes wallpaper callbacks use it instead of native branded/URL images. Brave's New tab page settings only toggle "Show background images". Default off. | • Custom NTP wallpaper |
 
 </details>
 
