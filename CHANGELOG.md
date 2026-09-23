@@ -1,3 +1,9 @@
+## [1.7.0-dev.7](https://github.com/dh6k/morphe-patches/compare/v1.7.0-dev.6...v1.7.0-dev.7) (2026-09-23)
+
+### 🐛 Bug Fixes
+
+* **brave:** use invoke-interface for Runnable callback drain ([adf562b](https://github.com/dh6k/morphe-patches/commit/adf562b790e0a994a2400ddfb49bfe84e9e7620e))
+
 ## [1.7.0-dev.6](https://github.com/dh6k/morphe-patches/compare/v1.7.0-dev.5...v1.7.0-dev.6) (2026-09-23)
 
 ### ✨ New Features
