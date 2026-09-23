@@ -65,7 +65,7 @@ internal fun returnBooleanSmali(value: Boolean): String =
 internal val runCallbackImmediatelySmali =
     """
         if-eqz p1, :done
-        invoke-virtual {p1}, Ljava/lang/Runnable;->run()V
+        invoke-interface {p1}, Ljava/lang/Runnable;->run()V
         :done
         return-void
     """.trimIndent()

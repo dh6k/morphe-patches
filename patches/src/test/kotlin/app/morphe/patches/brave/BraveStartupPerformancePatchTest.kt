@@ -2,6 +2,7 @@ package app.morphe.patches.brave
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class BraveStartupPerformancePatchTest {
@@ -38,7 +39,9 @@ class BraveStartupPerformancePatchTest {
     @Test
     fun `callback runner null-checks and returns`() {
         assertTrue(runCallbackImmediatelySmali.contains("if-eqz p1, :done"))
-        assertTrue(runCallbackImmediatelySmali.contains("Ljava/lang/Runnable;->run()V"))
+        // Runnable is an interface: invoke-virtual here is IncompatibleClassChangeError.
+        assertTrue(runCallbackImmediatelySmali.contains("invoke-interface {p1}, Ljava/lang/Runnable;->run()V"))
+        assertFalse(runCallbackImmediatelySmali.contains("invoke-virtual"))
         assertTrue(runCallbackImmediatelySmali.contains("return-void"))
     }
 
