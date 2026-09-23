@@ -1,3 +1,9 @@
+## [1.7.0-dev.6](https://github.com/dh6k/morphe-patches/compare/v1.7.0-dev.5...v1.7.0-dev.6) (2026-09-23)
+
+### ✨ New Features
+
+* **brave:** add Brave Startup Performance Optimization ([9b9f1ab](https://github.com/dh6k/morphe-patches/commit/9b9f1ab25f7de74231ff78abf2efd7afe072ddf8))
+
 ## [1.7.0-dev.5](https://github.com/dh6k/morphe-patches/compare/v1.7.0-dev.4...v1.7.0-dev.5) (2026-09-23)
 
 ### 🐛 Bug Fixes
