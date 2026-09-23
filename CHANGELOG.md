@@ -1,3 +1,9 @@
+## [1.7.0-dev.3](https://github.com/dh6k/morphe-patches/compare/v1.7.0-dev.2...v1.7.0-dev.3) (2026-09-23)
+
+### 🐛 Bug Fixes
+
+* **brave:** route NTP wallpaper through Java ambient catalog ([7c78a3c](https://github.com/dh6k/morphe-patches/commit/7c78a3cb11e44c04b1bb4fed833f1b4626c4932d))
+
 ## [1.7.0-dev.2](https://github.com/dh6k/morphe-patches/compare/v1.7.0-dev.1...v1.7.0-dev.2) (2026-09-23)
 
 ### 🐛 Bug Fixes
