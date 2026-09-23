@@ -1,61 +1,76 @@
-# Brave Origin, Quetta and Universal Patches
+<p align="center">
+  <a href="https://github.com/dh6k/morphe-patches/releases/latest"><img src="https://img.shields.io/github/v/release/dh6k/morphe-patches?color=7928CA&label=Release&logo=github&style=flat-square" alt="Latest Release" /></a>
+  <a href="https://github.com/dh6k/morphe-patches/releases"><img src="https://img.shields.io/github/downloads/dh6k/morphe-patches/total?style=flat-square&logo=github" alt="Total Downloads" /></a>
+  <img src="https://img.shields.io/badge/Runtime-Morphe_Patcher_1.7.0-8A2BE2?style=flat-square" alt="Runtime" />
+  <img src="https://img.shields.io/badge/License-GPLv3-blue?style=flat-square" alt="License" />
+</p>
 
-Morphe patch bundle for Brave Browser, Quetta browser plus app-independent Android resource patches.
+<h1 align="center">Brave, Quetta &amp; Universal Morphe Patches</h1>
 
-## Quetta Browser support
+<p align="center">
+  Morphe patch bundle for <b>Brave Browser</b> (Origin, Startup Performance, NTP), <b>Quetta Browser</b>, Titanium keep-alive/refresh helpers, and app-independent Android resource patches on Android using the <b><a href="https://morphe.software">Morphe</a></b> patcher framework.
+</p>
+
+<p align="center">
+  <a href="https://morphe.software/add-source?github=dh6k/morphe-patches"><img src="https://img.shields.io/badge/Morphe_Manager-Add_Patch_Source-8A2BE2?style=for-the-badge&logo=android&logoColor=white" alt="Add Source to Morphe Manager" /></a>
+  &nbsp;&nbsp;
+  <a href="https://github.com/dh6k/morphe-patches/releases/latest"><img src="https://img.shields.io/badge/Direct_Download-Get_.MPP_Bundle-0070F3?style=for-the-badge&logo=github&logoColor=white" alt="Download Latest Release .mpp Bundle" /></a>
+</p>
+
+---
+
+## Install
+
+1. Open the **Add Patch Source** button above (or add `https://github.com/dh6k/morphe-patches` manually in [Morphe Manager](https://morphe.software)).
+2. Pick an app and enable the desired patches. Universal patches apply to any app.
+3. Patch the APK or APKM and install the output.
+
+**Or** grab the latest `.mpp` with **Get .MPP Bundle** above if you prefer side-loading the patch package yourself.
+
+---
+
+## Supported applications
+
+### Quetta Browser
 
 | Build | Package name | Support status |
 | --- | --- | --- |
 | Quetta Browser (Play Store edition) | `net.quetta.browser` | version-unpinned; refresh-rate patch statically validated on `2.0.5` |
 | Quetta Browser (Direct APK edition) | `net.quetta.browser.official` | version-unpinned; extension patch tested on `2.0.2 (5307)` |
 
-Supports both versions of Quetta Browser through two Quetta-local patches:
+Two Quetta-local patches:
 
 - **Block Quetta bundled extension installation** — bundled extension install/reinstall block.
 - **Force highest refresh rate** — Quetta-adapted sibling of the Titanium patch. Separate fingerprints: Quetta 2.0.5 keeps `WindowAndroid.setPreferredRefreshRate(F)V` but obfuscates the nearest-mode worker and drops the Titanium log literal; this patch matches the structural shape (`getRefreshRate` + `getModeId` + `Window.setAttributes`) instead of editing the helium/Titanium implementation. Version-unpinned, experimental, fail-closed on ambiguity. Intended for arm64-v8a APKs; the framework does not enforce ABI.
 
-Patch blocks bundled installation/reinstallation for these exact extensions:
+Blocked bundled extensions:
 
 - `nnedfbcpeenmccjbdcnlnhogapndfeoa` — Q30 from Quetta Translator
 - `gadlcodpkkelmagfhkldjlobfncbkbmd` — Q30 from Quetta
 
-Analyzed manifests show these extensions have broad page access and background behavior, and can communicate with remote services (or telemetry in short). Blocking bundled installation/reinstallation reduces bundled background code and remote-service exposure, giving users more privacy and control without claiming what those services collect. **All related functions works probably fine without these extensions in the first place, so these are definitely bloated components**.
+Analyzed manifests show these extensions have broad page access and background behavior, and can communicate with remote services (or telemetry in short). Blocking bundled installation/reinstallation reduces bundled background code and remote-service exposure, giving users more privacy and control without claiming what those services collect. **All related functions work probably fine without these extensions in the first place, so these are definitely bloated components**.
 
-This does not block all Quetta telemetry or every Quetta network connection (for that just use DNS with blocklist instead), and does not remove copies already installed in existing profiles. Remove existing copies through ~~Quetta's extension-management UI~~ [SimpleExtManager Beta, since it's hidden from the Inbuilt Extension management UI](https://chromewebstore.google.com/detail/simpleextmanager-beta/bbgbjeiedibajiehaenkindljahjkodi) and install it from [here](https://www.crx4chrome.com/crx-downloader/) if download interrupted from the Web store, ~~or use a clean profile as appropriate~~ **Clean install already removed that, just patch it as usual and enjoy**. Static validation is anchored to supplied Quetta `2.0.2-530` Official (Direct APK from website) arm64-v8a APK; this is not broad runtime proof. Future versions may change fingerprints; patch should fail safely rather than modify unrelated methods.
+This does not block all Quetta telemetry or every Quetta network connection (for that just use DNS with blocklist instead), and does not remove copies already installed in existing profiles. Remove existing copies through ~~Quetta's extension-management UI~~ [SimpleExtManager Beta, since it's hidden from the Inbuilt Extension management UI](https://chromewebstore.google.com/detail/simpleextmanager-beta/bbgbjeiedibajiehaenkindljahjkodi) and install it from [here](https://www.crx4chrome.com/crx-downloader/) if download is interrupted from the Web store, ~~or use a clean profile as appropriate~~ **Clean install already removed that, just patch it as usual and enjoy**. Static validation is anchored to supplied Quetta `2.0.2-530` Official (Direct APK from website) arm64-v8a APK; this is not broad runtime proof. Future versions may change fingerprints; patch should fail safely rather than modify unrelated methods.
 
-## Brave Origin support
+### Brave Browser
 
 | Build | Package name | Support status |
 | --- | --- | --- |
-| Brave Browser | `com.brave.browser` | Tested on `1.92.140` |
+| Brave Browser | `com.brave.browser` | Origin tested on `1.92.140`; Startup Performance validated on Nightly `1.98.21` |
 | Brave Beta | `com.brave.browser_beta` | Experimental; version-unpinned |
-| Brave Nightly | `com.brave.browser_nightly` | Experimental; version-unpinned |
+| Brave Nightly | `com.brave.browser_nightly` | Experimental; version-unpinned; Startup Performance validated on `1.98.21` |
 
 Beta and Nightly share Brave Origin code paths, but require APK validation for each release before promotion from experimental support.
 
-### Web app installation limitation
+See [Patch notes](#patch-notes) for Startup Performance, Custom NTP wallpaper, and the WebAPK limitation under Brave Origin.
 
-Patched Brave APKs are re-signed. WebAPK installation through **Install and create shortcut > Install** may remain stuck on `Installing`, especially when the package name is also changed. This is separate from the Brave Origin bytecode patch: Brave Origin modifies subscription and feature-policy behavior, not the Chromium WebAPK installer.
+### Titanium Browser
 
-Use **Create shortcut** as the supported workaround. It uses Android's pinned-shortcut flow and does not install a WebAPK.
+| Build | Package name | Support status |
+| --- | --- | --- |
+| Titanium Browser for Android | (see patch catalog) | Experimental; version-unpinned keep-alive + refresh-rate helpers |
 
-When reporting this problem, include the app version, final package name, whether **Create shortcut** works, and filtered ADB output:
-
-```powershell
-adb logcat -c
-# Reproduce the failed Install action, then run:
-adb logcat -d -v threadtime |
-    Select-String -Pattern 'webapk|shortcut|packageinstaller|finsky|playcore|install'
-```
-
-Also verify the installed package and patched APK certificate:
-
-```powershell
-adb shell dumpsys package <package-name>
-apksigner verify --print-certs <patched.apk>
-```
-
-Do not use Chromium's GServices WebAPK package/signing-check overrides as an end-user fix. Those overrides are intended for development builds and may require privileged device access.
+---
 
 ## Patches
 
@@ -144,7 +159,41 @@ Do not use Chromium's GServices WebAPK package/signing-check overrides as an end
 
 <!-- PATCHES_END -->
 
-## Brave Startup Performance Optimization
+---
+
+## Patch notes
+
+Deep dives for patches that need more than the catalog description.
+
+### Brave Origin
+
+Unlocks **Brave Origin** and enables the Origin feature-toggle controls (subscription / feature-policy surface). Compatible with `com.brave.browser`, `com.brave.browser_beta`, and `com.brave.browser_nightly`.
+
+#### Web app installation limitation
+
+Patched Brave APKs are re-signed. WebAPK installation through **Install and create shortcut > Install** may remain stuck on `Installing`, especially when the package name is also changed. This is separate from the Brave Origin bytecode patch: Brave Origin modifies subscription and feature-policy behavior, not the Chromium WebAPK installer.
+
+Use **Create shortcut** as the supported workaround. It uses Android's pinned-shortcut flow and does not install a WebAPK.
+
+When reporting this problem, include the app version, final package name, whether **Create shortcut** works, and filtered ADB output:
+
+```powershell
+adb logcat -c
+# Reproduce the failed Install action, then run:
+adb logcat -d -v threadtime |
+    Select-String -Pattern 'webapk|shortcut|packageinstaller|finsky|playcore|install'
+```
+
+Also verify the installed package and patched APK certificate:
+
+```powershell
+adb shell dumpsys package <package-name>
+apksigner verify --print-certs <patched.apk>
+```
+
+Do not use Chromium's GServices WebAPK package/signing-check overrides as an end-user fix. Those overrides are intended for development builds and may require privileged device access.
+
+### Brave Startup Performance Optimization
 
 New patch for [issue #16](https://github.com/dh6k/morphe-patches/issues/16). Brave runs OEM/carrier **partner customizations** (`org.chromium.chrome.browser.partnercustomizations.PartnerBrowserCustomizations`) during browser startup. On devices with no partner package this still performs main-thread `SharedPreferences` reads, spawns a background resolver, and schedules a **10-second `PostTask` timeout** that re-runs pending callbacks — pure CPU/disk overhead on the launch path.
 
@@ -166,28 +215,27 @@ Supported on `com.brave.browser` (APK and APKM), `com.brave.browser_beta` (APK),
 
 By design this disables OEM partner homepage and Incognito-lockdown behavior. On non-carrier devices these were already inert.
 
-## Custom NTP wallpaper
+### Custom NTP wallpaper
 
 Alpha experimental patch for [issue #13](https://github.com/dh6k/morphe-patches/issues/13). Brave's **New tab page** settings only expose **Show background images**; this patch forces the NTP background to a patch-time PNG by rewriting the Java ambient wallpaper catalog (`BackgroundImage` drawable resource id) and making wallpaper callbacks use it instead of native branded/URL images.
 
 **How to use:** crop the wallpaper to your **current screen resolution** first (gallery / any crop tool, exact width × height of the device), then select that PNG in the patch options. Default off. Ambiguous targets fail closed. Intended for arm64-v8a APKs; the framework does not enforce ABI.
 
-## Keep Titanium Extensions Child Processes Alive
+### Keep Titanium Extensions Child Processes Alive
 
 Experimental version-unpinned two-layer mitigation for [issue #57](https://github.com/jqssun/android-titanium-browser/issues/57): child processes receive Chromium STRONG binding (`0x4`) and IMPORTANT/STRONG priority (`0x3`), while one main-process foreground service keeps extension background runtime visible through a persistent low-priority notification. Structural and local data-flow resolution tolerates routine signature, register, helper-name, and process-launch changes, then fails closed when relevant bytecode is genuinely ambiguous. Disabled by default and version-unpinned (no pinned Titanium version). Affects all relevant Titanium child processes, not only extensions. This can raise RAM, battery, and process pressure and only mitigates LMK kills; it does not guarantee survival, bypass force-stop or OEM task killers, detect or reload crashed extensions, or run a watchdog/polling loop/wake lock. A persistent low-importance foreground-service notification may appear. Future incompatible APKs may fail during patching. No reliable extension-only discriminator exists in inspected Titanium code, so child binding applies to all child processes.
 
-## Install
-
-1. Install [Morphe Manager](https://morphe.software) on Android.
-2. Add `https://github.com/dh6k/morphe-patches` as patch source.
-3. Select an app and enable the desired patch. Universal patches are available for any app.
-4. Patch the APK or APKM and install output.
+---
 
 ## Build
 
 ```bash
 ./gradlew :patches:buildAndroid
 ```
+
+Release CI regenerates `patches-list.json`, `patches-bundle.json`, and the catalog between `<!-- PATCHES_START … -->` / `<!-- PATCHES_END -->`. Do not hand-edit that block.
+
+---
 
 ## License
 
