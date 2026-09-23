@@ -143,7 +143,7 @@ Do not use Chromium's GServices WebAPK package/signing-check overrides as an end
 
 ## Custom NTP wallpaper
 
-Alpha experimental patch for [issue #13](https://github.com/dh6k/morphe-patches/issues/13). Brave's **New tab page** settings only expose **Show background images**; this patch injects a patch-time PNG into `NTPBackgroundImagesBridge.createWallpaper` / `createBrandedWallpaper` so the NTP background becomes that image. Default off. Rendering remains in `libchrome.so` — if a future build bypasses those factories the image is ignored and the rest of the APK is untouched. Ambiguous targets fail closed. Intended for arm64-v8a APKs; the framework does not enforce ABI.
+Alpha experimental patch for [issue #13](https://github.com/dh6k/morphe-patches/issues/13). Brave's **New tab page** settings only expose **Show background images**; this patch forces the NTP background to a patch-time PNG by rewriting the Java ambient wallpaper catalog (`BackgroundImage` drawable resource id) and making wallpaper callbacks use it instead of native branded/URL images. Default off. Ambiguous targets fail closed. Intended for arm64-v8a APKs; the framework does not enforce ABI.
 
 ## Keep Titanium Extensions Child Processes Alive
 

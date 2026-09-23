@@ -1,16 +1,19 @@
 /*
  * Alpha NTP wallpaper injection for Brave (issue #13).
  *
- * Brave's New tab page settings only expose "Show background images";
- * Chromium/Brave still ship NTPBackgroundImagesBridge wallpaper factories.
- * This patch forces those factories to describe a patch-time PNG so the NTP
- * background becomes the supplied custom image. Ambient wallpaper rendering
- * stays in libchrome.so — if factories are bypassed the patch is a no-op.
+ * Brave's New tab page settings only expose "Show background images".
+ * Native branded wallpapers are URL-loaded in libchrome.so and ignore
+ * android.resource:// URIs. The Java ambient catalog (t9i-style) instead
+ * holds an Android drawable resource id on BackgroundImage.a and is decoded
+ * with Resources — that is the path this patch owns:
+ *   1) rewrite the no-arg BackgroundImage factory to return our drawable
+ *   2) force wallpaper callbacks to use that factory instead of native data
  */
 package app.morphe.patches.brave
 
 import app.morphe.patcher.Fingerprint
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
+import app.morphe.patcher.extensions.InstructionExtensions.removeInstructions
 import app.morphe.patcher.patch.ApkFileType
 import app.morphe.patcher.patch.AppTarget
 import app.morphe.patcher.patch.BytecodePatch
@@ -21,6 +24,10 @@ import app.morphe.patcher.patch.ResourcePatch
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.patch.imageOption
 import app.morphe.patcher.patch.resourcePatch
+import com.android.tools.smali.dexlib2.iface.ClassDef
+import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.reference.FieldReference
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import java.io.DataInputStream
 import java.io.File
 import java.io.FileInputStream
@@ -66,6 +73,74 @@ internal object CreateBrandedWallpaperFingerprint : Fingerprint(
         "I",
     ),
 )
+
+/**
+ * Ambient Java catalog accessor (`t9i.a()` on inspected builds): static no-arg
+ * factory returning BackgroundImage, owning class <clinit> IPUTs a drawable
+ * resource id into BackgroundImage. Unique anchor independent of the obfuscated
+ * class name.
+ */
+internal object AmbientCatalogAccessorFingerprint : Fingerprint(
+    returnType = BACKGROUND_IMAGE_MODEL,
+    parameters = emptyList(),
+    custom = { _, classDef ->
+        classDef.methods.any { method ->
+            if (method.name != "<clinit>") return@any false
+            val impl = method.implementation ?: return@any false
+            impl.instructions.any { ins ->
+                val field = (ins as? ReferenceInstruction)?.reference as? FieldReference
+                field != null &&
+                    field.definingClass == BACKGROUND_IMAGE_MODEL &&
+                    field.type == "I"
+            }
+        }
+    },
+)
+
+internal fun backgroundImageResourceIdField(classDef: ClassDef): String {
+    val clinit = classDef.methods.firstOrNull { it.name == "<clinit>" && it.implementation != null }
+        ?: error("ambient wallpaper catalog class has no <clinit>")
+    val field = clinit.implementation!!.instructions
+        .mapNotNull { (it as? ReferenceInstruction)?.reference as? FieldReference }
+        .firstOrNull { it.definingClass == BACKGROUND_IMAGE_MODEL && it.type == "I" }
+        ?: error("BackgroundImage resource-id field not found in catalog <clinit>")
+    return "${field.definingClass}->${field.name}:${field.type}"
+}
+
+/**
+ * Replaces the ambient catalog accessor with a factory that resolves
+ * `morphe_custom_ntp_wallpaper` at runtime (package may be renamed) and
+ * writes that drawable id into BackgroundImage's resource-id field.
+ */
+internal fun forceAmbientCatalogAccessorSmali(resourceIdField: String): String = """
+    invoke-static {}, Landroid/app/ActivityThread;->currentApplication()Landroid/app/Application;
+    move-result-object v0
+    invoke-virtual {v0}, Landroid/content/Context;->getResources()Landroid/content/res/Resources;
+    move-result-object v1
+    const-string v2, "$NTP_WALLPAPER_RESOURCE_NAME"
+    const-string v3, "drawable"
+    invoke-virtual {v0}, Landroid/content/Context;->getPackageName()Ljava/lang/String;
+    move-result-object v4
+    invoke-virtual {v1, v2, v3, v4}, Landroid/content/res/Resources;->getIdentifier(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)I
+    move-result v1
+    new-instance v2, $BACKGROUND_IMAGE_MODEL
+    invoke-direct {v2}, $BACKGROUND_IMAGE_MODEL-><init>()V
+    iput v1, v2, $resourceIdField
+    return-object v2
+"""
+
+/**
+ * Callback.onResult(Object) on wallpaper delivery sites: replace the native
+ * wallpaper object with the ambient catalog accessor result so Brave's
+ * branded/URL wallpapers never win. p1 is the sole parameter (p0 = this).
+ */
+internal fun forceUseAmbientCatalogSmali(
+    catalogClass: String,
+    catalogMethod: String,
+): String = """
+    invoke-static {}, $catalogClass->$catalogMethod()$BACKGROUND_IMAGE_MODEL
+    move-result-object p1
+"""
 
 /**
  * `android.resource://<package>/drawable/morphe_custom_ntp_wallpaper`.
@@ -208,18 +283,17 @@ private val customNtpWallpaperResourcePatch: ResourcePatch = resourcePatch(
 }
 
 /**
- * Alpha / experimental: forces Brave NTP wallpaper factories to the supplied PNG.
- * Default off. Ambiguous or missing factories fail closed.
+ * Alpha / experimental: forces Brave NTP to the supplied PNG via the Java
+ * ambient catalog (drawable resource id). Default off. Ambiguous targets fail closed.
  */
 @Suppress("unused")
 val customNtpWallpaperPatch: BytecodePatch = bytecodePatch(
     name = "Custom NTP wallpaper",
-    description = "Alpha experimental version-unpinned patch (issue #13): forces Brave NTP " +
-        "background factories (NTPBackgroundImagesBridge.createWallpaper / createBrandedWallpaper) " +
-        "to a custom PNG chosen at patch time. Brave's New tab page settings only toggle " +
-        "\"Show background images\" — this patch supplies the missing custom wallpaper path. " +
-        "Rendering remains in libchrome.so; if a build bypasses these factories the image is " +
-        "ignored. Ambiguous targets fail closed. Default off.",
+    description = "Alpha experimental version-unpinned patch (issue #13): forces the Brave " +
+        "new-tab background to a custom PNG chosen at patch time. Rewrites the Java ambient " +
+        "wallpaper catalog (BackgroundImage drawable resource id) and makes wallpaper " +
+        "callbacks use it instead of native branded/URL images. Brave's New tab page " +
+        "settings only toggle \"Show background images\". Default off.",
     default = false,
 ) {
     dependsOn(customNtpWallpaperResourcePatch)
@@ -243,19 +317,62 @@ val customNtpWallpaperPatch: BytecodePatch = bytecodePatch(
         }
         validateWallpaperFile(File(sourcePath))
 
-        val packageName = packageMetadata.packageName
-        if (packageName.isNullOrBlank()) {
-            error("package name unavailable; cannot build wallpaper resource URI")
+        val accessorMethod = AmbientCatalogAccessorFingerprint.methodOrNull
+            ?: error("ambient wallpaper catalog accessor not found")
+        val catalogClass = AmbientCatalogAccessorFingerprint.originalClassDef.type
+        val catalogMethod = AmbientCatalogAccessorFingerprint.originalMethod?.name
+            ?: error("ambient wallpaper catalog accessor name missing")
+        val resourceIdField = backgroundImageResourceIdField(
+            AmbientCatalogAccessorFingerprint.originalClassDef,
+        )
+
+        accessorMethod.apply {
+            removeInstructions(0, implementation!!.instructions.count())
+            addInstructions(0, forceAmbientCatalogAccessorSmali(resourceIdField))
         }
 
+        var forcedCallbacks = 0
+        classDefForEach { classDef ->
+            classDef.methods.forEach { method ->
+                if (method.returnType != "V" ||
+                    method.parameterTypes.toList() != listOf("Ljava/lang/Object;") ||
+                    method.implementation == null
+                ) {
+                    return@forEach
+                }
+                val callsCatalog = method.implementation!!.instructions.any { ins ->
+                    val ref = (ins as? ReferenceInstruction)?.reference as? MethodReference
+                    ref != null &&
+                        ref.definingClass == catalogClass &&
+                        ref.name == catalogMethod &&
+                        ref.parameterTypes.isEmpty() &&
+                        ref.returnType == BACKGROUND_IMAGE_MODEL
+                }
+                if (!callsCatalog) return@forEach
+
+                mutableClassDefBy(classDef).methods
+                    .first { it.name == method.name && it.parameterTypes == method.parameterTypes }
+                    .addInstructions(0, forceUseAmbientCatalogSmali(catalogClass, catalogMethod))
+                forcedCallbacks++
+            }
+        }
+        if (forcedCallbacks == 0) {
+            error("no wallpaper callbacks call the ambient catalog accessor")
+        }
+
+        // Secondary: keep JNI factories consistent if some path still reads them.
+        // Native loaders ignore android.resource://, so this is best-effort only.
         CreateWallpaperFingerprint.methodOrNull?.addInstructions(
             0,
-            forceCreateWallpaperParamsSmali(packageName),
-        ) ?: error("NTPBackgroundImagesBridge.createWallpaper not found")
-
+            forceCreateWallpaperParamsSmali(
+                packageMetadata.packageName?.takeIf { it.isNotBlank() } ?: "com.brave.browser",
+            ),
+        )
         CreateBrandedWallpaperFingerprint.methodOrNull?.addInstructions(
             0,
-            forceCreateBrandedWallpaperParamsSmali(packageName),
-        ) ?: error("NTPBackgroundImagesBridge.createBrandedWallpaper not found")
+            forceCreateBrandedWallpaperParamsSmali(
+                packageMetadata.packageName?.takeIf { it.isNotBlank() } ?: "com.brave.browser",
+            ),
+        )
     }
 }
