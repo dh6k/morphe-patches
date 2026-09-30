@@ -1,3 +1,9 @@
+## [1.8.0-dev.5](https://github.com/dh6k/morphe-patches/compare/v1.8.0-dev.4...v1.8.0-dev.5) (2026-09-30)
+
+### 🐛 Bug Fixes
+
+* **brave:** rewrite AMOLED dark surfaces in values/ not just values-night ([b76ab33](https://github.com/dh6k/morphe-patches/commit/b76ab33ded56a444df0fa901d2c1b92d9ee81c87)), closes [#121212](https://github.com/dh6k/morphe-patches/issues/121212) [#ff303030](https://github.com/dh6k/morphe-patches/issues/ff303030)
+
 ## [1.8.0-dev.4](https://github.com/dh6k/morphe-patches/compare/v1.8.0-dev.3...v1.8.0-dev.4) (2026-09-30)
 
 ### 🐛 Bug Fixes
