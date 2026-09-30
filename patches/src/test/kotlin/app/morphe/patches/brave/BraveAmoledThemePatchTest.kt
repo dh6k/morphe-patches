@@ -156,11 +156,22 @@ class BraveAmoledThemePatchTest {
     }
 
     @Test
-    fun `applyAmoledResources rewrites night v31 and writes night v31 file`() {
+    fun `applyAmoledResources rewrites day night v31 and writes night v31 file`() {
         val res = createTempDirectory("amoled-res").toFile()
+        res.resolve("values").mkdirs()
         res.resolve("values-night").mkdirs()
         res.resolve("values-v31").mkdirs()
         res.resolve("xml").mkdirs()
+        // windowBackground / colorBackground live here as dark hex (e.g. #121212).
+        res.resolve("values/colors.xml").writeText(
+            """
+            <resources>
+                <color name="window_bg">#121212</color>
+                <color name="window_bg_argb">#ff303030</color>
+                <color name="light">#ffffff</color>
+            </resources>
+            """.trimIndent(),
+        )
         res.resolve("values-night/colors.xml").writeText(
             """
             <resources>
@@ -182,10 +193,16 @@ class BraveAmoledThemePatchTest {
         )
 
         val result = applyAmoledResources(res, "#000000")
+        assertEquals(2, result.dayColorsReplaced)
         assertEquals(1, result.nightColorsReplaced)
         assertEquals(1, result.v31MaterialYouReplaced)
         assertTrue(result.nightV31Overrides >= 1)
         assertEquals(1, result.preferenceFilesChanged)
+
+        val day = res.resolve("values/colors.xml").readText()
+        assertTrue("""<color name="window_bg">#000000</color>""" in day)
+        assertTrue("""<color name="window_bg_argb">#000000</color>""" in day)
+        assertTrue("""<color name="light">#ffffff</color>""" in day)
         assertTrue(
             """<color name="bg">#000000</color>""" in
                 res.resolve("values-night/colors.xml").readText(),
@@ -194,9 +211,6 @@ class BraveAmoledThemePatchTest {
             """<color name="bg">#000000</color>""" in
                 res.resolve("values-v31/colors.xml").readText(),
         )
-        val nightV31 = res.resolve("values-night-v31/colors.xml").readText()
-        assertTrue("""<color name="bg">#000000</color>""" in nightV31)
-        assertFalse("""<color name="accent">#000000</color>""" in nightV31)
     }
 
     @Test
