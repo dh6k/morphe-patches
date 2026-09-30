@@ -2,29 +2,43 @@
  * Brave AMOLED theme (issue #21).
  *
  * Brave dark chrome uses near-black neutrals (#1e2029 / #17171f / …), not pure
- * black. Resource names in release builds are obfuscated (APKTOOL_RENAMED_* /
- * stripped), so surfaces are matched by hex luminance + chroma instead of names.
+ * black. Resource names in release builds are obfuscated, so surfaces are
+ * matched by hex luminance + chroma instead of names.
+ *
+ * Material You is the other half: brave_android_dynamic_colors_enabled is
+ * persistent="false" and backed by Chromium prefs, so XML defaultValue cannot
+ * turn it off. The bytecode prologue forces the Z-returning readers to false.
  *
  * Layers owned here:
  *   values-night/colors.xml      — dark surface hex literals → AMOLED background
- *   values-night-v31/colors.xml  — re-assert those names over Material You system_*
- *   res/xml preference switches  — default Material You dynamic colors off
+ *   values-v31/colors.xml        — system_neutral*_(700+) roles → AMOLED background
+ *   values-night-v31/colors.xml  — re-assert those names over Material You
+ *   res/xml preference switches  — default the dynamic-colors widget to OFF
+ *   bytecode getters             — force Material You readers to return false
  *
  * Not owned: web content force-dark (brave_night_mode_enabled_key), NTP theme
  * collections, Chromium ColorProvider / native .pak chrome.
  */
 package app.morphe.patches.brave
 
+import app.morphe.patcher.Fingerprint
+import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.ApkFileType
 import app.morphe.patcher.patch.AppTarget
+import app.morphe.patcher.patch.BytecodePatch
 import app.morphe.patcher.patch.Compatibility
 import app.morphe.patcher.patch.PatchException
+import app.morphe.patcher.patch.ResourcePatch
 import app.morphe.patcher.patch.booleanOption
+import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.patch.colorOption
 import app.morphe.patcher.patch.resourcePatch
+import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.reference.StringReference
 import java.io.File
 
 internal const val DYNAMIC_COLORS_PREF_KEY = "brave_android_dynamic_colors_enabled"
+internal const val DYNAMIC_COLORS_FEATURE_FLAG = "BraveAndroidDynamicColorsByDefault"
 internal const val NIGHT_COLORS_PATH = "values-night/colors.xml"
 internal const val NIGHT_V31_COLORS_PATH = "values-night-v31/colors.xml"
 internal const val V31_COLORS_PATH = "values-v31/colors.xml"
@@ -135,6 +149,24 @@ internal fun rewriteNightColorXml(xml: String, backgroundHex: String): Pair<Stri
     return out to replaced
 }
 
+/** In-place: kill Material You dark roles so they cannot win over night-v31. */
+internal fun rewriteMaterialYouDarkNeutrals(xml: String, backgroundHex: String): Pair<String, Int> {
+    val target = normalizeOpaqueHex(backgroundHex)
+        ?: throw PatchException("AMOLED background must be an opaque hex color: $backgroundHex")
+    var replaced = 0
+    val out = COLOR_ELEMENT.replace(xml) { match ->
+        val name = match.groupValues[1]
+        val raw = match.groupValues[2].trim()
+        if (MATERIAL_YOU_DARK_NEUTRAL_ROLES.matches(raw)) {
+            replaced++
+            """<color name="$name">$target</color>"""
+        } else {
+            match.value
+        }
+    }
+    return out to replaced
+}
+
 internal fun collectSurfaceColorNames(xml: String): List<String> =
     COLOR_ELEMENT.findAll(xml)
         .filter { isAmoledSurfaceColor(it.groupValues[2].trim()) }
@@ -161,19 +193,15 @@ internal fun buildNightV31Overrides(names: Collection<String>, backgroundHex: St
     }
 }
 
-/**
- * Preference XML filenames are obfuscated; locate the switch by its stable key
- * and default Material You off so night surfaces stay on our palette.
- */
 private val PREF_ATTR_DEFAULT =
     Regex("""([\s](?:[\w.]+:)?defaultValue=")[^"]*(")""")
-private val PREF_ATTR_ENABLED =
-    Regex("""([\s](?:[\w.]+:)?enabled=")[^"]*(")""")
 
+/**
+ * Default the widget OFF only. Never set android:enabled=false — that greys the
+ * switch. Backend kill lives in the bytecode getter force.
+ */
 internal fun rewriteDynamicColorsPreferenceText(text: String): String {
     if (!text.contains(DYNAMIC_COLORS_PREF_KEY)) return text
-    // Require an attribute boundary before key= so longer names like
-    // some_other_key="brave_android_..." are not rewritten.
     return text.replace(
         Regex("""([\s](?:[\w.]+:)?key="$DYNAMIC_COLORS_PREF_KEY"[^>]*?)(/>|>)"""),
     ) { match ->
@@ -182,11 +210,6 @@ internal fun rewriteDynamicColorsPreferenceText(text: String): String {
             PREF_ATTR_DEFAULT.replace(tag, "$1false$2")
         } else {
             tag + """ android:defaultValue="false""""
-        }
-        tag = if (PREF_ATTR_ENABLED.containsMatchIn(tag)) {
-            PREF_ATTR_ENABLED.replace(tag, "$1false$2")
-        } else {
-            tag + """ android:enabled="false""""
         }
         tag + match.groupValues[2]
     }
@@ -225,8 +248,14 @@ internal fun applyAmoledResources(
 
     val surfaceNames = collectSurfaceColorNames(rewritten)
     val v31File = resourceDirectory.resolve(V31_COLORS_PATH)
+    var v31Replaced = 0
     val materialYouNames = if (v31File.isFile) {
-        collectMaterialYouDarkNeutralNames(v31File.readText())
+        val v31Xml = v31File.readText()
+        val names = collectMaterialYouDarkNeutralNames(v31Xml)
+        val (next, count) = rewriteMaterialYouDarkNeutrals(v31Xml, backgroundHex)
+        v31File.writeText(next)
+        v31Replaced = count
+        names
     } else {
         emptyList()
     }
@@ -245,6 +274,7 @@ internal fun applyAmoledResources(
     }
     return AmoledRewriteResult(
         nightColorsReplaced = replaced,
+        v31MaterialYouReplaced = v31Replaced,
         nightV31Overrides = overrideNames.size,
         preferenceFilesChanged = dynamicPrefs,
     )
@@ -252,9 +282,22 @@ internal fun applyAmoledResources(
 
 internal data class AmoledRewriteResult(
     val nightColorsReplaced: Int,
+    val v31MaterialYouReplaced: Int,
     val nightV31Overrides: Int,
     val preferenceFilesChanged: Int,
 )
+
+internal fun forceFalseBooleanPrologueSmali(): String =
+    "const/4 v0, 0x0\nreturn v0"
+
+internal fun methodMentionsDynamicColors(method: com.android.tools.smali.dexlib2.iface.Method): Boolean {
+    val impl = method.implementation ?: return false
+    return impl.instructions.any { ins ->
+        val ref = (ins as? ReferenceInstruction)?.reference as? StringReference
+        ref != null &&
+            (ref.string == DYNAMIC_COLORS_PREF_KEY || ref.string == DYNAMIC_COLORS_FEATURE_FLAG)
+    }
+}
 
 private fun amoledCompatibilities() = listOf(
     Compatibility(
@@ -294,21 +337,56 @@ private fun amoledCompatibilities() = listOf(
     ),
 )
 
-/**
- * Patch-time AMOLED (issue #21 fallback): dark chrome surfaces become pure black
- * (or the chosen opaque hex). Default off. Does not add a runtime theme picker.
- */
-@Suppress("unused")
-val braveAmoledThemePatch = resourcePatch(
-    name = "Brave AMOLED theme",
-    description = "Patch-time AMOLED dark theme (issue #21): rewrites Brave dark chrome " +
-        "surfaces to pure black (or a custom opaque hex). Overrides Material You night " +
-        "colors on Android 12+ and defaults dynamic colors off. Does not change web " +
-        "content force-dark, NTP theme collections, or add a runtime color picker. " +
-        "Default off.",
+// Options live on the public patch; this dependency owns the resource rewrite.
+private val braveAmoledResourcePatch: ResourcePatch = resourcePatch(
+    name = "Brave AMOLED theme resources",
+    description = "Rewrites Brave dark chrome surfaces and Material You dark roles.",
     default = false,
 ) {
     compatibleWith(*amoledCompatibilities().toTypedArray())
+    execute {
+        val background = normalizeOpaqueHex(
+            braveAmoledThemePatch.options["backgroundColor"]?.value as? String ?: "#000000",
+        ) ?: throw PatchException("Invalid AMOLED background color")
+        val res = get("res")
+        if (!res.isDirectory) {
+            throw PatchException("Decoded res/ directory not found")
+        }
+        val disableDynamic =
+            (braveAmoledThemePatch.options["disableDynamicColors"]?.value as? Boolean) ?: true
+        val result = applyAmoledResources(res, background, disableDynamic)
+        if (result.nightColorsReplaced == 0 && result.nightV31Overrides == 0) {
+            throw PatchException(
+                "No dark surface colors matched; refusing to ship an empty AMOLED rewrite",
+            )
+        }
+        println(
+            "[AMOLED] background=$background nightReplaced=${result.nightColorsReplaced} " +
+                "v31Replaced=${result.v31MaterialYouReplaced} " +
+                "nightV31Overrides=${result.nightV31Overrides} " +
+                "prefFiles=${result.preferenceFilesChanged}",
+        )
+    }
+}
+
+/**
+ * Patch-time AMOLED (issue #21 fallback): dark chrome surfaces become pure black
+ * (or the chosen opaque hex). Also forces Material You readers off so the system
+ * palette cannot repaint chrome. Default off. No runtime theme picker.
+ */
+@Suppress("unused")
+val braveAmoledThemePatch: BytecodePatch = bytecodePatch(
+    name = "Brave AMOLED theme",
+    description = "Patch-time AMOLED dark theme (issue #21): rewrites Brave dark chrome " +
+        "surfaces to pure black (or a custom opaque hex). Forces Material You dynamic " +
+        "colors off in bytecode (the pref is non-persistent) and overrides system " +
+        "neutral night roles on Android 12+. Apply Dark theme in Brave to see it. " +
+        "Does not change web content force-dark, NTP theme collections, or add a " +
+        "runtime color picker. Default off.",
+    default = false,
+) {
+    compatibleWith(*amoledCompatibilities().toTypedArray())
+    dependsOn(braveAmoledResourcePatch)
 
     val backgroundColor by colorOption(
         key = "backgroundColor",
@@ -324,33 +402,37 @@ val braveAmoledThemePatch = resourcePatch(
         key = "disableDynamicColors",
         default = true,
         title = "Disable Material You dynamic colors",
-        description = "Force Brave's wallpaper dynamic-colors switch off (default off) " +
-            "so AMOLED surfaces are not replaced by system palette roles.",
+        description = "Force Brave's wallpaper dynamic colors off so AMOLED surfaces " +
+            "are not replaced by system palette roles. The settings switch stays " +
+            "clickable but readers always return off.",
         required = false,
     )
 
     execute {
-        val background = normalizeOpaqueHex(backgroundColor ?: "#000000")
-            ?: throw PatchException("Invalid AMOLED background color: $backgroundColor")
-        val res = get("res")
-        if (!res.isDirectory) {
-            throw PatchException("Decoded res/ directory not found")
+        if (disableDynamicColors == false) {
+            println("[AMOLED] Leaving Material You getters untouched (user opt-out)")
+            return@execute
         }
 
-        val result = applyAmoledResources(
-            resourceDirectory = res,
-            backgroundHex = background,
-            disableDynamicColors = disableDynamicColors ?: true,
-        )
-        if (result.nightColorsReplaced == 0 && result.nightV31Overrides == 0) {
+        var forced = 0
+        classDefForEach { classDef ->
+            classDef.methods.forEach { method ->
+                if (method.returnType != "Z") return@forEach
+                if (!methodMentionsDynamicColors(method)) return@forEach
+                mutableClassDefBy(classDef).methods
+                    .first {
+                        it.name == method.name && it.parameterTypes == method.parameterTypes
+                    }
+                    .addInstructions(0, forceFalseBooleanPrologueSmali())
+                forced++
+            }
+        }
+        if (forced == 0) {
             throw PatchException(
-                "No dark surface colors matched; refusing to ship an empty AMOLED rewrite",
+                "No Material You dynamic-colors boolean readers found; " +
+                    "refusing to ship AMOLED that cannot disable Material You",
             )
         }
-        println(
-            "[AMOLED] background=$background nightReplaced=${result.nightColorsReplaced} " +
-                "nightV31Overrides=${result.nightV31Overrides} " +
-                "prefFiles=${result.preferenceFilesChanged}",
-        )
+        println("[AMOLED] Forced $forced dynamic-colors reader(s) to return false")
     }
 }

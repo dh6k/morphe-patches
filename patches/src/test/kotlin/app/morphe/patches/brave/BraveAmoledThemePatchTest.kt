@@ -1,6 +1,5 @@
 package app.morphe.patches.brave
 
-import java.io.File
 import kotlin.io.path.createTempDirectory
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -64,7 +63,7 @@ class BraveAmoledThemePatchTest {
     }
 
     @Test
-    fun `material you dark neutrals are collected for night v31 override`() {
+    fun `material you dark neutrals are collected and rewritten in place`() {
         val xml = """
             <resources>
                 <color name="surface">@android:color/system_neutral1_900</color>
@@ -75,6 +74,11 @@ class BraveAmoledThemePatchTest {
         """.trimIndent()
 
         assertEquals(listOf("surface", "elevated"), collectMaterialYouDarkNeutralNames(xml))
+        val (out, replaced) = rewriteMaterialYouDarkNeutrals(xml, "#000000")
+        assertEquals(2, replaced)
+        assertTrue("""<color name="surface">#000000</color>""" in out)
+        assertTrue("""<color name="elevated">#000000</color>""" in out)
+        assertTrue("""<color name="accent">@android:color/system_accent1_200</color>""" in out)
     }
 
     @Test
@@ -85,7 +89,7 @@ class BraveAmoledThemePatchTest {
     }
 
     @Test
-    fun `dynamic colors preference defaults to false`() {
+    fun `dynamic colors preference defaults off but stays clickable`() {
         val text = """
             <PreferenceScreen>
                 <ChromeSwitchPreference
@@ -96,9 +100,8 @@ class BraveAmoledThemePatchTest {
         """.trimIndent()
         val out = rewriteDynamicColorsPreferenceText(text)
         assertTrue("""android:defaultValue="false"""" in out)
-        assertTrue("""android:enabled="false"""" in out)
+        assertFalse("android:enabled" in out, "switch must stay clickable")
         assertTrue("""android:key="other"""" in out)
-        assertFalse("""android:key="other" android:enabled""" in out)
     }
 
     @Test
@@ -115,17 +118,6 @@ class BraveAmoledThemePatchTest {
     }
 
     @Test
-    fun `existing defaultValue and enabled attributes are forced off without duplication`() {
-        val text =
-            """<ChromeSwitchPreference android:key="brave_android_dynamic_colors_enabled" android:defaultValue="true" android:enabled="true"/>"""
-        val out = rewriteDynamicColorsPreferenceText(text)
-        assertEquals(1, Regex("defaultValue=").findAll(out).count())
-        assertEquals(1, Regex("enabled=").findAll(out).count())
-        assertTrue("""android:defaultValue="false"""" in out)
-        assertTrue("""android:enabled="false"""" in out)
-    }
-
-    @Test
     fun `pref rewrite does not touch similarly named attributes`() {
         val text =
             """<ChromeSwitchPreference some_other_key="brave_android_dynamic_colors_enabled" notdefaultValue="true" notenabled="true"/>"""
@@ -134,7 +126,14 @@ class BraveAmoledThemePatchTest {
     }
 
     @Test
-    fun `applyAmoledResources rewrites night and writes night v31`() {
+    fun `boolean prologue is const false return`() {
+        val smali = forceFalseBooleanPrologueSmali()
+        assertTrue("const/4 v0, 0x0" in smali)
+        assertTrue("return v0" in smali)
+    }
+
+    @Test
+    fun `applyAmoledResources rewrites night v31 and writes night v31 file`() {
         val res = createTempDirectory("amoled-res").toFile()
         res.resolve("values-night").mkdirs()
         res.resolve("values-v31").mkdirs()
@@ -161,11 +160,16 @@ class BraveAmoledThemePatchTest {
 
         val result = applyAmoledResources(res, "#000000")
         assertEquals(1, result.nightColorsReplaced)
+        assertEquals(1, result.v31MaterialYouReplaced)
         assertTrue(result.nightV31Overrides >= 1)
         assertEquals(1, result.preferenceFilesChanged)
         assertTrue(
             """<color name="bg">#000000</color>""" in
                 res.resolve("values-night/colors.xml").readText(),
+        )
+        assertTrue(
+            """<color name="bg">#000000</color>""" in
+                res.resolve("values-v31/colors.xml").readText(),
         )
         val nightV31 = res.resolve("values-night-v31/colors.xml").readText()
         assertTrue("""<color name="bg">#000000</color>""" in nightV31)
