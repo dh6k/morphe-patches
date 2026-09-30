@@ -133,14 +133,54 @@ internal fun isAmoledSurfaceColor(value: String): Boolean {
     return rgb.maxChannel <= 80 || normalized.lowercase() in KNOWN_DARK_SURFACE_HEXES
 }
 
-internal fun rewriteNightColorXml(xml: String, backgroundHex: String): Pair<String, Int> {
-    val target = normalizeOpaqueHex(backgroundHex)
-        ?: throw PatchException("AMOLED background must be an opaque hex color: $backgroundHex")
+/** Light low-chroma fills are text / icon ink (primary, secondary, muted). */
+internal fun isTextColor(value: String): Boolean {
+    val normalized = normalizeOpaqueHex(value) ?: return false
+    if (isAmoledSurfaceColor(normalized)) return false
+    val rgb = parseHexColor(normalized) ?: return false
+    return rgb.chroma <= 40 && rgb.maxChannel >= 140
+}
+
+/**
+ * Preserve Brave's ink hierarchy when tinting text: primary stays full, secondary
+ * and muted are scaled down the way #f0f2ff → #c2c4cf → #84889c already does.
+ */
+internal fun textTierFactor(rgb: RgbColor): Float = when {
+    rgb.maxChannel >= 220 -> 1.0f
+    rgb.maxChannel >= 180 -> 0.81f
+    else -> 0.62f
+}
+
+internal fun scaleHexByFactor(hex: String, factor: Float): String {
+    val rgb = parseHexColor(hex) ?: return hex
+    fun ch(v: Int) = (v * factor).toInt().coerceIn(0, 255)
+    return "#%02x%02x%02x".format(ch(rgb.r), ch(rgb.g), ch(rgb.b))
+}
+
+/**
+ * Blue-violet chromatic fills are the Brave accent family (#737ade / #a0a5eb /
+ * #434fcf / …). Status coral/orange/red is intentionally excluded.
+ */
+internal fun isAccentColor(value: String): Boolean {
+    val normalized = normalizeOpaqueHex(value) ?: return false
+    val rgb = parseHexColor(normalized) ?: return false
+    if (rgb.chroma < 50 || rgb.maxChannel < 100) return false
+    // Blue-purple: blue dominant over red, green sitting between them.
+    return rgb.b >= rgb.g && rgb.g >= rgb.r - 30
+}
+
+private fun rewriteHexGroup(
+    xml: String,
+    targetHex: String,
+    matcher: (String) -> Boolean,
+): Pair<String, Int> {
+    val target = normalizeOpaqueHex(targetHex)
+        ?: throw PatchException("Color must be opaque hex: $targetHex")
     var replaced = 0
     val out = COLOR_ELEMENT.replace(xml) { match ->
         val name = match.groupValues[1]
         val raw = match.groupValues[2].trim()
-        if (isAmoledSurfaceColor(raw) && normalizeOpaqueHex(raw) != target) {
+        if (matcher(raw) && normalizeOpaqueHex(raw) != target) {
             replaced++
             """<color name="$name">$target</color>"""
         } else {
@@ -149,6 +189,32 @@ internal fun rewriteNightColorXml(xml: String, backgroundHex: String): Pair<Stri
     }
     return out to replaced
 }
+
+internal fun rewriteNightColorXml(xml: String, backgroundHex: String): Pair<String, Int> =
+    rewriteHexGroup(xml, backgroundHex) { isAmoledSurfaceColor(it) }
+
+internal fun rewriteTextColorXml(xml: String, textHex: String): Pair<String, Int> {
+    val base = normalizeOpaqueHex(textHex)
+        ?: throw PatchException("Text color must be an opaque hex: $textHex")
+    var replaced = 0
+    val out = COLOR_ELEMENT.replace(xml) { match ->
+        val name = match.groupValues[1]
+        val raw = match.groupValues[2].trim()
+        val rgb = parseHexColor(normalizeOpaqueHex(raw) ?: "")?.takeIf { isTextColor(raw) }
+            ?: return@replace match.value
+        val target = scaleHexByFactor(base, textTierFactor(rgb))
+        if (normalizeOpaqueHex(raw) == target) {
+            match.value
+        } else {
+            replaced++
+            """<color name="$name">$target</color>"""
+        }
+    }
+    return out to replaced
+}
+
+internal fun rewriteAccentColorXml(xml: String, accentHex: String): Pair<String, Int> =
+    rewriteHexGroup(xml, accentHex) { isAccentColor(it) }
 
 /** In-place: kill Material You dark roles so they cannot win over night-v31. */
 internal fun rewriteMaterialYouDarkNeutrals(xml: String, backgroundHex: String): Pair<String, Int> {
@@ -237,27 +303,56 @@ internal fun disableDynamicColorsPreference(resourceDirectory: File): Int {
 internal fun applyAmoledResources(
     resourceDirectory: File,
     backgroundHex: String,
+    textColorHex: String? = null,
+    accentColorHex: String? = null,
     disableDynamicColors: Boolean = true,
 ): AmoledRewriteResult {
     // Chrome windowBackground / colorBackground live as dark hexes in
     // values/colors.xml (#121212 / #ff303030 / …), not only in values-night.
     val dayFile = resourceDirectory.resolve(DAY_COLORS_PATH)
     var dayReplaced = 0
+    var dayTextReplaced = 0
+    var dayAccentReplaced = 0
     if (dayFile.isFile) {
-        val (next, count) = rewriteNightColorXml(dayFile.readText(), backgroundHex)
-        dayFile.writeText(next)
-        dayReplaced = count
+        var xml = dayFile.readText()
+        val (afterBg, bgCount) = rewriteNightColorXml(xml, backgroundHex)
+        xml = afterBg
+        dayReplaced = bgCount
+        if (textColorHex != null) {
+            val (afterText, count) = rewriteTextColorXml(xml, textColorHex)
+            xml = afterText
+            dayTextReplaced = count
+        }
+        if (accentColorHex != null) {
+            val (afterAccent, count) = rewriteAccentColorXml(xml, accentColorHex)
+            xml = afterAccent
+            dayAccentReplaced = count
+        }
+        dayFile.writeText(xml)
     }
 
     val nightFile = resourceDirectory.resolve(NIGHT_COLORS_PATH)
     if (!nightFile.isFile) {
         throw PatchException("Brave night color resources not found: $NIGHT_COLORS_PATH")
     }
-    val nightXml = nightFile.readText()
-    val (rewritten, replaced) = rewriteNightColorXml(nightXml, backgroundHex)
-    nightFile.writeText(rewritten)
+    var nightXml = nightFile.readText()
+    val (afterNightBg, nightReplaced) = rewriteNightColorXml(nightXml, backgroundHex)
+    nightXml = afterNightBg
+    var nightTextReplaced = 0
+    var nightAccentReplaced = 0
+    if (textColorHex != null) {
+        val (afterText, count) = rewriteTextColorXml(nightXml, textColorHex)
+        nightXml = afterText
+        nightTextReplaced = count
+    }
+    if (accentColorHex != null) {
+        val (afterAccent, count) = rewriteAccentColorXml(nightXml, accentColorHex)
+        nightXml = afterAccent
+        nightAccentReplaced = count
+    }
+    nightFile.writeText(nightXml)
 
-    val surfaceNames = collectSurfaceColorNames(rewritten) +
+    val surfaceNames = collectSurfaceColorNames(nightXml) +
         (if (dayFile.isFile) collectSurfaceColorNames(dayFile.readText()) else emptyList())
     val v31File = resourceDirectory.resolve(V31_COLORS_PATH)
     var v31Replaced = 0
@@ -286,9 +381,11 @@ internal fun applyAmoledResources(
     }
     return AmoledRewriteResult(
         dayColorsReplaced = dayReplaced,
-        nightColorsReplaced = replaced,
+        nightColorsReplaced = nightReplaced,
         v31MaterialYouReplaced = v31Replaced,
         nightV31Overrides = overrideNames.size,
+        textColorsReplaced = dayTextReplaced + nightTextReplaced,
+        accentColorsReplaced = dayAccentReplaced + nightAccentReplaced,
         preferenceFilesChanged = dynamicPrefs,
     )
 }
@@ -298,6 +395,8 @@ internal data class AmoledRewriteResult(
     val nightColorsReplaced: Int,
     val v31MaterialYouReplaced: Int,
     val nightV31Overrides: Int,
+    val textColorsReplaced: Int = 0,
+    val accentColorsReplaced: Int = 0,
     val preferenceFilesChanged: Int,
 )
 
@@ -401,23 +500,36 @@ private val braveAmoledResourcePatch: ResourcePatch = resourcePatch(
         val background = normalizeOpaqueHex(
             braveAmoledThemePatch.options["backgroundColor"]?.value as? String ?: "#000000",
         ) ?: throw PatchException("Invalid AMOLED background color")
+        val text = (braveAmoledThemePatch.options["textColor"]?.value as? String)
+            ?.let { normalizeOpaqueHex(it) }
+        val accent = (braveAmoledThemePatch.options["accentColor"]?.value as? String)
+            ?.let { normalizeOpaqueHex(it) }
         val res = get("res")
         if (!res.isDirectory) {
             throw PatchException("Decoded res/ directory not found")
         }
         val disableDynamic =
             (braveAmoledThemePatch.options["disableDynamicColors"]?.value as? Boolean) ?: true
-        val result = applyAmoledResources(res, background, disableDynamic)
+        val result = applyAmoledResources(
+            resourceDirectory = res,
+            backgroundHex = background,
+            textColorHex = text,
+            accentColorHex = accent,
+            disableDynamicColors = disableDynamic,
+        )
         if (result.dayColorsReplaced + result.nightColorsReplaced + result.nightV31Overrides == 0) {
             throw PatchException(
                 "No dark surface colors matched; refusing to ship an empty AMOLED rewrite",
             )
         }
         println(
-            "[AMOLED] background=$background dayReplaced=${result.dayColorsReplaced} " +
+            "[AMOLED] background=$background text=${text ?: "-"} accent=${accent ?: "-"} " +
+                "dayReplaced=${result.dayColorsReplaced} " +
                 "nightReplaced=${result.nightColorsReplaced} " +
                 "v31Replaced=${result.v31MaterialYouReplaced} " +
                 "nightV31Overrides=${result.nightV31Overrides} " +
+                "textReplaced=${result.textColorsReplaced} " +
+                "accentReplaced=${result.accentColorsReplaced} " +
                 "prefFiles=${result.preferenceFilesChanged}",
         )
     }
@@ -432,7 +544,8 @@ private val braveAmoledResourcePatch: ResourcePatch = resourcePatch(
 val braveAmoledThemePatch: BytecodePatch = bytecodePatch(
     name = "Brave AMOLED theme",
     description = "Patch-time AMOLED dark theme (issue #21): rewrites Brave dark chrome " +
-        "surfaces to pure black (or a custom opaque hex). Forces Material You dynamic " +
+        "surfaces to pure black (or a custom opaque hex). Optional text and accent " +
+        "colors (defaults keep Brave's #f0f2ff / #737ade). Forces Material You dynamic " +
         "colors off in bytecode (the pref is non-persistent) and overrides system " +
         "neutral night roles on Android 12+. Apply Dark theme in Brave to see it. " +
         "Does not change web content force-dark, NTP theme collections, or add a " +
@@ -448,6 +561,26 @@ val braveAmoledThemePatch: BytecodePatch = bytecodePatch(
         title = "AMOLED background",
         description = "Opaque hex used for dark chrome surfaces. " +
             "Use #000000 for pure black OLED. Example elevated near-black: #0a0a0a.",
+        required = true,
+        validator = { value -> value == null || normalizeOpaqueHex(value) != null },
+    )
+
+    val textColor by colorOption(
+        key = "textColor",
+        default = "#f0f2ff",
+        title = "Text color",
+        description = "Opaque hex for text and icon ink (primary/secondary/muted). " +
+            "Brave dark default: #f0f2ff.",
+        required = true,
+        validator = { value -> value == null || normalizeOpaqueHex(value) != null },
+    )
+
+    val accentColor by colorOption(
+        key = "accentColor",
+        default = "#737ade",
+        title = "Accent color",
+        description = "Opaque hex for Brave accent (toggles, links, highlights). " +
+            "Default: #737ade. Status coral/orange is left alone.",
         required = true,
         validator = { value -> value == null || normalizeOpaqueHex(value) != null },
     )

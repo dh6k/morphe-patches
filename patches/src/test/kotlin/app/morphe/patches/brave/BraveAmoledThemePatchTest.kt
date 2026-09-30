@@ -11,9 +11,70 @@ class BraveAmoledThemePatchTest {
     @Test
     fun `option keys are bundle specific`() {
         assertEquals(
-            setOf("backgroundColor", "disableDynamicColors"),
+            setOf("backgroundColor", "textColor", "accentColor", "disableDynamicColors"),
             braveAmoledThemePatch.options.keys,
         )
+    }
+
+    @Test
+    fun `text and accent matchers stay out of each other and of surfaces`() {
+        // Brave dark ink palette
+        assertTrue(isTextColor("#f0f2ff"))
+        assertTrue(isTextColor("#c2c4cf"))
+        assertTrue(isTextColor("#84889c"))
+        assertTrue(isTextColor("#ffffff"))
+        // Accent family
+        assertTrue(isAccentColor("#737ade"))
+        assertTrue(isAccentColor("#a0a5eb"))
+        assertTrue(isAccentColor("#bcc6f3"))
+        assertTrue(isAccentColor("#434fcf"))
+        // Cross-talk must stay false
+        assertFalse(isTextColor("#737ade"), "accent is not text")
+        assertFalse(isAccentColor("#f0f2ff"), "text is not accent")
+        assertFalse(isTextColor("#121212"), "surface is not text")
+        assertFalse(isAccentColor("#121212"), "surface is not accent")
+        assertFalse(isAmoledSurfaceColor("#f0f2ff"), "text is not surface")
+        // Status colors stay
+        assertFalse(isAccentColor("#ff7654"), "error coral is not accent")
+        assertFalse(isAccentColor("#ff7f72"), "warning coral is not accent")
+    }
+
+    @Test
+    fun `rewrite text keeps ink hierarchy and accent stays independent`() {
+        val xml = """
+            <resources>
+                <color name="title">#f0f2ff</color>
+                <color name="body">#c2c4cf</color>
+                <color name="muted">#84889c</color>
+                <color name="link">#737ade</color>
+                <color name="chip">#a0a5eb</color>
+                <color name="bg">#121212</color>
+                <color name="err">#ff7654</color>
+            </resources>
+        """.trimIndent()
+        val (textOut, textCount) = rewriteTextColorXml(xml, "#ffffff")
+        assertEquals(3, textCount)
+        // Primary full, secondary ~81%, muted ~62% — not one flat color.
+        assertTrue("""<color name="title">#ffffff</color>""" in textOut)
+        assertTrue("""<color name="body">#cecece</color>""" in textOut)
+        assertTrue("""<color name="muted">#9e9e9e</color>""" in textOut)
+        assertTrue("""<color name="link">#737ade</color>""" in textOut)
+        assertTrue("""<color name="err">#ff7654</color>""" in textOut)
+
+        val (accentOut, accentCount) = rewriteAccentColorXml(xml, "#ff0000")
+        assertEquals(2, accentCount)
+        assertTrue("""<color name="link">#ff0000</color>""" in accentOut)
+        assertTrue("""<color name="chip">#ff0000</color>""" in accentOut)
+        assertTrue("""<color name="title">#f0f2ff</color>""" in accentOut)
+        assertTrue("""<color name="err">#ff7654</color>""" in accentOut)
+    }
+
+    @Test
+    fun `text tier factors preserve relative lightness`() {
+        assertEquals(1.0f, textTierFactor(RgbColor(255, 255, 255, 255)))
+        assertEquals(0.81f, textTierFactor(RgbColor(207, 207, 207, 255)))
+        assertEquals(0.62f, textTierFactor(RgbColor(156, 156, 156, 255)))
+        assertEquals("#c6c6c6", scaleHexByFactor("#ffffff", 0.78f))
     }
 
     @Test
