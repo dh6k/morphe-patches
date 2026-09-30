@@ -1,3 +1,9 @@
+## [1.8.0-dev.4](https://github.com/dh6k/morphe-patches/compare/v1.8.0-dev.3...v1.8.0-dev.4) (2026-09-30)
+
+### 🐛 Bug Fixes
+
+* **brave:** only force the dedicated AMOLED dynamic-colors getter ([535f6f2](https://github.com/dh6k/morphe-patches/commit/535f6f281c1de3464d1971f437c4abc2af1150a4))
+
 ## [1.8.0-dev.3](https://github.com/dh6k/morphe-patches/compare/v1.8.0-dev.2...v1.8.0-dev.3) (2026-09-30)
 
 ### 🐛 Bug Fixes
