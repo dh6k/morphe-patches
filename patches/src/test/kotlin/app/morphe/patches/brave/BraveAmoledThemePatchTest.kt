@@ -133,6 +133,29 @@ class BraveAmoledThemePatchTest {
     }
 
     @Test
+    fun `dedicated getter matcher rejects AppearancePreferences style methods`() {
+        // AppearancePreferences.J1/k4 bind every Appearance key in one boolean
+        // method — force-false on those greys out / kills the whole menu.
+        val appearanceBinder = listOf(
+            "brave_android_dynamic_colors_enabled",
+            "brave_bottom_toolbar_enabled_key",
+            "brave_night_mode_enabled_key",
+            "ads_switch",
+            "show_brave_rewards_icon",
+            "ui_theme",
+        )
+        assertTrue(appearanceBinder.any { it == DYNAMIC_COLORS_PREF_KEY })
+        assertTrue(
+            appearanceBinder.any { it.contains("brave_night_mode") },
+            "fixture must look like the real Appearance binder",
+        )
+        // Documented rule: any Appearance hint blocks the force-false path.
+        assertTrue(
+            APPEARANCE_PREF_KEY_HINTS.any { hint -> appearanceBinder.any { it.contains(hint) } },
+        )
+    }
+
+    @Test
     fun `applyAmoledResources rewrites night v31 and writes night v31 file`() {
         val res = createTempDirectory("amoled-res").toFile()
         res.resolve("values-night").mkdirs()
