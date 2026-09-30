@@ -39,6 +39,7 @@ import java.io.File
 
 internal const val DYNAMIC_COLORS_PREF_KEY = "brave_android_dynamic_colors_enabled"
 internal const val DYNAMIC_COLORS_FEATURE_FLAG = "BraveAndroidDynamicColorsByDefault"
+internal const val DAY_COLORS_PATH = "values/colors.xml"
 internal const val NIGHT_COLORS_PATH = "values-night/colors.xml"
 internal const val NIGHT_V31_COLORS_PATH = "values-night-v31/colors.xml"
 internal const val V31_COLORS_PATH = "values-v31/colors.xml"
@@ -238,6 +239,16 @@ internal fun applyAmoledResources(
     backgroundHex: String,
     disableDynamicColors: Boolean = true,
 ): AmoledRewriteResult {
+    // Chrome windowBackground / colorBackground live as dark hexes in
+    // values/colors.xml (#121212 / #ff303030 / …), not only in values-night.
+    val dayFile = resourceDirectory.resolve(DAY_COLORS_PATH)
+    var dayReplaced = 0
+    if (dayFile.isFile) {
+        val (next, count) = rewriteNightColorXml(dayFile.readText(), backgroundHex)
+        dayFile.writeText(next)
+        dayReplaced = count
+    }
+
     val nightFile = resourceDirectory.resolve(NIGHT_COLORS_PATH)
     if (!nightFile.isFile) {
         throw PatchException("Brave night color resources not found: $NIGHT_COLORS_PATH")
@@ -246,7 +257,8 @@ internal fun applyAmoledResources(
     val (rewritten, replaced) = rewriteNightColorXml(nightXml, backgroundHex)
     nightFile.writeText(rewritten)
 
-    val surfaceNames = collectSurfaceColorNames(rewritten)
+    val surfaceNames = collectSurfaceColorNames(rewritten) +
+        (if (dayFile.isFile) collectSurfaceColorNames(dayFile.readText()) else emptyList())
     val v31File = resourceDirectory.resolve(V31_COLORS_PATH)
     var v31Replaced = 0
     val materialYouNames = if (v31File.isFile) {
@@ -273,6 +285,7 @@ internal fun applyAmoledResources(
         0
     }
     return AmoledRewriteResult(
+        dayColorsReplaced = dayReplaced,
         nightColorsReplaced = replaced,
         v31MaterialYouReplaced = v31Replaced,
         nightV31Overrides = overrideNames.size,
@@ -281,6 +294,7 @@ internal fun applyAmoledResources(
 }
 
 internal data class AmoledRewriteResult(
+    val dayColorsReplaced: Int,
     val nightColorsReplaced: Int,
     val v31MaterialYouReplaced: Int,
     val nightV31Overrides: Int,
@@ -394,13 +408,14 @@ private val braveAmoledResourcePatch: ResourcePatch = resourcePatch(
         val disableDynamic =
             (braveAmoledThemePatch.options["disableDynamicColors"]?.value as? Boolean) ?: true
         val result = applyAmoledResources(res, background, disableDynamic)
-        if (result.nightColorsReplaced == 0 && result.nightV31Overrides == 0) {
+        if (result.dayColorsReplaced + result.nightColorsReplaced + result.nightV31Overrides == 0) {
             throw PatchException(
                 "No dark surface colors matched; refusing to ship an empty AMOLED rewrite",
             )
         }
         println(
-            "[AMOLED] background=$background nightReplaced=${result.nightColorsReplaced} " +
+            "[AMOLED] background=$background dayReplaced=${result.dayColorsReplaced} " +
+                "nightReplaced=${result.nightColorsReplaced} " +
                 "v31Replaced=${result.v31MaterialYouReplaced} " +
                 "nightV31Overrides=${result.nightV31Overrides} " +
                 "prefFiles=${result.preferenceFilesChanged}",
