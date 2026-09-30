@@ -446,6 +446,48 @@ class HeliumProcessResolversTest {
         ),
     )
 
+    @Test
+    fun `extension scope resolves command line param and helper instance register`() {
+        val method = method(
+            name = "createAndStart",
+            params = listOf("J", "[Ljava/lang/String;", "Z"),
+            isStatic = true,
+            instructions = listOf(
+                StructuralInstruction.StringLiteral(0, "ChildProcessLauncher.start"),
+                StructuralInstruction.FieldWrite(1, 9, 5, "I", "Lorg/chromium/content/browser/ChildProcessLauncherHelperImpl;"),
+                StructuralInstruction.Move(2, 3, 20),
+                StructuralInstruction.Const(3, 20, 3),
+                StructuralInstruction.Invoke(5, "Lx;", "a", "Ly;", listOf("I"), listOf(3)),
+                StructuralInstruction.MoveResultObject(6, 4),
+                StructuralInstruction.Invoke(10, "Lorg/chromium/base/TraceEvent;", "end", "V", emptyList(), emptyList(), isStatic = true),
+            ),
+        )
+        val scope = resolveExtensionScope(method, "Lorg/chromium/content/browser/ChildProcessLauncherHelperImpl;", beforeIndex = 5)
+        assertEquals(1, scope.commandLineParameterIndex)
+        assertEquals(2, scope.commandLineParameterWordOffset)
+        assertEquals(5, scope.helperInstanceRegister)
+    }
+
+    @Test
+    fun `extension scope fails closed without String array command line`() {
+        val method = method(params = listOf("J", "Z"), isStatic = true)
+        assertFailsWith<HeliumResolutionException> {
+            resolveExtensionScope(method, "Lhelper;", beforeIndex = 1)
+        }
+    }
+
+    @Test
+    fun `extension scope fails closed without helper iput`() {
+        val method = method(
+            params = listOf("[Ljava/lang/String;"),
+            isStatic = true,
+            instructions = listOf(StructuralInstruction.Other(0, "NOP")),
+        )
+        assertFailsWith<HeliumResolutionException> {
+            resolveExtensionScope(method, "Lhelper;", beforeIndex = 1)
+        }
+    }
+
     private fun bindingMethod(owner: String, name: String, register: Int): StructuralMethod {
         // Include small-enum constant evidence so hardened resolver accepts synthetic fixtures
         val evidenceReg = 20

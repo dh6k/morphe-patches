@@ -114,6 +114,7 @@ sealed class StructuralInstruction {
         val source: Int,
         val objectRegister: Int?,
         val type: String,
+        val definingClass: String = "",
     ) : StructuralInstruction()
 
     data class Move(override val index: Int, val dest: Int, val source: Int) : StructuralInstruction()
@@ -236,6 +237,54 @@ fun resolveActivityHook(models: List<ActivityClassModel>): ActivityResolution {
 }
 
 class HeliumResolutionException(message: String) : IllegalStateException(message)
+
+data class ExtensionScopeResolution(
+    val commandLineParameterIndex: Int,
+    val commandLineParameterWordOffset: Int,
+    val helperInstanceRegister: Int,
+    val diagnostics: String,
+)
+
+/**
+ * Locates the `String[]` command line parameter and the helper instance register
+ * (via iput sites on [helperClass]) so boosts can be scoped to `--extension-process`.
+ */
+fun resolveExtensionScope(
+    method: StructuralMethod,
+    helperClass: String,
+    beforeIndex: Int,
+): ExtensionScopeResolution {
+    val commandLineParams = method.params.withIndex().filter { (_, type) ->
+        type == "[Ljava/lang/String;" || (type.startsWith("[") && type.contains("String"))
+    }
+    if (commandLineParams.size != 1) {
+        throw HeliumResolutionException(
+            "extension scope: expected 1 String[] command line param, actual ${commandLineParams.size} | params=${method.params}",
+        )
+    }
+    val commandLineIndex = commandLineParams.single().index
+    val commandLineOffset = method.parameterWordOffset(commandLineIndex)
+    val writes = method.instructions
+        .filterIsInstance<StructuralInstruction.FieldWrite>()
+        .filter { it.index < beforeIndex && it.definingClass == helperClass && it.objectRegister != null }
+    if (writes.isEmpty()) {
+        throw HeliumResolutionException(
+            "extension scope: no iput to $helperClass before index $beforeIndex | method=${method.descriptor}",
+        )
+    }
+    val instanceRegisters = writes.map { it.objectRegister!! }.distinct()
+    if (instanceRegisters.size != 1) {
+        throw HeliumResolutionException(
+            "extension scope: ambiguous helper instance registers $instanceRegisters | writes=${writes.size}",
+        )
+    }
+    return ExtensionScopeResolution(
+        commandLineParameterIndex = commandLineIndex,
+        commandLineParameterWordOffset = commandLineOffset,
+        helperInstanceRegister = instanceRegisters.single(),
+        diagnostics = "cmd param=$commandLineIndex p$commandLineOffset inst=v${instanceRegisters.single()} iputs=${writes.size}",
+    )
+}
 
 private fun width(type: String) = if (type == "J" || type == "D") 2 else 1
 fun StructuralMethod.parameterWordOffset(parameterIndex: Int): Int {

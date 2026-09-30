@@ -1,6 +1,7 @@
 package app.morphe.patches.helium
 
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
+import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.patch.ApkFileType
 import app.morphe.patcher.patch.AppTarget
 import app.morphe.patcher.patch.Compatibility
@@ -207,12 +208,37 @@ private const val HELIUM_PACKAGE = "io.github.jqssun.helium"
 internal const val HELIUM_CHILD_PROCESS_CLASS =
     "Lorg/chromium/content/browser/ChildProcessLauncherHelperImpl;"
 internal const val HELIUM_SET_PRIORITY_METHOD: String = HELIUM_PRIORITY_METHOD
-// Chromium ChildBindingState values observed across validated Titanium 149-152 APKs.
+internal const val HELIUM_BOOST_CLASS = "Lapp/morphe/extension/helium/HeliumProcessBoost;"
+// Chromium ChildBindingState.STRONG / ChildProcessImportance.IMPORTANT from commit ff12f1c.
 internal const val HELIUM_STRONG_BINDING_VALUE = 0x4
 internal const val HELIUM_IMPORTANT_PRIORITY_VALUE = 0x3
 internal const val HELIUM_SPAWN_START_ANCHOR = "ChildProcessLauncher.start"
-internal fun heliumStrongBindingInstruction(register: Int) =
-    "const/16 v$register, $HELIUM_STRONG_BINDING_VALUE"
+
+// High parameter registers (v29/p12 on validated APKs) cannot use 35c invoke;
+// every call goes through invoke-static/range (3rc, 16-bit registers).
+internal fun heliumSetSpawnCommandLineSmali(commandLineWordOffset: Int): String =
+    "invoke-static/range {p$commandLineWordOffset .. p$commandLineWordOffset}, " +
+        "$HELIUM_BOOST_CLASS->setSpawnCommandLine([Ljava/lang/String;)V"
+
+internal fun heliumNoteHelperSmali(instanceRegister: Int): String =
+    "invoke-static/range {v$instanceRegister .. v$instanceRegister}, " +
+        "$HELIUM_BOOST_CLASS->noteHelper(Ljava/lang/Object;)V"
+
+internal fun heliumScopedBindingSmali(bindingRegister: Int): String =
+    """
+        invoke-static/range {v$bindingRegister .. v$bindingRegister}, $HELIUM_BOOST_CLASS->scopedBinding(I)I
+        move-result v$bindingRegister
+    """.trimIndent()
+
+internal fun heliumScopedImportanceSmali(importanceWordOffset: Int, scratchRegister: Int): String =
+    """
+        invoke-static/range {p0 .. p0}, $HELIUM_BOOST_CLASS->isExtension(Ljava/lang/Object;)Z
+        move-result v$scratchRegister
+        if-eqz v$scratchRegister, :helium_skip_importance
+        const/16 p$importanceWordOffset, $HELIUM_IMPORTANT_PRIORITY_VALUE
+        :helium_skip_importance
+        nop
+    """.trimIndent()
 
 /** Version-unpinned experimental Titanium patch using structural fingerprints; ambiguity fails safely. */
 internal val heliumChildProcessCompatibility = Compatibility(
@@ -230,7 +256,7 @@ internal val heliumChildProcessCompatibility = Compatibility(
 @Suppress("unused")
 val keepHeliumChildProcessesAlivePatch: BytecodePatch = bytecodePatch(
     name = "Keep Titanium Extensions Child Processes Alive",
-    description = "Experimental version-unpinned structural/data-flow patch: starts one main-process foreground service with persistent low-priority notification and forces child STRONG binding plus IMPORTANT/STRONG priority updates. Tolerates routine signature, register, and helper-name changes; ambiguous targets fail closed. May increase RAM, battery, and process pressure; mitigates LMK kills only. To hide the notification, use Android Settings > Apps > Titanium > Notifications (the keep-alive service stays active either way).",
+    description = "Experimental version-unpinned structural/data-flow patch: starts one main-process foreground service with persistent low-priority notification and forces STRONG binding plus IMPORTANT priority only for extension child processes (detected via --extension-process, matching upstream Titanium commit ff12f1c). Renderer and GPU children keep stock priority, so RAM and battery pressure stay closer to baseline. Tolerates routine signature, register, and helper-name changes; ambiguous targets fail closed. Mitigates LMK kills only. To hide the notification, use Android Settings > Apps > Titanium > Notifications (the keep-alive service stays active either way).",
     default = false,
 ) {
     dependsOn(heliumManifestPatch)
@@ -265,12 +291,14 @@ val keepHeliumChildProcessesAlivePatch: BytecodePatch = bytecodePatch(
             val createMethods = helperClass.methods.filter { it.implementation != null }
             val resolvedCreate = resolveCreateAndStart(createMethods.map { it.toStructuralMethod() })
             val resolvedBinding = resolveBindingTarget(resolvedCreate)
-            // Register safety: retain dev.3 validated insertion (const/16). Full liveness would require CFG;
-            // only guard unencodable register to avoid false rejection on valid APK.
+            // move-result is 11x (8-bit register); invoke-static/range is 3rc (16-bit).
             if (resolvedBinding.register < 0 || resolvedBinding.register >= 256) {
-                throw HeliumResolutionException("binding register v${resolvedBinding.register} not encodable as const/16")
+                throw HeliumResolutionException("binding register v${resolvedBinding.register} not encodable as move-result")
             }
             val targetMethod = createMethods.single { it.toStructuralMethod().descriptor == resolvedCreate.descriptor }
+            // Extension-only scoping (upstream commit ff12f1c): boosts apply only to
+            // children launched with --extension-process, not renderer/GPU.
+            val scope = resolveExtensionScope(resolvedCreate, HELIUM_CHILD_PROCESS_CLASS, resolvedBinding.index)
         val activityClasses = mutableListOf<ActivityClassModel>()
         val classDefsByType = mutableMapOf<String, ClassDef>()
         classDefForEach { classDef ->
@@ -307,13 +335,30 @@ val keepHeliumChildProcessesAlivePatch: BytecodePatch = bytecodePatch(
             activityModel.superIndex + 1,
             "invoke-static {p0}, Lapp/morphe/extension/helium/HeliumKeepAliveStarter;->start(Landroid/content/Context;)V",
         )
-        // ponytail: unconditional floor — if-lt needs two registers and we own
-        // no spare here; one const write is cheaper than a spare-register hunt.
+        // Insert at the resolved binding index first — addInstructions(0, …) would
+        // shift every later index and land the boost one instruction too early.
         targetMethod.addInstructions(
             resolvedBinding.index,
-            heliumStrongBindingInstruction(resolvedBinding.register),
+            "${heliumNoteHelperSmali(scope.helperInstanceRegister)}\n${heliumScopedBindingSmali(resolvedBinding.register)}",
         )
-        priorityMethod.addInstructions(0, "const/16 p${priorityModel.parameterWordOffset}, ${HELIUM_IMPORTANT_PRIORITY_VALUE}")
+        targetMethod.addInstructions(0, heliumSetSpawnCommandLineSmali(scope.commandLineParameterWordOffset))
+        // Scratch must be a true local. Parameters occupy the last paramWords registers,
+        // so v0 aliases p0 (this) exactly when registerCount == paramWords.
+        val priorityStructure = priorityMethod.toStructuralMethod()
+        val lastParam = priorityStructure.params.lastIndex
+        val lastIsWide = priorityStructure.params[lastParam] == "J" || priorityStructure.params[lastParam] == "D"
+        val priorityParamWords = priorityStructure.parameterWordOffset(lastParam) + (if (lastIsWide) 2 else 1)
+        val priorityRegisterCount = priorityMethod.implementation?.registerCount
+            ?: throw HeliumResolutionException("setPriority: missing implementation")
+        if (priorityRegisterCount <= priorityParamWords) {
+            throw HeliumResolutionException(
+                "setPriority: no spare local register | registerCount=$priorityRegisterCount paramWords=$priorityParamWords",
+            )
+        }
+        priorityMethod.addInstructionsWithLabels(
+            0,
+            heliumScopedImportanceSmali(priorityModel.parameterWordOffset, scratchRegister = 0),
+        )
         } catch (e: HeliumResolutionException) {
             LauncherActivityRegistry.clear(packageMetadata)
             throw e
