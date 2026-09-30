@@ -1,3 +1,9 @@
+## [1.8.0-dev.3](https://github.com/dh6k/morphe-patches/compare/v1.8.0-dev.2...v1.8.0-dev.3) (2026-09-30)
+
+### 🐛 Bug Fixes
+
+* **brave:** actually kill Material You in AMOLED and stop greying the switch ([2e38c35](https://github.com/dh6k/morphe-patches/commit/2e38c35636e31867c33211fdc103c076f885dec7))
+
 ## [1.8.0-dev.2](https://github.com/dh6k/morphe-patches/compare/v1.8.0-dev.1...v1.8.0-dev.2) (2026-09-30)
 
 ### ✨ New Features
