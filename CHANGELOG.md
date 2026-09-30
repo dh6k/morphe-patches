@@ -1,3 +1,9 @@
+## [1.8.0-dev.2](https://github.com/dh6k/morphe-patches/compare/v1.8.0-dev.1...v1.8.0-dev.2) (2026-09-30)
+
+### ✨ New Features
+
+* **brave:** add patch-time AMOLED theme (issue [#21](https://github.com/dh6k/morphe-patches/issues/21)) ([863a558](https://github.com/dh6k/morphe-patches/commit/863a558a8549b0dec16a8109c6c4c78e7a7330a9))
+
 ## [1.8.0-dev.1](https://github.com/dh6k/morphe-patches/compare/v1.7.0...v1.8.0-dev.1) (2026-09-30)
 
 ### ✨ New Features

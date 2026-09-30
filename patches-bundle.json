@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-09-30T10:35:15",
-  "description": "## [1.8.0-dev.1](https://github.com/dh6k/morphe-patches/compare/v1.7.0...v1.8.0-dev.1) (2026-09-30)\n\n### ✨ New Features\n\n* **titanium:** scope keep-alive boosts to extension processes ([a461882](https://github.com/dh6k/morphe-patches/commit/a461882a418570b36eb0531176065dc1f8006a8f))",
-  "download_url": "https://github.com/dh6k/morphe-patches/releases/download/v1.8.0-dev.1/patches-1.8.0-dev.1.mpp",
+  "created_at": "2026-09-30T11:23:27",
+  "description": "## [1.8.0-dev.2](https://github.com/dh6k/morphe-patches/compare/v1.8.0-dev.1...v1.8.0-dev.2) (2026-09-30)\n\n### ✨ New Features\n\n* **brave:** add patch-time AMOLED theme (issue [#21](https://github.com/dh6k/morphe-patches/issues/21)) ([863a558](https://github.com/dh6k/morphe-patches/commit/863a558a8549b0dec16a8109c6c4c78e7a7330a9))",
+  "download_url": "https://github.com/dh6k/morphe-patches/releases/download/v1.8.0-dev.2/patches-1.8.0-dev.2.mpp",
   "signature_download_url": "",
-  "version": "1.8.0-dev.1"
+  "version": "1.8.0-dev.2"
 }
