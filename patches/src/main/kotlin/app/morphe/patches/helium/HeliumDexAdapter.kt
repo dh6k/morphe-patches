@@ -168,6 +168,7 @@ internal fun Method.toStructuralMethod(): StructuralMethod {
                     instruction.registerA,
                     instruction.registerB,
                     reference?.type ?: "",
+                    reference?.definingClass ?: "",
                 )
             }
 

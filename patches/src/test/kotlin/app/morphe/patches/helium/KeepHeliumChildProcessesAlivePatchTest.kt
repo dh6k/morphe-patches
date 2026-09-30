@@ -15,8 +15,27 @@ class KeepHeliumChildProcessesAlivePatchTest {
         assertFalse(keepHeliumChildProcessesAlivePatch.default)
         assertEquals("Lorg/chromium/content/browser/ChildProcessLauncherHelperImpl;", HELIUM_CHILD_PROCESS_CLASS)
         assertEquals("setPriority", HELIUM_SET_PRIORITY_METHOD)
-        assertEquals("const/16 v7, 4", heliumStrongBindingInstruction(7))
         assertEquals("ChildProcessLauncher.start", HELIUM_SPAWN_START_ANCHOR)
+    }
+
+    @Test
+    fun `boost smali is extension scoped via range invokes`() {
+        assertEquals(
+            "invoke-static/range {p2 .. p2}, Lapp/morphe/extension/helium/HeliumProcessBoost;->setSpawnCommandLine([Ljava/lang/String;)V",
+            heliumSetSpawnCommandLineSmali(2),
+        )
+        assertEquals(
+            "invoke-static/range {v5 .. v5}, Lapp/morphe/extension/helium/HeliumProcessBoost;->noteHelper(Ljava/lang/Object;)V",
+            heliumNoteHelperSmali(5),
+        )
+        val binding = heliumScopedBindingSmali(7)
+        assertTrue(binding.contains("scopedBinding(I)I"), binding)
+        assertTrue(binding.contains("move-result v7"), binding)
+        val importance = heliumScopedImportanceSmali(12, scratchRegister = 3)
+        assertTrue(importance.contains("isExtension(Ljava/lang/Object;)Z"), importance)
+        assertTrue(importance.contains("move-result v3"), importance)
+        assertTrue(importance.contains("const/16 p12, 3"), importance)
+        assertTrue(importance.contains(":helium_skip_importance"), importance)
     }
     @Test
     fun `manifest helper is idempotent`() {
