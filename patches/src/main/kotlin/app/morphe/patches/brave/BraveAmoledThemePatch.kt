@@ -290,13 +290,52 @@ internal data class AmoledRewriteResult(
 internal fun forceFalseBooleanPrologueSmali(): String =
     "const/4 v0, 0x0\nreturn v0"
 
-internal fun methodMentionsDynamicColors(method: com.android.tools.smali.dexlib2.iface.Method): Boolean {
-    val impl = method.implementation ?: return false
-    return impl.instructions.any { ins ->
-        val ref = (ins as? ReferenceInstruction)?.reference as? StringReference
-        ref != null &&
-            (ref.string == DYNAMIC_COLORS_PREF_KEY || ref.string == DYNAMIC_COLORS_FEATURE_FLAG)
+internal fun methodStringConstants(
+    method: com.android.tools.smali.dexlib2.iface.Method,
+): List<String> {
+    val impl = method.implementation ?: return emptyList()
+    return impl.instructions.mapNotNull { ins ->
+        (ins as? ReferenceInstruction)?.reference as? StringReference
+    }.map { it.string }
+}
+
+internal fun methodMentionsDynamicColors(method: com.android.tools.smali.dexlib2.iface.Method): Boolean =
+    methodStringConstants(method).any {
+        it == DYNAMIC_COLORS_PREF_KEY || it == DYNAMIC_COLORS_FEATURE_FLAG
     }
+
+/**
+ * AppearancePreferences binds every Appearance switch in one boolean method
+ * (J1/k4/…). Force-false on those kills the whole menu. A dedicated
+ * dynamic-colors getter only carries the dynamic-colors constant.
+ */
+internal val APPEARANCE_PREF_KEY_HINTS = listOf(
+    "brave_night_mode",
+    "brave_bottom_toolbar",
+    "brave_disable_sharing",
+    "brave_rewards",
+    "brave_enable_tab_groups",
+    "show_undo_when_tabs",
+    "ads_switch",
+    "bookmark_bar",
+    "address_bar",
+    "ui_theme",
+    "brave_customize_menu",
+    "enable_multi_windows",
+    "toolbar_shortcut",
+    "navigation_section",
+    "general_section",
+)
+
+internal fun isDedicatedDynamicColorsGetter(
+    method: com.android.tools.smali.dexlib2.iface.Method,
+): Boolean {
+    if (method.returnType != "Z") return false
+    val strings = methodStringConstants(method)
+    if (strings.none { it == DYNAMIC_COLORS_PREF_KEY || it == DYNAMIC_COLORS_FEATURE_FLAG }) {
+        return false
+    }
+    return APPEARANCE_PREF_KEY_HINTS.none { hint -> strings.any { it.contains(hint) } }
 }
 
 private fun amoledCompatibilities() = listOf(
@@ -417,8 +456,7 @@ val braveAmoledThemePatch: BytecodePatch = bytecodePatch(
         var forced = 0
         classDefForEach { classDef ->
             classDef.methods.forEach { method ->
-                if (method.returnType != "Z") return@forEach
-                if (!methodMentionsDynamicColors(method)) return@forEach
+                if (!isDedicatedDynamicColorsGetter(method)) return@forEach
                 mutableClassDefBy(classDef).methods
                     .first {
                         it.name == method.name && it.parameterTypes == method.parameterTypes
