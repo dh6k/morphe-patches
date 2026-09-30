@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-09-30T15:27:56",
-  "description": "## [1.8.0-dev.4](https://github.com/dh6k/morphe-patches/compare/v1.8.0-dev.3...v1.8.0-dev.4) (2026-09-30)\n\n### 🐛 Bug Fixes\n\n* **brave:** only force the dedicated AMOLED dynamic-colors getter ([535f6f2](https://github.com/dh6k/morphe-patches/commit/535f6f281c1de3464d1971f437c4abc2af1150a4))",
-  "download_url": "https://github.com/dh6k/morphe-patches/releases/download/v1.8.0-dev.4/patches-1.8.0-dev.4.mpp",
+  "created_at": "2026-09-30T16:36:29",
+  "description": "## [1.8.0-dev.5](https://github.com/dh6k/morphe-patches/compare/v1.8.0-dev.4...v1.8.0-dev.5) (2026-09-30)\n\n### 🐛 Bug Fixes\n\n* **brave:** rewrite AMOLED dark surfaces in values/ not just values-night ([b76ab33](https://github.com/dh6k/morphe-patches/commit/b76ab33ded56a444df0fa901d2c1b92d9ee81c87)), closes [#121212](https://github.com/dh6k/morphe-patches/issues/121212) [#ff303030](https://github.com/dh6k/morphe-patches/issues/ff303030)",
+  "download_url": "https://github.com/dh6k/morphe-patches/releases/download/v1.8.0-dev.5/patches-1.8.0-dev.5.mpp",
   "signature_download_url": "",
-  "version": "1.8.0-dev.4"
+  "version": "1.8.0-dev.5"
 }
