@@ -1,3 +1,9 @@
+## [1.8.0-dev.6](https://github.com/dh6k/morphe-patches/compare/v1.8.0-dev.5...v1.8.0-dev.6) (2026-09-30)
+
+### ✨ New Features
+
+* **brave:** add AMOLED text and accent color options ([e0484bb](https://github.com/dh6k/morphe-patches/commit/e0484bbec22ffb990d510ca2b9ecaa3499545f81))
+
 ## [1.8.0-dev.5](https://github.com/dh6k/morphe-patches/compare/v1.8.0-dev.4...v1.8.0-dev.5) (2026-09-30)
 
 ### 🐛 Bug Fixes
