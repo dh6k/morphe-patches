@@ -1,3 +1,9 @@
+## [1.8.0-dev.8](https://github.com/dh6k/morphe-patches/compare/v1.8.0-dev.7...v1.8.0-dev.8) (2026-10-01)
+
+### 🐛 Bug Fixes
+
+* **brave:** keep colors the app renders text with out of the surface sweep ([fcf7630](https://github.com/dh6k/morphe-patches/commit/fcf7630819301cb0aa41f4e7912176b2793ce31e)), closes [#1c1c1d](https://github.com/dh6k/morphe-patches/issues/1c1c1d) [#0d0f14](https://github.com/dh6k/morphe-patches/issues/0d0f14) [#202124](https://github.com/dh6k/morphe-patches/issues/202124) [#484b4e](https://github.com/dh6k/morphe-patches/issues/484b4e) [#25272b](https://github.com/dh6k/morphe-patches/issues/25272b)
+
 ## [1.8.0-dev.7](https://github.com/dh6k/morphe-patches/compare/v1.8.0-dev.6...v1.8.0-dev.7) (2026-10-01)
 
 ### 🐛 Bug Fixes
