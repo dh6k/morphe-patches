@@ -12,12 +12,6 @@ patches {
     }
 }
 
-kotlin {
-    compilerOptions {
-        freeCompilerArgs.add("-Xcontext-parameters")
-    }
-}
-
 // Keep Gson available to generatePatchesList without bundling its runtime graph
 // into the patches DEX.
 val patchListGeneratorClasspath = configurations.create("patchListGeneratorClasspath")

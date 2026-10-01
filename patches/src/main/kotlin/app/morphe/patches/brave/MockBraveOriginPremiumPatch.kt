@@ -196,8 +196,7 @@ val braveOriginPatch = bytecodePatch(
 
         // ── 6. Origin preferences setup: force v42.d call-site result = false ─────────
         val validSubscriptionClass = hasValidSubscriptionTokensFingerprint.originalClassDef.type
-        val validSubscriptionMethod = hasValidSubscriptionTokensFingerprint.originalMethod?.name
-            ?: error("Failed to resolve Brave Origin credential predicate")
+        val validSubscriptionMethod = hasValidSubscriptionTokensFingerprint.originalMethod.name
         val q4Fingerprint = Fingerprint(
             definingClass = ORIGIN_PREFERENCES_CLASS,
             returnType = "V",

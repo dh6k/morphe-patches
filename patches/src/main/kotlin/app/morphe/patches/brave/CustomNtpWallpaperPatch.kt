@@ -268,7 +268,7 @@ private val customNtpWallpaperResourcePatch: ResourcePatch = resourcePatch(
 ) {
     compatibleWith(*customNtpWallpaperCompatibilities().toTypedArray())
     execute {
-        val sourcePath = customNtpWallpaperPatch.options["customWallpaper"]?.value as? String
+        val sourcePath = customNtpWallpaperPatch.options["customWallpaper"].value as? String
         val trimmed = sourcePath?.trim().orEmpty()
         if (trimmed.isEmpty()) {
             throw PatchException("Custom NTP wallpaper path must not be blank")
@@ -321,8 +321,7 @@ val customNtpWallpaperPatch: BytecodePatch = bytecodePatch(
         val accessorMethod = AmbientCatalogAccessorFingerprint.methodOrNull
             ?: error("ambient wallpaper catalog accessor not found")
         val catalogClass = AmbientCatalogAccessorFingerprint.originalClassDef.type
-        val catalogMethod = AmbientCatalogAccessorFingerprint.originalMethod?.name
-            ?: error("ambient wallpaper catalog accessor name missing")
+        val catalogMethod = AmbientCatalogAccessorFingerprint.originalMethod.name
         val resourceIdField = backgroundImageResourceIdField(
             AmbientCatalogAccessorFingerprint.originalClassDef,
         )
@@ -366,13 +365,13 @@ val customNtpWallpaperPatch: BytecodePatch = bytecodePatch(
         CreateWallpaperFingerprint.methodOrNull?.addInstructions(
             0,
             forceCreateWallpaperParamsSmali(
-                packageMetadata.packageName?.takeIf { it.isNotBlank() } ?: "com.brave.browser",
+                packageMetadata.packageName.takeIf { it.isNotBlank() } ?: "com.brave.browser",
             ),
         )
         CreateBrandedWallpaperFingerprint.methodOrNull?.addInstructions(
             0,
             forceCreateBrandedWallpaperParamsSmali(
-                packageMetadata.packageName?.takeIf { it.isNotBlank() } ?: "com.brave.browser",
+                packageMetadata.packageName.takeIf { it.isNotBlank() } ?: "com.brave.browser",
             ),
         )
     }

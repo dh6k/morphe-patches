@@ -1,7 +1,7 @@
 <p align="center">
   <a href="https://github.com/dh6k/morphe-patches/releases/latest"><img src="https://img.shields.io/github/v/release/dh6k/morphe-patches?color=7928CA&label=Release&logo=github&style=flat-square" alt="Latest Release" /></a>
   <a href="https://github.com/dh6k/morphe-patches/releases"><img src="https://img.shields.io/github/downloads/dh6k/morphe-patches/total?style=flat-square&logo=github" alt="Total Downloads" /></a>
-  <img src="https://img.shields.io/badge/Runtime-Morphe_Patcher_1.7.0-8A2BE2?style=flat-square" alt="Runtime" />
+  <img src="https://img.shields.io/badge/Runtime-Morphe_Patcher_1.15.0-8A2BE2?style=flat-square" alt="Runtime" />
   <img src="https://img.shields.io/badge/License-GPLv3-blue?style=flat-square" alt="License" />
 </p>
 
