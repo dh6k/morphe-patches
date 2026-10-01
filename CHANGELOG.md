@@ -1,3 +1,9 @@
+## [1.9.0-dev.1](https://github.com/dh6k/morphe-patches/compare/v1.8.1-dev.1...v1.9.0-dev.1) (2026-10-01)
+
+### ✨ New Features
+
+* **brave:** keep NTP tiles in four columns with a background image ([632015d](https://github.com/dh6k/morphe-patches/commit/632015dc64144fccedeaa5db29a28dc9e89a0a8e))
+
 ## [1.8.1-dev.1](https://github.com/dh6k/morphe-patches/compare/v1.8.0...v1.8.1-dev.1) (2026-10-01)
 
 ### 🚀 Updated App Support
