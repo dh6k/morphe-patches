@@ -509,4 +509,90 @@ class BraveAmoledThemePatchTest {
             """n0:fillColor="#000000"""" in res.resolve("drawable/panel.xml").readText(),
         )
     }
+
+    @Test
+    fun `text bearing ids are never flattened to background`() {
+        val xml = """
+            <resources>
+                <color name="ink_only">#1c1c1d</color>
+                <color name="panel">#212529</color>
+            </resources>
+        """.trimIndent()
+        // Both hexes pass the surface heuristic; only the one the app renders
+        // text with must be spared.
+        assertTrue(isAmoledSurfaceColor("#1c1c1d"))
+        val (out, replaced) = rewriteSurfaceColorXml(xml, "#000000", setOf("ink_only"))
+        assertEquals(1, replaced)
+        assertTrue("""<color name="ink_only">#1c1c1d</color>""" in out)
+        assertTrue("""<color name="panel">#000000</color>""" in out)
+    }
+
+    @Test
+    fun `text bearing ids are collected from styles and layouts`() {
+        val res = createTempDirectory("amoled-textids").toFile()
+        res.resolve("values").mkdirs()
+        res.resolve("values-v31").mkdirs()
+        res.resolve("layout").mkdirs()
+        res.resolve("layout-land").mkdirs()
+        res.resolve("values/styles.xml").writeText(
+            """
+            <resources>
+                <style name="A">
+                    <item name="android:textColor">@color/from_style</item>
+                    <item name="android:textColorHint">@color/from_hint</item>
+                    <item name="android:background">@color/from_background</item>
+                </style>
+            </resources>
+            """.trimIndent(),
+        )
+        res.resolve("values-v31/styles.xml").writeText(
+            """
+            <resources>
+                <style name="B">
+                    <item name="android:textColorPrimary">@color/from_v31</item>
+                </style>
+            </resources>
+            """.trimIndent(),
+        )
+        res.resolve("layout/screen.xml").writeText(
+            """
+            <TextView
+              android:textColor="@color/from_layout"
+              android:background="@color/layout_bg"
+              app:tint="@color/from_tint" />
+            """.trimIndent(),
+        )
+        res.resolve("layout-land/screen.xml").writeText(
+            """<TextView n0:textColor="@color/from_land" />""",
+        )
+
+        val ids = collectTextBearingIds(res)
+        assertTrue("from_style" in ids)
+        assertTrue("from_hint" in ids)
+        assertTrue("from_v31" in ids, "a later qualifier can swap the id set")
+        assertTrue("from_layout" in ids)
+        assertTrue("from_land" in ids, "layout qualifiers count too")
+        assertFalse("from_background" in ids, "background is a surface, not text")
+        assertFalse("layout_bg" in ids)
+        assertFalse("from_tint" in ids)
+    }
+
+    @Test
+    fun `day only text ids get a readable night declaration`() {
+        val xml = """
+            <resources>
+                <color name="bg">#1e2029</color>
+            </resources>
+        """.trimIndent()
+        val (out, declared) = declareNightTextColors(
+            xml = xml,
+            textNames = listOf("ink", "already_night"),
+            declaredInNight = setOf("already_night"),
+            hex = "#f0f2ff",
+        )
+        assertEquals(1, declared)
+        assertTrue("""<color name="ink">#f0f2ff</color>""" in out)
+        assertFalse("already_night" in out, "an id night already defines is not redeclared")
+        assertTrue("""<color name="bg">#1e2029</color>""" in out)
+    }
 }

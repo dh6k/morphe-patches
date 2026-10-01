@@ -203,6 +203,7 @@ private fun rewriteHexGroup(
     xml: String,
     targetHex: String,
     matcher: (String) -> Boolean,
+    excludeNames: Set<String> = emptySet(),
 ): Pair<String, Int> {
     val target = normalizeOpaqueHex(targetHex)
         ?: throw PatchException("Color must be opaque hex: $targetHex")
@@ -210,6 +211,7 @@ private fun rewriteHexGroup(
     val out = COLOR_ELEMENT.replace(xml) { match ->
         val name = match.groupValues[1]
         val raw = match.groupValues[2].trim()
+        if (name in excludeNames) return@replace match.value
         if (matcher(raw) && normalizeOpaqueHex(raw) != target) {
             replaced++
             """<color name="$name">$target</color>"""
@@ -220,8 +222,22 @@ private fun rewriteHexGroup(
     return out to replaced
 }
 
+/**
+ * Flatten dark chrome surfaces to the AMOLED background. A colour the patch
+ * cannot see the use of is judged by its value alone, and values/colors.xml
+ * ships light-mode ink (#1c1c1d, #0d0f14, #202124) that satisfies that test.
+ * Those ids are black-on-black once flattened, so callers pass the ids known to
+ * be text and they are left alone.
+ */
+internal fun rewriteSurfaceColorXml(
+    xml: String,
+    backgroundHex: String,
+    excludeNames: Set<String> = emptySet(),
+): Pair<String, Int> =
+    rewriteHexGroup(xml, backgroundHex, { isAmoledSurfaceColor(it) }, excludeNames)
+
 internal fun rewriteNightColorXml(xml: String, backgroundHex: String): Pair<String, Int> =
-    rewriteHexGroup(xml, backgroundHex) { isAmoledSurfaceColor(it) }
+    rewriteSurfaceColorXml(xml, backgroundHex)
 
 internal fun rewriteTextColorXml(xml: String, textHex: String): Pair<String, Int> {
     val base = normalizeOpaqueHex(textHex)
@@ -244,7 +260,7 @@ internal fun rewriteTextColorXml(xml: String, textHex: String): Pair<String, Int
 }
 
 internal fun rewriteAccentColorXml(xml: String, accentHex: String): Pair<String, Int> =
-    rewriteHexGroup(xml, accentHex) { isAccentColor(it) }
+    rewriteHexGroup(xml, accentHex, matcher = { isAccentColor(it) })
 
 /** In-place: kill Material You dark roles so they cannot win over night-v31. */
 internal fun rewriteMaterialYouDarkNeutrals(xml: String, backgroundHex: String): Pair<String, Int> {
@@ -299,14 +315,67 @@ internal fun collectTextColorRefsFromDir(resourceDirectory: File): List<String> 
     return out.toList()
 }
 
+private val STYLE_TEXT_ITEM =
+    Regex("""<item\s+name="(?:android:)?text[A-Za-z]*"\s*>\s*@color/([^<]+)\s*<""")
+private val LAYOUT_TEXT_ATTR =
+    Regex("""(?:android:|\bn\d+:)text[A-Za-z]*\s*=\s*"@color/([^"]+)"""")
+
+/**
+ * Colour ids the app actually renders text with, taken from structural evidence
+ * rather than from the value itself: every `text*` item in every values styles
+ * qualifier, plus every inline `text*` attribute in every layout. Decoded APKs
+ * rename the framework namespace to n0: and library namespaces to n1:, n2:, …
+ * so both spellings have to be matched.
+ *
+ * These ids must never be flattened to the background, even when their light-mode
+ * value looks exactly like a dark chrome surface.
+ */
+internal fun collectTextBearingIds(resourceDirectory: File): Set<String> {
+    val out = linkedSetOf<String>()
+    resourceDirectory.listFiles()
+        .orEmpty()
+        .filter { it.isDirectory && it.name.startsWith("values") }
+        .flatMap { it.listFiles().orEmpty().toList() }
+        .filter { it.isFile && it.name.equals("styles.xml", ignoreCase = true) }
+        .forEach { file ->
+            STYLE_TEXT_ITEM.findAll(file.readText()).forEach { out += it.groupValues[1] }
+        }
+    resourceDirectory.listFiles()
+        .orEmpty()
+        .filter { it.isDirectory && it.name.startsWith("layout") }
+        .forEach { dir ->
+            dir.walkTopDown()
+                .filter { it.isFile && it.extension.equals("xml", ignoreCase = true) }
+                .forEach { file ->
+                    LAYOUT_TEXT_ATTR.findAll(file.readText())
+                        .forEach { out += it.groupValues[1] }
+                }
+        }
+    return out
+}
+
 /** Day ink used when an undefined text id must be re-declared for light mode. */
 internal const val DAY_INK = "#202124"
 
+/** Colour ids backed by a res/color selector folder rather than a <color> element. */
+internal fun selectorColorNames(resourceDirectory: File): Set<String> {
+    val names = linkedSetOf<String>()
+    resourceDirectory.listFiles()
+        .orEmpty()
+        .filter { it.isDirectory && it.name.startsWith("color") }
+        .forEach { dir ->
+            dir.listFiles().orEmpty()
+                .filter { it.isFile && it.extension.equals("xml", ignoreCase = true) }
+                .forEach { names += it.nameWithoutExtension }
+        }
+    return names
+}
+
 /**
  * Every directory that can hold a color definition: values XML plus the
- * res/color* selector folders. A `<color name="X">` next to an existing
- * res/color/X.xml is a duplicate resource and breaks the build, so both forms
- * have to be checked before declaring anything.
+ * res/color selector folders. A `<color name="X">` next to an existing selector
+ * file is a duplicate resource and breaks the build, so both forms have to be
+ * checked before declaring anything.
  */
 internal fun declaredColorNames(resourceDirectory: File): Set<String> {
     val names = linkedSetOf<String>()
@@ -343,6 +412,47 @@ internal fun declareMissingTextColors(
     val target = normalizeOpaqueHex(hex)
         ?: throw PatchException("Text color must be an opaque hex: $hex")
     val missing = textNames.filter { it !in declared }.toSortedSet()
+    if (missing.isEmpty()) return xml to 0
+
+    val inject = missing.joinToString("\n") { name -> """    <color name="$name">$target</color>""" }
+    val out = if (xml.contains("</resources>")) {
+        xml.replace("</resources>", "$inject\n</resources>")
+    } else {
+        xml + "\n<resources>\n$inject\n</resources>\n"
+    }
+    return out to missing.size
+}
+
+/** Colour ids declared by one specific values qualifier. */
+internal fun declaredColorNamesIn(file: File): Set<String> {
+    if (!file.isFile) return emptySet()
+    return COLOR_ELEMENT.findAll(file.readText()).map { it.groupValues[1] }.toSet()
+}
+
+/**
+ * Text ids that have a light-mode colour but no dark-mode counterpart keep that
+ * light (dark) value in dark mode, where it is black on black. Declaring the same
+ * id again under values-night is an override, not a duplicate — the id already
+ * resolves from values/, so no selector file backs it and merge stays happy.
+ *
+ * Ids that do resolve through a selector folder are skipped: a <color> beside a
+ * selector file is the duplicate that blacked out AMOLED text.
+ */
+internal fun declareNightTextColors(
+    xml: String,
+    textNames: Collection<String>,
+    declaredInNight: Set<String>,
+    hex: String,
+    resolvedElsewhere: Set<String> = emptySet(),
+): Pair<String, Int> {
+    val target = normalizeOpaqueHex(hex)
+        ?: throw PatchException("Text color must be an opaque hex: $hex")
+    // An id already defined in this file, or backed by a selector folder, is not
+    // re-declared: a <color> beside a selector file is a duplicate resource.
+    val alreadyHere = COLOR_ELEMENT.findAll(xml).map { it.groupValues[1] }.toSet()
+    val missing = textNames
+        .filter { it !in declaredInNight && it !in alreadyHere && it !in resolvedElsewhere }
+        .toSortedSet()
     if (missing.isEmpty()) return xml to 0
 
     val inject = missing.joinToString("\n") { name -> """    <color name="$name">$target</color>""" }
@@ -471,6 +581,7 @@ internal fun applyAmoledResources(
 ): AmoledRewriteResult {
     val textRefs = collectTextColorRefsFromDir(resourceDirectory)
     val declared = declaredColorNames(resourceDirectory)
+    val textBearing = collectTextBearingIds(resourceDirectory)
     val dayFile = resourceDirectory.resolve(DAY_COLORS_PATH)
     val nightFile = resourceDirectory.resolve(NIGHT_COLORS_PATH)
 
@@ -482,7 +593,7 @@ internal fun applyAmoledResources(
     var dayInkInjected = 0
     if (dayFile.isFile) {
         var xml = dayFile.readText()
-        val (afterBg, bgCount) = rewriteNightColorXml(xml, backgroundHex)
+        val (afterBg, bgCount) = rewriteSurfaceColorXml(xml, backgroundHex, textBearing)
         xml = afterBg
         dayReplaced = bgCount
         if (textColorHex != null) {
@@ -506,14 +617,28 @@ internal fun applyAmoledResources(
         throw PatchException("Brave night color resources not found: $NIGHT_COLORS_PATH")
     }
     var nightXml = nightFile.readText()
-    val (afterNightBg, nightReplaced) = rewriteNightColorXml(nightXml, backgroundHex)
+    val (afterNightBg, nightReplaced) = rewriteSurfaceColorXml(nightXml, backgroundHex, textBearing)
     nightXml = afterNightBg
     var nightTextReplaced = 0
     var nightAccentReplaced = 0
+    var nightInkDeclared = 0
     if (textColorHex != null) {
         val (afterText, count) = rewriteTextColorXml(nightXml, textColorHex)
         nightXml = afterText
         nightTextReplaced = count
+        // Ids the app renders text with but that only exist in the light config
+        // would stay dark-on-dark here, so give night its own readable value.
+        val (afterDeclare, declaredCount) = declareNightTextColors(
+            nightXml,
+            textBearing,
+            declaredColorNamesIn(nightFile),
+            textColorHex,
+            // An id a selector folder already resolves must not gain a <color>
+            // element — that pair is the duplicate that broke text before.
+            selectorColorNames(resourceDirectory),
+        )
+        nightXml = afterDeclare
+        nightInkDeclared = declaredCount
     }
     if (accentColorHex != null) {
         val (afterAccent, count) = rewriteAccentColorXml(nightXml, accentColorHex)
@@ -592,6 +717,8 @@ internal fun applyAmoledResources(
         textColorsReplaced = dayTextReplaced + nightTextReplaced,
         accentColorsReplaced = dayAccentReplaced + nightAccentReplaced,
         textIdsInjected = dayInkInjected,
+        nightTextDeclared = nightInkDeclared,
+        textBearingIds = textBearing.size,
         lStarSelectorsReplaced = lStarReplaced,
         drawableSurfaceFills = drawableFills,
         preferenceFilesChanged = dynamicPrefs,
@@ -606,6 +733,8 @@ internal data class AmoledRewriteResult(
     val textColorsReplaced: Int = 0,
     val accentColorsReplaced: Int = 0,
     val textIdsInjected: Int = 0,
+    val nightTextDeclared: Int = 0,
+    val textBearingIds: Int = 0,
     val lStarSelectorsReplaced: Int = 0,
     val drawableSurfaceFills: Int = 0,
     val preferenceFilesChanged: Int,
@@ -742,6 +871,8 @@ private val braveAmoledResourcePatch: ResourcePatch = resourcePatch(
                 "textReplaced=${result.textColorsReplaced} " +
                 "accentReplaced=${result.accentColorsReplaced} " +
                 "textIdsInjected=${result.textIdsInjected} " +
+                "nightTextDeclared=${result.nightTextDeclared} " +
+                "textBearingIds=${result.textBearingIds} " +
                 "lStarSelectors=${result.lStarSelectorsReplaced} " +
                 "drawableFills=${result.drawableSurfaceFills} " +
                 "prefFiles=${result.preferenceFilesChanged}",
