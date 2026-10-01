@@ -1,3 +1,63 @@
+## [1.8.0-dev.10](https://github.com/dh6k/morphe-patches/compare/v1.8.0-dev.9...v1.8.0-dev.10) (2026-10-01)
+
+### 🐛 Bug Fixes
+
+* **brave:** keep accent-coloured text when declaring night ink ([11d8e1f](https://github.com/dh6k/morphe-patches/commit/11d8e1fa0a6d398682e19d33d81cf22d535ad635)), closes [#cd4400](https://github.com/dh6k/morphe-patches/issues/cd4400) [#545ff8](https://github.com/dh6k/morphe-patches/issues/545ff8) [#687485](https://github.com/dh6k/morphe-patches/issues/687485)
+
+## [1.8.0-dev.9](https://github.com/dh6k/morphe-patches/compare/v1.8.0-dev.8...v1.8.0-dev.9) (2026-10-01)
+
+### 🐛 Bug Fixes
+
+* **brave:** stop night-v31 overrides from re-asserting text as background ([d17495b](https://github.com/dh6k/morphe-patches/commit/d17495bb353edeef95c552f0cbff181ac98c3405)), closes [#000000](https://github.com/dh6k/morphe-patches/issues/000000)
+
+## [1.8.0-dev.8](https://github.com/dh6k/morphe-patches/compare/v1.8.0-dev.7...v1.8.0-dev.8) (2026-10-01)
+
+### 🐛 Bug Fixes
+
+* **brave:** keep colors the app renders text with out of the surface sweep ([fcf7630](https://github.com/dh6k/morphe-patches/commit/fcf7630819301cb0aa41f4e7912176b2793ce31e)), closes [#1c1c1d](https://github.com/dh6k/morphe-patches/issues/1c1c1d) [#0d0f14](https://github.com/dh6k/morphe-patches/issues/0d0f14) [#202124](https://github.com/dh6k/morphe-patches/issues/202124) [#484b4e](https://github.com/dh6k/morphe-patches/issues/484b4e) [#25272b](https://github.com/dh6k/morphe-patches/issues/25272b)
+
+## [1.8.0-dev.7](https://github.com/dh6k/morphe-patches/compare/v1.8.0-dev.6...v1.8.0-dev.7) (2026-10-01)
+
+### 🐛 Bug Fixes
+
+* **brave:** stop declaring text colors that already have selectors ([cda4691](https://github.com/dh6k/morphe-patches/commit/cda4691484a808a2ad476ac1e24f49d5845af04c))
+
+## [1.8.0-dev.6](https://github.com/dh6k/morphe-patches/compare/v1.8.0-dev.5...v1.8.0-dev.6) (2026-09-30)
+
+### ✨ New Features
+
+* **brave:** add AMOLED text and accent color options ([e0484bb](https://github.com/dh6k/morphe-patches/commit/e0484bbec22ffb990d510ca2b9ecaa3499545f81))
+
+## [1.8.0-dev.5](https://github.com/dh6k/morphe-patches/compare/v1.8.0-dev.4...v1.8.0-dev.5) (2026-09-30)
+
+### 🐛 Bug Fixes
+
+* **brave:** rewrite AMOLED dark surfaces in values/ not just values-night ([b76ab33](https://github.com/dh6k/morphe-patches/commit/b76ab33ded56a444df0fa901d2c1b92d9ee81c87)), closes [#121212](https://github.com/dh6k/morphe-patches/issues/121212) [#ff303030](https://github.com/dh6k/morphe-patches/issues/ff303030)
+
+## [1.8.0-dev.4](https://github.com/dh6k/morphe-patches/compare/v1.8.0-dev.3...v1.8.0-dev.4) (2026-09-30)
+
+### 🐛 Bug Fixes
+
+* **brave:** only force the dedicated AMOLED dynamic-colors getter ([535f6f2](https://github.com/dh6k/morphe-patches/commit/535f6f281c1de3464d1971f437c4abc2af1150a4))
+
+## [1.8.0-dev.3](https://github.com/dh6k/morphe-patches/compare/v1.8.0-dev.2...v1.8.0-dev.3) (2026-09-30)
+
+### 🐛 Bug Fixes
+
+* **brave:** actually kill Material You in AMOLED and stop greying the switch ([2e38c35](https://github.com/dh6k/morphe-patches/commit/2e38c35636e31867c33211fdc103c076f885dec7))
+
+## [1.8.0-dev.2](https://github.com/dh6k/morphe-patches/compare/v1.8.0-dev.1...v1.8.0-dev.2) (2026-09-30)
+
+### ✨ New Features
+
+* **brave:** add patch-time AMOLED theme (issue [#21](https://github.com/dh6k/morphe-patches/issues/21)) ([863a558](https://github.com/dh6k/morphe-patches/commit/863a558a8549b0dec16a8109c6c4c78e7a7330a9))
+
+## [1.8.0-dev.1](https://github.com/dh6k/morphe-patches/compare/v1.7.0...v1.8.0-dev.1) (2026-09-30)
+
+### ✨ New Features
+
+* **titanium:** scope keep-alive boosts to extension processes ([a461882](https://github.com/dh6k/morphe-patches/commit/a461882a418570b36eb0531176065dc1f8006a8f))
+
 ## [1.7.0](https://github.com/dh6k/morphe-patches/compare/v1.6.0...v1.7.0) (2026-09-24)
 
 ### 🐛 Bug Fixes

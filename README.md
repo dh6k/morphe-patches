@@ -75,7 +75,7 @@ See [Patch notes](#patch-notes) for Startup Performance, Custom NTP wallpaper, a
 ## Patches
 
 <!-- PATCHES_START EXPANDED -->
-> **[v1.7.0](https://github.com/dh6k/morphe-patches/releases/tag/v1.7.0)**&nbsp;&nbsp;•&nbsp;&nbsp;`main`&nbsp;&nbsp;•&nbsp;&nbsp;9 patches total
+> **[v1.8.0-dev.10](https://github.com/dh6k/morphe-patches/releases/tag/v1.8.0-dev.10)**&nbsp;&nbsp;•&nbsp;&nbsp;`dev`&nbsp;&nbsp;•&nbsp;&nbsp;10 patches total
 <details open>
 <summary>📦 Quetta Browser&nbsp;&nbsp;•&nbsp;&nbsp;2 patches</summary>
 <br>
@@ -99,11 +99,12 @@ See [Patch notes](#patch-notes) for Startup Performance, Custom NTP wallpaper, a
 </details>
 
 <details open>
-<summary>📦 Brave Browser&nbsp;&nbsp;•&nbsp;&nbsp;3 patches</summary>
+<summary>📦 Brave Browser&nbsp;&nbsp;•&nbsp;&nbsp;4 patches</summary>
 <br>
 
 | 💊&nbsp;Patch | 📜&nbsp;Description | ⚙️&nbsp;Options |
 |----------|----------------|-----------|
+| [Brave AMOLED theme](#brave-amoled-theme) | Patch-time AMOLED dark theme (issue #21): rewrites Brave dark chrome surfaces to pure black (or a custom opaque hex). Optional text and accent colors (defaults keep Brave's #f0f2ff / #737ade). Forces Material You dynamic colors off in bytecode (the pref is non-persistent) and overrides system neutral night roles on Android 12+. Apply Dark theme in Brave to see it. Does not change web content force-dark, NTP theme collections, or add a runtime color picker. Default off. | • AMOLED background<br>• Text color<br>• Accent color<br>• Disable Material You dynamic colors |
 | [Brave Origin](#brave-origin) | Unlocks Brave Origin and enables feature toggle controls. |  |
 | [Brave Startup Performance Optimization](#brave-startup-performance-optimization) | Optimizes startup time and eliminates background CPU/disk overhead by disabling unused OEM carrier partner customizations. Marks PartnerBrowserCustomizations initialized without SharedPreferences/ContentResolver/ThreadPool/timeout work, drains init callbacks immediately, and forces partner homepage and incognito lockdown gates closed. |  |
 | [Custom NTP wallpaper](#custom-ntp-wallpaper) | Alpha experimental version-unpinned patch (issue #13): forces the Brave new-tab background to a custom PNG chosen at patch time. Rewrites the Java ambient wallpaper catalog (BackgroundImage drawable resource id) and makes wallpaper callbacks use it instead of native branded/URL images. IMPORTANT: crop the image to your current screen resolution first, then select that file in the patch options. Brave's New tab page settings only toggle "Show background images". Default off. | • Custom NTP wallpaper |
@@ -111,11 +112,12 @@ See [Patch notes](#patch-notes) for Startup Performance, Custom NTP wallpaper, a
 </details>
 
 <details open>
-<summary>📦 Brave Beta&nbsp;&nbsp;•&nbsp;&nbsp;3 patches</summary>
+<summary>📦 Brave Beta&nbsp;&nbsp;•&nbsp;&nbsp;4 patches</summary>
 <br>
 
 | 💊&nbsp;Patch | 📜&nbsp;Description | ⚙️&nbsp;Options |
 |----------|----------------|-----------|
+| [Brave AMOLED theme](#brave-amoled-theme) | Patch-time AMOLED dark theme (issue #21): rewrites Brave dark chrome surfaces to pure black (or a custom opaque hex). Optional text and accent colors (defaults keep Brave's #f0f2ff / #737ade). Forces Material You dynamic colors off in bytecode (the pref is non-persistent) and overrides system neutral night roles on Android 12+. Apply Dark theme in Brave to see it. Does not change web content force-dark, NTP theme collections, or add a runtime color picker. Default off. | • AMOLED background<br>• Text color<br>• Accent color<br>• Disable Material You dynamic colors |
 | [Brave Origin](#brave-origin) | Unlocks Brave Origin and enables feature toggle controls. |  |
 | [Brave Startup Performance Optimization](#brave-startup-performance-optimization) | Optimizes startup time and eliminates background CPU/disk overhead by disabling unused OEM carrier partner customizations. Marks PartnerBrowserCustomizations initialized without SharedPreferences/ContentResolver/ThreadPool/timeout work, drains init callbacks immediately, and forces partner homepage and incognito lockdown gates closed. |  |
 | [Custom NTP wallpaper](#custom-ntp-wallpaper) | Alpha experimental version-unpinned patch (issue #13): forces the Brave new-tab background to a custom PNG chosen at patch time. Rewrites the Java ambient wallpaper catalog (BackgroundImage drawable resource id) and makes wallpaper callbacks use it instead of native branded/URL images. IMPORTANT: crop the image to your current screen resolution first, then select that file in the patch options. Brave's New tab page settings only toggle "Show background images". Default off. | • Custom NTP wallpaper |
@@ -123,11 +125,12 @@ See [Patch notes](#patch-notes) for Startup Performance, Custom NTP wallpaper, a
 </details>
 
 <details open>
-<summary>📦 Brave Nightly&nbsp;&nbsp;•&nbsp;&nbsp;3 patches</summary>
+<summary>📦 Brave Nightly&nbsp;&nbsp;•&nbsp;&nbsp;4 patches</summary>
 <br>
 
 | 💊&nbsp;Patch | 📜&nbsp;Description | ⚙️&nbsp;Options |
 |----------|----------------|-----------|
+| [Brave AMOLED theme](#brave-amoled-theme) | Patch-time AMOLED dark theme (issue #21): rewrites Brave dark chrome surfaces to pure black (or a custom opaque hex). Optional text and accent colors (defaults keep Brave's #f0f2ff / #737ade). Forces Material You dynamic colors off in bytecode (the pref is non-persistent) and overrides system neutral night roles on Android 12+. Apply Dark theme in Brave to see it. Does not change web content force-dark, NTP theme collections, or add a runtime color picker. Default off. | • AMOLED background<br>• Text color<br>• Accent color<br>• Disable Material You dynamic colors |
 | [Brave Origin](#brave-origin) | Unlocks Brave Origin and enables feature toggle controls. |  |
 | [Brave Startup Performance Optimization](#brave-startup-performance-optimization) | Optimizes startup time and eliminates background CPU/disk overhead by disabling unused OEM carrier partner customizations. Marks PartnerBrowserCustomizations initialized without SharedPreferences/ContentResolver/ThreadPool/timeout work, drains init callbacks immediately, and forces partner homepage and incognito lockdown gates closed. |  |
 | [Custom NTP wallpaper](#custom-ntp-wallpaper) | Alpha experimental version-unpinned patch (issue #13): forces the Brave new-tab background to a custom PNG chosen at patch time. Rewrites the Java ambient wallpaper catalog (BackgroundImage drawable resource id) and makes wallpaper callbacks use it instead of native branded/URL images. IMPORTANT: crop the image to your current screen resolution first, then select that file in the patch options. Brave's New tab page settings only toggle "Show background images". Default off. | • Custom NTP wallpaper |
@@ -141,7 +144,7 @@ See [Patch notes](#patch-notes) for Startup Performance, Custom NTP wallpaper, a
 | 💊&nbsp;Patch | 📜&nbsp;Description | ⚙️&nbsp;Options |
 |----------|----------------|-----------|
 | [Force highest refresh rate](#force-highest-refresh-rate) | Experimental version-unpinned patch: forces Chromium to pick the highest-refresh display mode by requesting Float.MAX_VALUE through WindowAndroid. Works on any panel (60/90/120/144/165Hz+) without knowing the max at patch time. May increase battery usage; ambiguous targets fail closed. |  |
-| [Keep Titanium Extensions Child Processes Alive](#keep-titanium-extensions-child-processes-alive) | Experimental version-unpinned structural/data-flow patch: starts one main-process foreground service with persistent low-priority notification and forces child STRONG binding plus IMPORTANT/STRONG priority updates. Tolerates routine signature, register, and helper-name changes; ambiguous targets fail closed. May increase RAM, battery, and process pressure; mitigates LMK kills only. To hide the notification, use Android Settings > Apps > Titanium > Notifications (the keep-alive service stays active either way). | • Notification title<br>• Notification text |
+| [Keep Titanium Extensions Child Processes Alive](#keep-titanium-extensions-child-processes-alive) | Experimental version-unpinned structural/data-flow patch: starts one main-process foreground service with persistent low-priority notification and forces STRONG binding plus IMPORTANT priority only for extension child processes (detected via --extension-process, matching upstream Titanium commit ff12f1c). Renderer and GPU children keep stock priority, so RAM and battery pressure stay closer to baseline. Tolerates routine signature, register, and helper-name changes; ambiguous targets fail closed. Mitigates LMK kills only. To hide the notification, use Android Settings > Apps > Titanium > Notifications (the keep-alive service stays active either way). | • Notification title<br>• Notification text |
 
 </details>
 
@@ -223,7 +226,7 @@ Alpha experimental patch for [issue #13](https://github.com/dh6k/morphe-patches/
 
 ### Keep Titanium Extensions Child Processes Alive
 
-Experimental version-unpinned two-layer mitigation for [issue #57](https://github.com/jqssun/android-titanium-browser/issues/57): child processes receive Chromium STRONG binding (`0x4`) and IMPORTANT/STRONG priority (`0x3`), while one main-process foreground service keeps extension background runtime visible through a persistent low-priority notification. Structural and local data-flow resolution tolerates routine signature, register, helper-name, and process-launch changes, then fails closed when relevant bytecode is genuinely ambiguous. Disabled by default and version-unpinned (no pinned Titanium version). Affects all relevant Titanium child processes, not only extensions. This can raise RAM, battery, and process pressure and only mitigates LMK kills; it does not guarantee survival, bypass force-stop or OEM task killers, detect or reload crashed extensions, or run a watchdog/polling loop/wake lock. A persistent low-importance foreground-service notification may appear. Future incompatible APKs may fail during patching. No reliable extension-only discriminator exists in inspected Titanium code, so child binding applies to all child processes.
+Experimental version-unpinned two-layer mitigation for [issue #57](https://github.com/jqssun/android-titanium-browser/issues/57): extension child processes (detected via `--extension-process`, matching upstream Titanium commit ff12f1c) receive Chromium STRONG binding (`0x4`) and IMPORTANT priority (`0x3`), while one main-process foreground service keeps extension background runtime visible through a persistent low-priority notification. Renderer and GPU children keep stock priority, so RAM and battery pressure stay closer to baseline than the previous all-children boost. Structural and local data-flow resolution tolerates routine signature, register, helper-name, and process-launch changes, then fails closed when relevant bytecode is genuinely ambiguous. Disabled by default and version-unpinned (no pinned Titanium version). This only mitigates LMK kills; it does not guarantee survival, bypass force-stop or OEM task killers, detect or reload crashed extensions, or run a watchdog/polling loop/wake lock. A persistent low-importance foreground-service notification may appear. Future incompatible APKs may fail during patching.
 
 ---
 
