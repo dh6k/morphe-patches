@@ -288,4 +288,225 @@ class BraveAmoledThemePatchTest {
         assertEquals("#0a0a0a", normalizeOpaqueHex("#0A0A0A"))
         assertEquals(null, normalizeOpaqueHex("#80121314"))
     }
+
+    @Test
+    fun `declared colors include selector files so no duplicate is created`() {
+        val res = createTempDirectory("amoled-declared").toFile()
+        res.resolve("values").mkdirs()
+        res.resolve("values-night").mkdirs()
+        res.resolve("color-v31").mkdirs()
+        res.resolve("values/colors.xml").writeText(
+            """<resources><color name="has_color_element">#ffffff</color></resources>""",
+        )
+        res.resolve("values-night/colors.xml").writeText(
+            """<resources><color name="night_only">#f0f2ff</color></resources>""",
+        )
+        // Selector-backed id: this is the one an earlier fix re-declared and
+        // turned every screen's text black.
+        res.resolve("color-v31/APKTOOL_RENAMED_0x7f0701f1.xml").writeText(
+            "<selector><item n0:color=\"#ffffff\" /></selector>",
+        )
+
+        val declared = declaredColorNames(res)
+        assertTrue("has_color_element" in declared)
+        assertTrue("night_only" in declared)
+        assertTrue("APKTOOL_RENAMED_0x7f0701f1" in declared)
+    }
+
+    @Test
+    fun `text ids backed by a selector are never re-declared`() {
+        val xml = "<resources>\n</resources>"
+        val (out, injected) = declareMissingTextColors(
+            xml = xml,
+            textNames = listOf("selector_backed", "truly_missing"),
+            declared = setOf("selector_backed"),
+            hex = "#f0f2ff",
+        )
+        assertEquals(1, injected)
+        assertFalse("selector_backed" in out, "re-declaring a selector id breaks the build")
+        assertTrue("""<color name="truly_missing">#f0f2ff</color>""" in out)
+    }
+
+    @Test
+    fun `material you regex covers the api34 surface ladder but not ink`() {
+        // v31 neutral tones
+        assertTrue(
+            MATERIAL_YOU_DARK_NEUTRAL_ROLES.matches("@android:color/system_neutral1_900"),
+        )
+        assertTrue(
+            MATERIAL_YOU_DARK_NEUTRAL_ROLES.matches("@android:color/system_neutral2_700"),
+        )
+        // v34 surface ladder — the gap this closes
+        for (role in listOf(
+            "system_background_dark",
+            "system_surface_dark",
+            "system_surface_bright_dark",
+            "system_surface_dim_dark",
+            "system_surface_variant_dark",
+            "system_surface_container_dark",
+            "system_surface_container_high_dark",
+            "system_surface_container_highest_dark",
+            "system_surface_container_low_dark",
+            "system_surface_container_lowest_dark",
+        )) {
+            assertTrue(MATERIAL_YOU_DARK_NEUTRAL_ROLES.matches("@android:color/$role"), role)
+        }
+        // Ink / accent / light roles must stay untouched
+        for (role in listOf(
+            "system_on_surface_dark",
+            "system_on_background_dark",
+            "system_outline_dark",
+            "system_primary_dark",
+            "system_accent1_900",
+            "system_neutral1_100",
+            "system_neutral2_500",
+            "system_surface_light",
+            "system_surface_container_low_light",
+        )) {
+            assertFalse(MATERIAL_YOU_DARK_NEUTRAL_ROLES.matches("@android:color/$role"), role)
+        }
+    }
+
+    @Test
+    fun `low lstar selectors drop lstar while high ones survive`() {
+        val dark = """
+            <selector>
+                <item n0:color="@android:color/system_neutral2_600" n0:lStar="12.0"
+                  xmlns:n0="http://schemas.android.com/apk/res/android" />
+            </selector>
+        """.trimIndent()
+        val (darkOut, darkCount) = rewriteDarkLStarSelectors(dark, "#000000")
+        assertEquals(1, darkCount)
+        assertTrue("""n0:color="#000000"""" in darkOut)
+        assertFalse("lStar" in darkOut, "lStar only exists to let Material You re-tint")
+        assertTrue("xmlns:n0" in darkOut, "the namespace declaration must survive")
+
+        val light = dark.replace("12.0", "87.0")
+        val (lightOut, lightCount) = rewriteDarkLStarSelectors(light, "#000000")
+        assertEquals(0, lightCount)
+        assertEquals(light, lightOut)
+    }
+
+    @Test
+    fun `vector surface fills are rewritten but icons are not`() {
+        val panel = """
+            <vector xmlns:n0="http://schemas.android.com/apk/res/android">
+                <path n0:fillColor="#1e2029" n0:pathData="M0,0" />
+                <path n0:fillColor="#84889c" n0:pathData="M1,1" />
+            </vector>
+        """.trimIndent()
+        val (panelOut, panelCount) = rewriteVectorSurfaceFills(panel, "#000000")
+        assertEquals(1, panelCount)
+        assertTrue("""n0:fillColor="#000000"""" in panelOut)
+        assertTrue("""n0:fillColor="#84889c"""" in panelOut, "icon ink inside a panel stays")
+
+        val icon = """<vector xmlns:n0="http://schemas.android.com/apk/res/android">""" +
+            """""" + """
+            <path n0:fillColor="#212529" n0:pathData="a" />
+            <path n0:fillColor="#ffffff" n0:pathData="b" />
+            <path n0:fillColor="#000000" n0:pathData="c" />
+            <path n0:fillColor="#424242" n0:pathData="d" />
+        </vector>
+        """.trimIndent()
+        val (_, iconCount) = rewriteVectorSurfaceFills(icon, "#000000")
+        assertEquals(0, iconCount, "4-path artwork is an icon, not a surface panel")
+    }
+
+    @Test
+    fun `applyAmoledResources never declares a color a selector already backs`() {
+        val res = createTempDirectory("amoled-integration").toFile()
+        res.resolve("values").mkdirs()
+        res.resolve("values-night").mkdirs()
+        res.resolve("values-v31").mkdirs()
+        res.resolve("values-v34").mkdirs()
+        res.resolve("color-v31").mkdirs()
+        res.resolve("drawable").mkdirs()
+
+        res.resolve("values/colors.xml").writeText(
+            """
+            <resources>
+                <color name="window_bg">#121212</color>
+                <color name="bg">#212529</color>
+            </resources>
+            """.trimIndent(),
+        )
+        res.resolve("values-night/colors.xml").writeText(
+            """
+            <resources>
+                <color name="bg">#1e2029</color>
+                <color name="ink">#f0f2ff</color>
+            </resources>
+            """.trimIndent(),
+        )
+        res.resolve("values-v31/colors.xml").writeText(
+            """<resources><color name="s">@android:color/system_neutral1_900</color></resources>""",
+        )
+        res.resolve("values-v34/colors.xml").writeText(
+            """
+            <resources>
+                <color name="container">@android:color/system_surface_container_dark</color>
+                <color name="on_surface">@android:color/system_on_surface_dark</color>
+            </resources>
+            """.trimIndent(),
+        )
+        res.resolve("values/styles.xml").writeText(
+            """
+            <resources>
+                <style name="T">
+                    <item name="android:textColorPrimary">@color/selector_backed</item>
+                    <item name="android:textColor">@color/never_declared</item>
+                </style>
+            </resources>
+            """.trimIndent(),
+        )
+        res.resolve("color-v31/selector_backed.xml").writeText(
+            """<selector><item n0:color="#ffffff" /></selector>""",
+        )
+        res.resolve("color-v31/dark_lstar.xml").writeText(
+            """
+            <selector>
+                <item n0:color="@android:color/system_neutral2_600" n0:lStar="6.0"
+                  xmlns:n0="http://schemas.android.com/apk/res/android" />
+            </selector>
+            """.trimIndent(),
+        )
+        res.resolve("drawable/panel.xml").writeText(
+            """
+            <vector xmlns:n0="http://schemas.android.com/apk/res/android">
+                <path n0:fillColor="#1e2029" n0:pathData="M0,0" />
+                <path n0:fillColor="#84889c" n0:pathData="M1,1" />
+            </vector>
+            """.trimIndent(),
+        )
+
+        val result = applyAmoledResources(res, "#000000", textColorHex = "#f0f2ff")
+
+        // Only the id that resolves to nothing is declared, and only for light
+        // mode (dark ink); dark mode inherits the base declaration.
+        assertEquals(1, result.textIdsInjected)
+        val night = res.resolve("values-night/colors.xml").readText()
+        assertFalse(
+            "selector_backed" in night,
+            "re-declaring a selector-backed id is what made AMOLED text black",
+        )
+        assertTrue(
+            """<color name="never_declared">#202124</color>""" in
+                res.resolve("values/colors.xml").readText(),
+        )
+        // surfaces flattened, ink preserved
+        assertTrue("""<color name="bg">#000000</color>""" in night)
+        assertTrue("""<color name="ink">#f0f2ff</color>""" in night)
+        // v31 + v34 both handled; on_surface stays ink
+        assertEquals(2, result.v31MaterialYouReplaced)
+        val v34 = res.resolve("values-v34/colors.xml").readText()
+        assertTrue("""<color name="container">#000000</color>""" in v34)
+        assertTrue("""<color name="on_surface">@android:color/system_on_surface_dark</color>""" in v34)
+        // low lStar selector pinned to AMOLED, drawable panel flattened
+        assertEquals(1, result.lStarSelectorsReplaced)
+        assertEquals(1, result.drawableSurfaceFills)
+        assertTrue("""n0:color="#000000"""" in res.resolve("color-v31/dark_lstar.xml").readText())
+        assertTrue(
+            """n0:fillColor="#000000"""" in res.resolve("drawable/panel.xml").readText(),
+        )
+    }
 }

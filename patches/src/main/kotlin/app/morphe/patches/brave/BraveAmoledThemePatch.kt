@@ -10,11 +10,18 @@
  * turn it off. The bytecode prologue forces the Z-returning readers to false.
  *
  * Layers owned here:
- *   values-night/colors.xml      — dark surface hex literals → AMOLED background
- *   values-v31/colors.xml        — system_neutral*_(700+) roles → AMOLED background
- *   values-night-v31/colors.xml  — re-assert those names over Material You
+ *   values/colors.xml + values-night/colors.xml  — dark surface hex → AMOLED background
+ *   values-v31/v34/v35/colors.xml — Material You dark surface roles → AMOLED background
+ *   res/color selector files      — low-lStar dynamic surfaces pinned to the background
+ *   res/drawable vector files     — panels that hardcode the dark chrome fill
+ *   values-night-v31/colors.xml — re-assert every surface id over Material You
  *   res/xml preference switches  — default the dynamic-colors widget to OFF
  *   bytecode getters             — force Material You readers to return false
+ *
+ * Declaring a <color> for an id that already has a selector file under res/color
+ * is a duplicate resource: it breaks the build and, when it slips through,
+ * renders that text black. Text ids are only declared when nothing else defines
+ * them.
  *
  * Not owned: web content force-dark (brave_night_mode_enabled_key), NTP theme
  * collections, Chromium ColorProvider / native .pak chrome.
@@ -42,7 +49,6 @@ internal const val DYNAMIC_COLORS_FEATURE_FLAG = "BraveAndroidDynamicColorsByDef
 internal const val DAY_COLORS_PATH = "values/colors.xml"
 internal const val NIGHT_COLORS_PATH = "values-night/colors.xml"
 internal const val NIGHT_V31_COLORS_PATH = "values-night-v31/colors.xml"
-internal const val V31_COLORS_PATH = "values-v31/colors.xml"
 
 /** Chrome/Brave dark surface literals seen on 1.9x; heuristic still covers drift. */
 internal val KNOWN_DARK_SURFACE_HEXES = setOf(
@@ -68,11 +74,35 @@ internal val KNOWN_DARK_SURFACE_HEXES = setOf(
     "#3b3e4f",
 )
 
-/** Material You dark neutral roles that would override values-night on API 31+. */
+/**
+ * Material You dark surface roles that would override values-night. Two families:
+ *   - neutral tones on API 31+ (values-v31)
+ *   - the surface/background role ladder on API 34+ (values-v34)
+ * on_surface / outline / accent roles are ink, never surfaces, and stay.
+ *
+ * Flattening the whole ladder (including surface_bright_dark, the brightest step)
+ * collapses the elevation ramp on purpose: AMOLED wants one flat black.
+ */
 internal val MATERIAL_YOU_DARK_NEUTRAL_ROLES = Regex(
-    pattern = """@android:color/system_neutral[123]_(700|800|900|1000)$""",
+    pattern = """@android:color/system_(?:neutral[123]_(?:700|800|900|1000)""" +
+        """|(?:background|surface|surface_bright|surface_dim|surface_variant""" +
+        """|surface_container(?:_low|_lowest|_high|_highest)?)_dark)$""",
     option = RegexOption.IGNORE_CASE,
 )
+
+/**
+ * res/color-v31 selectors pin a dark neutral tone to an explicit low lStar so
+ * Material You can tint it. lStar only applies to dynamic colors, so the value
+ * falls back to the raw tone — a near-black grey. Rewriting the color and
+ * dropping lStar is what actually forces AMOLED.
+ */
+internal val DARK_LSTAR_SELECTOR = Regex(
+    pattern = """<item\s+n0:color="@android:color/system_[^"]+"\s+n0:lStar="(\d+(?:\.\d+)?)"""",
+    option = RegexOption.IGNORE_CASE,
+)
+
+/** Below this lStar a surface role is too dark to read text on. */
+internal const val DARK_SURFACE_LSTAR_CEILING = 24.0
 
 private val HEX_COLOR = Regex("""^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})$""")
 private val COLOR_ELEMENT = Regex(
@@ -246,6 +276,128 @@ internal fun collectMaterialYouDarkNeutralNames(xml: String): List<String> =
         .map { it.groupValues[1] }
         .toList()
 
+private val TEXT_COLOR_REF = Regex("""textColor[A-Za-z]*">@color/([^<]+)<""")
+
+/**
+ * Color names styles mark as text (textColorPrimary / Secondary / Hint / …).
+ * Must scan every style qualifier: values-v31/styles.xml re-points the theme at
+ * a different id set on Android 12+, and those ids resolve through the
+ * res/color selector folders, so reading only values/ misses whatever that
+ * qualifier swaps in.
+ */
+internal fun collectTextColorRefs(stylesXml: String): List<String> =
+    TEXT_COLOR_REF.findAll(stylesXml).map { it.groupValues[1] }.distinct().toList()
+
+internal fun collectTextColorRefsFromDir(resourceDirectory: File): List<String> {
+    val out = linkedSetOf<String>()
+    resourceDirectory.listFiles()
+        .orEmpty()
+        .filter { it.isDirectory && it.name.startsWith("values") }
+        .flatMap { it.listFiles().orEmpty().toList() }
+        .filter { it.isFile && it.name.equals("styles.xml", ignoreCase = true) }
+        .forEach { out += collectTextColorRefs(it.readText()) }
+    return out.toList()
+}
+
+/** Day ink used when an undefined text id must be re-declared for light mode. */
+internal const val DAY_INK = "#202124"
+
+/**
+ * Every directory that can hold a color definition: values XML plus the
+ * res/color* selector folders. A `<color name="X">` next to an existing
+ * res/color/X.xml is a duplicate resource and breaks the build, so both forms
+ * have to be checked before declaring anything.
+ */
+internal fun declaredColorNames(resourceDirectory: File): Set<String> {
+    val names = linkedSetOf<String>()
+    resourceDirectory.listFiles()
+        .orEmpty()
+        .filter { it.isDirectory && it.name.startsWith("values") }
+        .flatMap { it.listFiles().orEmpty().toList() }
+        .filter { it.isFile && it.name.equals("colors.xml", ignoreCase = true) }
+        .forEach { file ->
+            COLOR_ELEMENT.findAll(file.readText()).forEach { names += it.groupValues[1] }
+        }
+    resourceDirectory.listFiles()
+        .orEmpty()
+        .filter { it.isDirectory && it.name.startsWith("color") }
+        .forEach { dir ->
+            dir.listFiles().orEmpty()
+                .filter { it.isFile && it.extension.equals("xml", ignoreCase = true) }
+                .forEach { names += it.nameWithoutExtension }
+        }
+    return names
+}
+
+/**
+ * Only ids that resolve to nothing at all get a new <color>. Anything already
+ * backed by a selector file is left untouched — declaring it again is what
+ * turned every screen's text black on AMOLED in the first place.
+ */
+internal fun declareMissingTextColors(
+    xml: String,
+    textNames: Collection<String>,
+    declared: Set<String>,
+    hex: String,
+): Pair<String, Int> {
+    val target = normalizeOpaqueHex(hex)
+        ?: throw PatchException("Text color must be an opaque hex: $hex")
+    val missing = textNames.filter { it !in declared }.toSortedSet()
+    if (missing.isEmpty()) return xml to 0
+
+    val inject = missing.joinToString("\n") { name -> """    <color name="$name">$target</color>""" }
+    val out = if (xml.contains("</resources>")) {
+        xml.replace("</resources>", "$inject\n</resources>")
+    } else {
+        xml + "\n<resources>\n$inject\n</resources>\n"
+    }
+    return out to missing.size
+}
+
+/**
+ * A res/color-v31 selector that pins a tone to a very low lStar is a dark
+ * surface. Point it at the AMOLED background and drop lStar, which only exists
+ * to let Material You re-tint the tone. Only the two attributes are touched so
+ * the xmlns:n0 declaration on the same tag survives.
+ */
+internal fun rewriteDarkLStarSelectors(xml: String, backgroundHex: String): Pair<String, Int> {
+    val target = normalizeOpaqueHex(backgroundHex)
+        ?: throw PatchException("AMOLED background must be an opaque hex color: $backgroundHex")
+    var replaced = 0
+    val out = DARK_LSTAR_SELECTOR.replace(xml) { match ->
+        val lStar = match.groupValues[1].toDoubleOrNull() ?: return@replace match.value
+        if (lStar > DARK_SURFACE_LSTAR_CEILING) return@replace match.value
+        replaced++
+        match.value
+            .replace(Regex("""n0:color="[^"]*""""), """n0:color="$target"""")
+            .replace(Regex("""\s+n0:lStar="[^"]*""""), "")
+    }
+    return out to replaced
+}
+
+private val VECTOR_PATH = Regex("""<path\b""")
+
+private val VECTOR_FILL = Regex("(n0:fillColor|n1:fillColor)=\"([^\"]+)\"")
+
+/**
+ * Vector panels (promo cards, sheets) hardcode the dark chrome fill instead of
+ * pointing at a color resource. Rewriting them is limited to small path counts
+ * so icons — whose fills are ink, not surfaces — are never touched.
+ */
+internal fun rewriteVectorSurfaceFills(xml: String, backgroundHex: String): Pair<String, Int> {
+    val target = normalizeOpaqueHex(backgroundHex)
+        ?: throw PatchException("AMOLED background must be an opaque hex color: $backgroundHex")
+    val pathCount = VECTOR_PATH.findAll(xml).count()
+    if (pathCount == 0 || pathCount > 3) return xml to 0
+    var replaced = 0
+    val out = VECTOR_FILL.replace(xml) { match ->
+        if (!isAmoledSurfaceColor(match.groupValues[2])) return@replace match.value
+        replaced++
+        match.groupValues[1] + "=\"" + target + "\""
+    }
+    return out to replaced
+}
+
 internal fun buildNightV31Overrides(names: Collection<String>, backgroundHex: String): String {
     val target = normalizeOpaqueHex(backgroundHex)
         ?: throw PatchException("AMOLED background must be an opaque hex color: $backgroundHex")
@@ -300,6 +452,16 @@ internal fun disableDynamicColorsPreference(resourceDirectory: File): Int {
     return changed
 }
 
+/** Material You role files, oldest first so values-night-v31 wins. */
+internal val MATERIAL_YOU_COLORS_PATHS = listOf(
+    "values-v31/colors.xml",
+    "values-v34/colors.xml",
+    "values-v35/colors.xml",
+)
+
+/** Selector directories that can pin a surface to a low lStar. */
+internal val SELECTOR_DIRS = listOf("color", "color-night", "color-v31")
+
 internal fun applyAmoledResources(
     resourceDirectory: File,
     backgroundHex: String,
@@ -307,12 +469,17 @@ internal fun applyAmoledResources(
     accentColorHex: String? = null,
     disableDynamicColors: Boolean = true,
 ): AmoledRewriteResult {
+    val textRefs = collectTextColorRefsFromDir(resourceDirectory)
+    val declared = declaredColorNames(resourceDirectory)
+    val dayFile = resourceDirectory.resolve(DAY_COLORS_PATH)
+    val nightFile = resourceDirectory.resolve(NIGHT_COLORS_PATH)
+
     // Chrome windowBackground / colorBackground live as dark hexes in
     // values/colors.xml (#121212 / #ff303030 / …), not only in values-night.
-    val dayFile = resourceDirectory.resolve(DAY_COLORS_PATH)
     var dayReplaced = 0
     var dayTextReplaced = 0
     var dayAccentReplaced = 0
+    var dayInkInjected = 0
     if (dayFile.isFile) {
         var xml = dayFile.readText()
         val (afterBg, bgCount) = rewriteNightColorXml(xml, backgroundHex)
@@ -322,6 +489,10 @@ internal fun applyAmoledResources(
             val (afterText, count) = rewriteTextColorXml(xml, textColorHex)
             xml = afterText
             dayTextReplaced = count
+            // Light mode keeps dark ink, so only declare what resolves to nothing.
+            val (afterInject, injected) = declareMissingTextColors(xml, textRefs, declared, DAY_INK)
+            xml = afterInject
+            dayInkInjected = injected
         }
         if (accentColorHex != null) {
             val (afterAccent, count) = rewriteAccentColorXml(xml, accentColorHex)
@@ -331,7 +502,6 @@ internal fun applyAmoledResources(
         dayFile.writeText(xml)
     }
 
-    val nightFile = resourceDirectory.resolve(NIGHT_COLORS_PATH)
     if (!nightFile.isFile) {
         throw PatchException("Brave night color resources not found: $NIGHT_COLORS_PATH")
     }
@@ -354,18 +524,53 @@ internal fun applyAmoledResources(
 
     val surfaceNames = collectSurfaceColorNames(nightXml) +
         (if (dayFile.isFile) collectSurfaceColorNames(dayFile.readText()) else emptyList())
-    val v31File = resourceDirectory.resolve(V31_COLORS_PATH)
-    var v31Replaced = 0
-    val materialYouNames = if (v31File.isFile) {
-        val v31Xml = v31File.readText()
-        val names = collectMaterialYouDarkNeutralNames(v31Xml)
-        val (next, count) = rewriteMaterialYouDarkNeutrals(v31Xml, backgroundHex)
-        v31File.writeText(next)
-        v31Replaced = count
-        names
-    } else {
-        emptyList()
+
+    var materialYouReplaced = 0
+    val materialYouNames = mutableListOf<String>()
+    MATERIAL_YOU_COLORS_PATHS.forEach { path ->
+        val file = resourceDirectory.resolve(path)
+        if (!file.isFile) return@forEach
+        val xml = file.readText()
+        materialYouNames += collectMaterialYouDarkNeutralNames(xml)
+        val (next, count) = rewriteMaterialYouDarkNeutrals(xml, backgroundHex)
+        file.writeText(next)
+        materialYouReplaced += count
     }
+
+    var lStarReplaced = 0
+    SELECTOR_DIRS.forEach { dir ->
+        val dirFile = resourceDirectory.resolve(dir)
+        dirFile.listFiles()
+            .orEmpty()
+            .filter { it.isFile && it.extension.equals("xml", ignoreCase = true) }
+            .forEach { file ->
+                val xml = file.readText()
+                val (next, count) = rewriteDarkLStarSelectors(xml, backgroundHex)
+                if (count > 0) {
+                    file.writeText(next)
+                    lStarReplaced += count
+                }
+            }
+    }
+
+    var drawableFills = 0
+    resourceDirectory.listFiles()
+        .orEmpty()
+        .filter { it.isDirectory && it.name.startsWith("drawable") }
+        .forEach { dir ->
+            dir.listFiles()
+                .orEmpty()
+                .filter { it.isFile && it.extension.equals("xml", ignoreCase = true) }
+                .forEach { file ->
+                    val xml = file.readText()
+                    if (!xml.contains("<path")) return@forEach
+                    val (next, count) = rewriteVectorSurfaceFills(xml, backgroundHex)
+                    if (count > 0) {
+                        file.writeText(next)
+                        drawableFills += count
+                    }
+                }
+        }
 
     val overrideNames = (surfaceNames + materialYouNames).toSortedSet()
     if (overrideNames.isNotEmpty()) {
@@ -382,10 +587,13 @@ internal fun applyAmoledResources(
     return AmoledRewriteResult(
         dayColorsReplaced = dayReplaced,
         nightColorsReplaced = nightReplaced,
-        v31MaterialYouReplaced = v31Replaced,
+        v31MaterialYouReplaced = materialYouReplaced,
         nightV31Overrides = overrideNames.size,
         textColorsReplaced = dayTextReplaced + nightTextReplaced,
         accentColorsReplaced = dayAccentReplaced + nightAccentReplaced,
+        textIdsInjected = dayInkInjected,
+        lStarSelectorsReplaced = lStarReplaced,
+        drawableSurfaceFills = drawableFills,
         preferenceFilesChanged = dynamicPrefs,
     )
 }
@@ -397,6 +605,9 @@ internal data class AmoledRewriteResult(
     val nightV31Overrides: Int,
     val textColorsReplaced: Int = 0,
     val accentColorsReplaced: Int = 0,
+    val textIdsInjected: Int = 0,
+    val lStarSelectorsReplaced: Int = 0,
+    val drawableSurfaceFills: Int = 0,
     val preferenceFilesChanged: Int,
 )
 
@@ -526,10 +737,13 @@ private val braveAmoledResourcePatch: ResourcePatch = resourcePatch(
             "[AMOLED] background=$background text=${text ?: "-"} accent=${accent ?: "-"} " +
                 "dayReplaced=${result.dayColorsReplaced} " +
                 "nightReplaced=${result.nightColorsReplaced} " +
-                "v31Replaced=${result.v31MaterialYouReplaced} " +
+                "materialYouReplaced=${result.v31MaterialYouReplaced} " +
                 "nightV31Overrides=${result.nightV31Overrides} " +
                 "textReplaced=${result.textColorsReplaced} " +
                 "accentReplaced=${result.accentColorsReplaced} " +
+                "textIdsInjected=${result.textIdsInjected} " +
+                "lStarSelectors=${result.lStarSelectorsReplaced} " +
+                "drawableFills=${result.drawableSurfaceFills} " +
                 "prefFiles=${result.preferenceFilesChanged}",
         )
     }
