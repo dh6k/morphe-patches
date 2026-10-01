@@ -654,4 +654,49 @@ class BraveAmoledThemePatchTest {
                 res.resolve("values-night/colors.xml").readText(),
         )
     }
+
+    @Test
+    fun `accent coloured text keeps its colour in dark mode`() {
+        val res = createTempDirectory("amoled-accent-text").toFile()
+        res.resolve("values").mkdirs()
+        res.resolve("values-night").mkdirs()
+        res.resolve("values/styles.xml").writeText(
+            """
+            <resources>
+                <style name="Stats">
+                    <item name="android:textColor">@color/stat_orange</item>
+                    <item name="android:textColor">@color/stat_grey</item>
+                    <item name="android:textColor">@color/body_ink</item>
+                </style>
+            </resources>
+            """.trimIndent(),
+        )
+        // The privacy report paints its stat numbers in the accent palette, so
+        // forcing every text id onto the ink colour erases the colour coding.
+        res.resolve("values/colors.xml").writeText(
+            """
+            <resources>
+                <color name="stat_orange">#cd4400</color>
+                <color name="stat_grey">#687485</color>
+                <color name="body_ink">#212529</color>
+            </resources>
+            """.trimIndent(),
+        )
+        res.resolve("values-night/colors.xml").writeText(
+            """<resources><color name="bg">#1e2029</color></resources>""",
+        )
+
+        applyAmoledResources(res, "#000000", textColorHex = "#f0f2ff")
+
+        val night = res.resolve("values-night/colors.xml").readText()
+        assertFalse(
+            """<color name="stat_orange">#f0f2ff</color>""" in night,
+            "an orange stat number must not be flattened onto the body ink",
+        )
+        assertFalse("""<color name="stat_grey">#f0f2ff</color>""" in night)
+        assertTrue(
+            """<color name="body_ink">#f0f2ff</color>""" in night,
+            "genuinely dark ink still needs a readable night value",
+        )
+    }
 }

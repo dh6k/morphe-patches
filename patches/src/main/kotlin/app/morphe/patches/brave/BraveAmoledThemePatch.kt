@@ -451,6 +451,25 @@ internal fun declaredColorNamesIn(file: File): Set<String> {
 }
 
 /**
+ * Text ids whose light-mode value is too dark to read on AMOLED. Only these need
+ * a night declaration.
+ *
+ * Text positions are not always ink: the privacy report paints its stat numbers
+ * in the accent palette (#cd4400 orange, #545ff8 blue), and forcing those to the
+ * body-ink colour turns a three-colour readout into three identical white
+ * numbers. The test is darkness, not "is it ink" — #212529 body ink and #cd4400
+ * stat orange are both dark, yet only the first needs rewriting.
+ */
+internal fun darkTextIdsInDay(xml: String, textIds: Collection<String>): List<String> {
+    val dark = COLOR_ELEMENT.findAll(xml)
+        .filter { it.groupValues[1] in textIds }
+        .filter { isAmoledSurfaceColor(it.groupValues[2].trim()) }
+        .map { it.groupValues[1] }
+        .toSet()
+    return dark.toList()
+}
+
+/**
  * Text ids that have a light-mode colour but no dark-mode counterpart keep that
  * light (dark) value in dark mode, where it is black on black. Declaring the same
  * id again under values-night is an override, not a duplicate — the id already
@@ -653,9 +672,10 @@ internal fun applyAmoledResources(
         nightTextReplaced = count
         // Ids the app renders text with but that only exist in the light config
         // would stay dark-on-dark here, so give night its own readable value.
+        // Accent-coloured text (privacy-report stat numbers) is left alone.
         val (afterDeclare, declaredCount) = declareNightTextColors(
             nightXml,
-            textBearing,
+            darkTextIdsInDay(originalDayXml, textBearing),
             declaredColorNamesIn(nightFile),
             textColorHex,
             // An id a selector folder already resolves must not gain a <color>
