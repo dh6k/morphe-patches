@@ -595,4 +595,63 @@ class BraveAmoledThemePatchTest {
         assertFalse("already_night" in out, "an id night already defines is not redeclared")
         assertTrue("""<color name="bg">#1e2029</color>""" in out)
     }
+
+    @Test
+    fun `night v31 overrides never re-assert text ids as background`() {
+        val res = createTempDirectory("amoled-nv31").toFile()
+        res.resolve("values").mkdirs()
+        res.resolve("values-night").mkdirs()
+        res.resolve("values-v31").mkdirs()
+        res.resolve("values/styles.xml").writeText(
+            """
+            <resources>
+                <style name="T">
+                    <item name="android:textColor">@color/ink_id</item>
+                </style>
+            </resources>
+            """.trimIndent(),
+        )
+        // Both look exactly like dark chrome surfaces; only one is really ink.
+        res.resolve("values/colors.xml").writeText(
+            """
+            <resources>
+                <color name="panel">#1e2029</color>
+                <color name="ink_id">#1c1c1d</color>
+            </resources>
+            """.trimIndent(),
+        )
+        res.resolve("values-night/colors.xml").writeText(
+            """
+            <resources>
+                <color name="panel">#1e2029</color>
+                <color name="ink_id">#e4e4e5</color>
+            </resources>
+            """.trimIndent(),
+        )
+        res.resolve("values-v31/colors.xml").writeText(
+            """
+            <resources>
+                <color name="my_surface">@android:color/system_neutral1_900</color>
+            </resources>
+            """.trimIndent(),
+        )
+
+        applyAmoledResources(res, "#000000", textColorHex = "#f0f2ff")
+
+        val nv31 = res.resolve("values-night-v31/colors.xml")
+        assertTrue(nv31.isFile, "the override file still has to exist")
+        val text = nv31.readText()
+        assertFalse(
+            "ink_id" in text,
+            "a text id re-asserted here overrides the values-night fix and goes black",
+        )
+        assertTrue("panel" in text, "real surfaces still need the night-v31 override")
+        assertTrue("my_surface" in text, "Material You roles still need it too")
+
+        // values-night keeps the readable ink the patch wrote.
+        assertTrue(
+            """<color name="ink_id">#f0f2ff</color>""" in
+                res.resolve("values-night/colors.xml").readText(),
+        )
+    }
 }

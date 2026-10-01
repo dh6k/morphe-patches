@@ -292,6 +292,27 @@ internal fun collectMaterialYouDarkNeutralNames(xml: String): List<String> =
         .map { it.groupValues[1] }
         .toList()
 
+/**
+ * Ids that values-night-v31 has to re-assert because a Material You role would
+ * otherwise win over values-night on API 31+.
+ *
+ * The set is collected from the files as they were *before* the sweep. Reading
+ * them back afterwards would count everything the sweep just wrote — including
+ * the ids it flattened — and re-assert all of them as background, which puts the
+ * text ids back to black on top of the values-night fix.
+ */
+internal fun collectOverrideNames(
+    dayXml: String,
+    nightXml: String,
+    materialYouNames: Collection<String>,
+    textBearing: Set<String>,
+): Set<String> {
+    val surfaces = collectSurfaceColorNames(nightXml) + collectSurfaceColorNames(dayXml)
+    // Text ink must never be re-asserted as a background, whatever the sweep did.
+    val materialYou = materialYouNames.filter { it !in textBearing }
+    return (surfaces.filter { it !in textBearing } + materialYou).toSortedSet()
+}
+
 private val TEXT_COLOR_REF = Regex("""textColor[A-Za-z]*">@color/([^<]+)<""")
 
 /**
@@ -584,6 +605,10 @@ internal fun applyAmoledResources(
     val textBearing = collectTextBearingIds(resourceDirectory)
     val dayFile = resourceDirectory.resolve(DAY_COLORS_PATH)
     val nightFile = resourceDirectory.resolve(NIGHT_COLORS_PATH)
+    // Snapshot before the sweep: the night-v31 override set is built from what
+    // the app shipped, not from what the sweep just wrote.
+    val originalDayXml = if (dayFile.isFile) dayFile.readText() else ""
+    val originalNightXml = if (nightFile.isFile) nightFile.readText() else ""
 
     // Chrome windowBackground / colorBackground live as dark hexes in
     // values/colors.xml (#121212 / #ff303030 / …), not only in values-night.
@@ -647,9 +672,6 @@ internal fun applyAmoledResources(
     }
     nightFile.writeText(nightXml)
 
-    val surfaceNames = collectSurfaceColorNames(nightXml) +
-        (if (dayFile.isFile) collectSurfaceColorNames(dayFile.readText()) else emptyList())
-
     var materialYouReplaced = 0
     val materialYouNames = mutableListOf<String>()
     MATERIAL_YOU_COLORS_PATHS.forEach { path ->
@@ -661,6 +683,15 @@ internal fun applyAmoledResources(
         file.writeText(next)
         materialYouReplaced += count
     }
+
+    // Built from the pre-sweep snapshot: reading the rewritten files back would
+    // re-assert every flattened id, including the text ones, as background.
+    val overrideNames = collectOverrideNames(
+        originalDayXml,
+        originalNightXml,
+        materialYouNames,
+        textBearing,
+    )
 
     var lStarReplaced = 0
     SELECTOR_DIRS.forEach { dir ->
@@ -697,7 +728,6 @@ internal fun applyAmoledResources(
                 }
         }
 
-    val overrideNames = (surfaceNames + materialYouNames).toSortedSet()
     if (overrideNames.isNotEmpty()) {
         val nightV31 = resourceDirectory.resolve(NIGHT_V31_COLORS_PATH)
         nightV31.parentFile?.mkdirs()
