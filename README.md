@@ -105,6 +105,7 @@ See [Patch notes](#patch-notes) for Startup Performance, Custom NTP wallpaper, a
 | 💊&nbsp;Patch | 📜&nbsp;Description | ⚙️&nbsp;Options |
 |----------|----------------|-----------|
 | [Brave AMOLED theme](#brave-amoled-theme) | Patch-time AMOLED dark theme (issue #21): rewrites Brave dark chrome surfaces to pure black (or a custom opaque hex). Optional text and accent colors (defaults keep Brave's #f0f2ff / #737ade). Forces Material You dynamic colors off in bytecode (the pref is non-persistent) and overrides system neutral night roles on Android 12+. Apply Dark theme in Brave to see it. Does not change web content force-dark, NTP theme collections, or add a runtime color picker. Default off. | • AMOLED background<br>• Text color<br>• Accent color<br>• Disable Material You dynamic colors |
+| [Brave NTP four-column tiles](#brave-ntp-four-column-tiles) | Experimental version-unpinned patch (issue #24): keeps the new-tab pinned and most-visited tiles in a four-column grid that extends downwards, the layout Brave already uses when no background image is set, and keeps it while a background image is enabled. Neutralizes the `brave.new_tab_page.show_background_image` gate in the NTP builder that otherwise forces the tiles into a single horizontally scrolling row. Default off. |  |
 | [Brave Origin](#brave-origin) | Unlocks Brave Origin and enables feature toggle controls. |  |
 | [Brave Startup Performance Optimization](#brave-startup-performance-optimization) | Optimizes startup time and eliminates background CPU/disk overhead by disabling unused OEM carrier partner customizations. Marks PartnerBrowserCustomizations initialized without SharedPreferences/ContentResolver/ThreadPool/timeout work, drains init callbacks immediately, and forces partner homepage and incognito lockdown gates closed. |  |
 | [Custom NTP wallpaper](#custom-ntp-wallpaper) | Alpha experimental version-unpinned patch (issue #13): forces the Brave new-tab background to a custom PNG chosen at patch time. Rewrites the Java ambient wallpaper catalog (BackgroundImage drawable resource id) and makes wallpaper callbacks use it instead of native branded/URL images. IMPORTANT: crop the image to your current screen resolution first, then select that file in the patch options. Brave's New tab page settings only toggle "Show background images". Default off. | • Custom NTP wallpaper |
@@ -118,6 +119,7 @@ See [Patch notes](#patch-notes) for Startup Performance, Custom NTP wallpaper, a
 | 💊&nbsp;Patch | 📜&nbsp;Description | ⚙️&nbsp;Options |
 |----------|----------------|-----------|
 | [Brave AMOLED theme](#brave-amoled-theme) | Patch-time AMOLED dark theme (issue #21): rewrites Brave dark chrome surfaces to pure black (or a custom opaque hex). Optional text and accent colors (defaults keep Brave's #f0f2ff / #737ade). Forces Material You dynamic colors off in bytecode (the pref is non-persistent) and overrides system neutral night roles on Android 12+. Apply Dark theme in Brave to see it. Does not change web content force-dark, NTP theme collections, or add a runtime color picker. Default off. | • AMOLED background<br>• Text color<br>• Accent color<br>• Disable Material You dynamic colors |
+| [Brave NTP four-column tiles](#brave-ntp-four-column-tiles) | Experimental version-unpinned patch (issue #24): keeps the new-tab pinned and most-visited tiles in a four-column grid that extends downwards, the layout Brave already uses when no background image is set, and keeps it while a background image is enabled. Neutralizes the `brave.new_tab_page.show_background_image` gate in the NTP builder that otherwise forces the tiles into a single horizontally scrolling row. Default off. |  |
 | [Brave Origin](#brave-origin) | Unlocks Brave Origin and enables feature toggle controls. |  |
 | [Brave Startup Performance Optimization](#brave-startup-performance-optimization) | Optimizes startup time and eliminates background CPU/disk overhead by disabling unused OEM carrier partner customizations. Marks PartnerBrowserCustomizations initialized without SharedPreferences/ContentResolver/ThreadPool/timeout work, drains init callbacks immediately, and forces partner homepage and incognito lockdown gates closed. |  |
 | [Custom NTP wallpaper](#custom-ntp-wallpaper) | Alpha experimental version-unpinned patch (issue #13): forces the Brave new-tab background to a custom PNG chosen at patch time. Rewrites the Java ambient wallpaper catalog (BackgroundImage drawable resource id) and makes wallpaper callbacks use it instead of native branded/URL images. IMPORTANT: crop the image to your current screen resolution first, then select that file in the patch options. Brave's New tab page settings only toggle "Show background images". Default off. | • Custom NTP wallpaper |
@@ -131,6 +133,7 @@ See [Patch notes](#patch-notes) for Startup Performance, Custom NTP wallpaper, a
 | 💊&nbsp;Patch | 📜&nbsp;Description | ⚙️&nbsp;Options |
 |----------|----------------|-----------|
 | [Brave AMOLED theme](#brave-amoled-theme) | Patch-time AMOLED dark theme (issue #21): rewrites Brave dark chrome surfaces to pure black (or a custom opaque hex). Optional text and accent colors (defaults keep Brave's #f0f2ff / #737ade). Forces Material You dynamic colors off in bytecode (the pref is non-persistent) and overrides system neutral night roles on Android 12+. Apply Dark theme in Brave to see it. Does not change web content force-dark, NTP theme collections, or add a runtime color picker. Default off. | • AMOLED background<br>• Text color<br>• Accent color<br>• Disable Material You dynamic colors |
+| [Brave NTP four-column tiles](#brave-ntp-four-column-tiles) | Experimental version-unpinned patch (issue #24): keeps the new-tab pinned and most-visited tiles in a four-column grid that extends downwards, the layout Brave already uses when no background image is set, and keeps it while a background image is enabled. Neutralizes the `brave.new_tab_page.show_background_image` gate in the NTP builder that otherwise forces the tiles into a single horizontally scrolling row. Default off. |  |
 | [Brave Origin](#brave-origin) | Unlocks Brave Origin and enables feature toggle controls. |  |
 | [Brave Startup Performance Optimization](#brave-startup-performance-optimization) | Optimizes startup time and eliminates background CPU/disk overhead by disabling unused OEM carrier partner customizations. Marks PartnerBrowserCustomizations initialized without SharedPreferences/ContentResolver/ThreadPool/timeout work, drains init callbacks immediately, and forces partner homepage and incognito lockdown gates closed. |  |
 | [Custom NTP wallpaper](#custom-ntp-wallpaper) | Alpha experimental version-unpinned patch (issue #13): forces the Brave new-tab background to a custom PNG chosen at patch time. Rewrites the Java ambient wallpaper catalog (BackgroundImage drawable resource id) and makes wallpaper callbacks use it instead of native branded/URL images. IMPORTANT: crop the image to your current screen resolution first, then select that file in the patch options. Brave's New tab page settings only toggle "Show background images". Default off. | • Custom NTP wallpaper |
@@ -223,6 +226,28 @@ By design this disables OEM partner homepage and Incognito-lockdown behavior. On
 Alpha experimental patch for [issue #13](https://github.com/dh6k/morphe-patches/issues/13). Brave's **New tab page** settings only expose **Show background images**; this patch forces the NTP background to a patch-time PNG by rewriting the Java ambient wallpaper catalog (`BackgroundImage` drawable resource id) and making wallpaper callbacks use it instead of native branded/URL images.
 
 **How to use:** crop the wallpaper to your **current screen resolution** first (gallery / any crop tool, exact width × height of the device), then select that PNG in the patch options. Default off. Ambiguous targets fail closed. Intended for arm64-v8a APKs; the framework does not enforce ABI.
+
+### Brave NTP four-column tiles
+
+Experimental version-unpinned patch for [issue #24](https://github.com/dh6k/morphe-patches/issues/24). Brave's NTP tiles collapse into a single horizontally scrolling row as soon as a background image is enabled.
+
+**Cause.** `MostVisitedTilesLayout` (a Chromium class Brave partially rewrote) keeps two layouts behind one boolean instance flag — `TilesLinearLayout` in a `HorizontalScrollView` for a single row, or a `GridLayout` with a hardcoded **4 columns** laid out downwards. Brave writes that flag in the NTP builder, and only when the `brave.new_tab_page.show_background_image` pref is **off**:
+
+```
+pref = PrefService.getBoolean("brave.new_tab_page.show_background_image")
+if (pref) skip
+MostVisitedTilesLayout-><flag> = true     // iput-boolean, the single write in the APK
+```
+
+The flag has exactly one writer and one reader (the measure pass), so the gate is the only thing standing between the two layouts.
+
+**Fix.** The patch replaces the single `if-nez` skip branch after the pref read with a `nop`, so the flag is always written as true. `if-nez` is a 2-byte format-21t and `nop` is a 2-byte format-10x, so the swap is byte-identical and every branch offset in the ~6.3 kB factory method stays valid.
+
+**Why it writes the flag instead of the read.** Rewriting the reader to force `true` makes the value provably constant, and the reassembler then folds away the surrounding four-column code — `const/4 v2, 4` and its width guard disappear, leaving `setColumnCount` with a stale register and a one-column grid. Writing the producer leaves the reader and all of its code untouched.
+
+`HorizontalScrollView` is only used in `onLayout` to auto-scroll a focused tile into view, and both of its call sites are null-guarded, so the grid path does not depend on the scroll container.
+
+**Validation:** statically validated on Brave Nightly `1.98.21` (`com.brave.browser_nightly`) — fingerprint matched exactly one method, one flag write, one gate branch at index #1637. The patched dex was disassembled and compared against the original: the measure pass is byte-identical, `const/4 v2, 4` and `setColumnCount` survive, and the factory method stays at 6352 code bytes with no offset drift. No on-device test was run.
 
 ### Keep Titanium Extensions Child Processes Alive
 
