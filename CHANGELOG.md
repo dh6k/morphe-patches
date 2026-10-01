@@ -1,3 +1,9 @@
+## [1.8.0-dev.7](https://github.com/dh6k/morphe-patches/compare/v1.8.0-dev.6...v1.8.0-dev.7) (2026-10-01)
+
+### 🐛 Bug Fixes
+
+* **brave:** stop declaring text colors that already have selectors ([cda4691](https://github.com/dh6k/morphe-patches/commit/cda4691484a808a2ad476ac1e24f49d5845af04c))
+
 ## [1.8.0-dev.6](https://github.com/dh6k/morphe-patches/compare/v1.8.0-dev.5...v1.8.0-dev.6) (2026-09-30)
 
 ### ✨ New Features
