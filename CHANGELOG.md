@@ -1,3 +1,9 @@
+## [1.8.0-dev.10](https://github.com/dh6k/morphe-patches/compare/v1.8.0-dev.9...v1.8.0-dev.10) (2026-10-01)
+
+### 🐛 Bug Fixes
+
+* **brave:** keep accent-coloured text when declaring night ink ([11d8e1f](https://github.com/dh6k/morphe-patches/commit/11d8e1fa0a6d398682e19d33d81cf22d535ad635)), closes [#cd4400](https://github.com/dh6k/morphe-patches/issues/cd4400) [#545ff8](https://github.com/dh6k/morphe-patches/issues/545ff8) [#687485](https://github.com/dh6k/morphe-patches/issues/687485)
+
 ## [1.8.0-dev.9](https://github.com/dh6k/morphe-patches/compare/v1.8.0-dev.8...v1.8.0-dev.9) (2026-10-01)
 
 ### 🐛 Bug Fixes
