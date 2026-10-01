@@ -1,3 +1,9 @@
+## [1.8.0-dev.9](https://github.com/dh6k/morphe-patches/compare/v1.8.0-dev.8...v1.8.0-dev.9) (2026-10-01)
+
+### 🐛 Bug Fixes
+
+* **brave:** stop night-v31 overrides from re-asserting text as background ([d17495b](https://github.com/dh6k/morphe-patches/commit/d17495bb353edeef95c552f0cbff181ac98c3405)), closes [#000000](https://github.com/dh6k/morphe-patches/issues/000000)
+
 ## [1.8.0-dev.8](https://github.com/dh6k/morphe-patches/compare/v1.8.0-dev.7...v1.8.0-dev.8) (2026-10-01)
 
 ### 🐛 Bug Fixes
