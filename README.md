@@ -247,11 +247,11 @@ The flag has exactly one writer and one reader (the measure pass), so the gate i
 
 `HorizontalScrollView` is only used in `onLayout` to auto-scroll a focused tile into view, and both of its call sites are null-guarded, so the grid path does not depend on the scroll container.
 
-**Validation:** statically validated on two builds — Brave Nightly `1.98.21` (`com.brave.browser_nightly`) and stable `1.96.60` (`com.brave.browser`, arm64-v8a universal). Both carry the same pref literal, the same single `if-nez` gate immediately after the pref read, and the same single flag write, so the fingerprint pins only the pref literal plus the structural shape.
+**Validation:** statically validated on three builds — stable `1.96.60` (`com.brave.browser`), Nightly `1.98.21`, and Nightly `1.99.6` (both `com.brave.browser_nightly`, arm64-v8a universal). All three carry the same pref literal, the same single `if-nez` gate immediately after the pref read, and the same single flag write, so the fingerprint pins only the pref literal plus the structural shape.
 
-The enclosing method differs per channel — a constructor on Nightly, `a(TabImpl[])Lxic;` on stable — so nothing about the signature is pinned. A first attempt that pinned `returnType = "V"` matched Nightly and silently missed stable.
+The enclosing method differs per build — a constructor on Nightly 1.98.21, `a(TabImpl[])Lxic;` on stable 1.96.60, `a(TabImpl[])Lnrc;` on Nightly 1.99.6 — so nothing about the signature is pinned. An earlier attempt that pinned `returnType = "V"` matched one build and silently missed another. On 1.96.60 six methods carry the pref literal and only one of them also writes the flag, so resolution stays unique.
 
-On both builds the patched dex was disassembled and compared against the original: the measure pass is byte-identical and still carries `const/4 v2, 4` and `setColumnCount`; the gate site becomes `nop`; the factory method's code size is unchanged (6352 bytes on Nightly, 6596 on stable), so no branch offset drifts. Re-running the fingerprint against an already-patched APK finds no gate left, confirming it applies exactly once. No on-device test was run.
+On every build the patched dex was disassembled and compared against the original: the measure pass is byte-identical and still carries `const/4 v2, 4` and `setColumnCount`; the gate site becomes `nop`; the factory method's code size is unchanged (5436 bytes on 1.99.6, 6596 on 1.96.60), so no branch offset drifts. No on-device test was run.
 
 ### Keep Titanium Extensions Child Processes Alive
 
