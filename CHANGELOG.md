@@ -1,3 +1,9 @@
+## [1.9.0-dev.2](https://github.com/dh6k/morphe-patches/compare/v1.9.0-dev.1...v1.9.0-dev.2) (2026-10-02)
+
+### 🐛 Bug Fixes
+
+* **brave:** match the NTP grid gate across Brave channels ([cb9d123](https://github.com/dh6k/morphe-patches/commit/cb9d123f4cfff533e653fb42b64379b3f7a9e02b)), closes [#1738](https://github.com/dh6k/morphe-patches/issues/1738) [#1747](https://github.com/dh6k/morphe-patches/issues/1747)
+
 ## [1.9.0-dev.1](https://github.com/dh6k/morphe-patches/compare/v1.8.1-dev.1...v1.9.0-dev.1) (2026-10-01)
 
 ### ✨ New Features
