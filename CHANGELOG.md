@@ -1,3 +1,21 @@
+## [1.9.0-dev.2](https://github.com/dh6k/morphe-patches/compare/v1.9.0-dev.1...v1.9.0-dev.2) (2026-10-02)
+
+### 🐛 Bug Fixes
+
+* **brave:** match the NTP grid gate across Brave channels ([cb9d123](https://github.com/dh6k/morphe-patches/commit/cb9d123f4cfff533e653fb42b64379b3f7a9e02b)), closes [#1738](https://github.com/dh6k/morphe-patches/issues/1738) [#1747](https://github.com/dh6k/morphe-patches/issues/1747)
+
+## [1.9.0-dev.1](https://github.com/dh6k/morphe-patches/compare/v1.8.1-dev.1...v1.9.0-dev.1) (2026-10-01)
+
+### ✨ New Features
+
+* **brave:** keep NTP tiles in four columns with a background image ([632015d](https://github.com/dh6k/morphe-patches/commit/632015dc64144fccedeaa5db29a28dc9e89a0a8e))
+
+## [1.8.1-dev.1](https://github.com/dh6k/morphe-patches/compare/v1.8.0...v1.8.1-dev.1) (2026-10-01)
+
+### 🚀 Updated App Support
+
+* upgrade morphe-patcher to 1.15.0 ([46479c7](https://github.com/dh6k/morphe-patches/commit/46479c7531b87ca7743c8503a901cda8e165a2a9))
+
 ## [1.8.0](https://github.com/dh6k/morphe-patches/compare/v1.7.0...v1.8.0) (2026-10-01)
 
 ### 🐛 Bug Fixes

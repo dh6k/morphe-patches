@@ -54,8 +54,8 @@ class KeepHeliumChildProcessesAlivePatchTest {
     @Test
     fun `notification options default to default lines`() {
         assertEquals(setOf("notificationTitle", "notificationText"), keepHeliumChildProcessesAlivePatch.options.keys)
-        assertEquals(HELIUM_DEFAULT_NOTIFICATION_TITLE, keepHeliumChildProcessesAlivePatch.options["notificationTitle"]?.default)
-        assertEquals(HELIUM_DEFAULT_NOTIFICATION_TEXT, keepHeliumChildProcessesAlivePatch.options["notificationText"]?.default)
+        assertEquals(HELIUM_DEFAULT_NOTIFICATION_TITLE, keepHeliumChildProcessesAlivePatch.options["notificationTitle"].default)
+        assertEquals(HELIUM_DEFAULT_NOTIFICATION_TEXT, keepHeliumChildProcessesAlivePatch.options["notificationText"].default)
         assertEquals("fallback", sanitizeHeliumNotificationLine("   ", "fallback"))
         assertEquals("fallback", sanitizeHeliumNotificationLine(null, "fallback"))
         assertEquals("Custom", sanitizeHeliumNotificationLine("  Custom ", "fallback"))

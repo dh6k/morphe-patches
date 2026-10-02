@@ -888,18 +888,18 @@ private val braveAmoledResourcePatch: ResourcePatch = resourcePatch(
     compatibleWith(*amoledCompatibilities().toTypedArray())
     execute {
         val background = normalizeOpaqueHex(
-            braveAmoledThemePatch.options["backgroundColor"]?.value as? String ?: "#000000",
+            braveAmoledThemePatch.options["backgroundColor"].value as? String ?: "#000000",
         ) ?: throw PatchException("Invalid AMOLED background color")
-        val text = (braveAmoledThemePatch.options["textColor"]?.value as? String)
+        val text = (braveAmoledThemePatch.options["textColor"].value as? String)
             ?.let { normalizeOpaqueHex(it) }
-        val accent = (braveAmoledThemePatch.options["accentColor"]?.value as? String)
+        val accent = (braveAmoledThemePatch.options["accentColor"].value as? String)
             ?.let { normalizeOpaqueHex(it) }
         val res = get("res")
         if (!res.isDirectory) {
             throw PatchException("Decoded res/ directory not found")
         }
         val disableDynamic =
-            (braveAmoledThemePatch.options["disableDynamicColors"]?.value as? Boolean) ?: true
+            (braveAmoledThemePatch.options["disableDynamicColors"].value as? Boolean) ?: true
         val result = applyAmoledResources(
             resourceDirectory = res,
             backgroundHex = background,
