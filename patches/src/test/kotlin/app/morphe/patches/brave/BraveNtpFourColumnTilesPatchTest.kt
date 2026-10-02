@@ -14,15 +14,22 @@ class BraveNtpFourColumnTilesPatchTest {
     }
 
     @Test
+    fun `fingerprint pins nothing about the obfuscated signature`() {
+        // Brave reshapes the enclosing method per channel: Nightly 1.98.21 has it
+        // in a constructor returning V, stable 1.96.60 has it in a(TabImpl[])Lxic;.
+        // Pinning returnType or parameters made the patch miss stable builds.
+        assertEquals(null, NtpTilesGridModeWriterFingerprint.declaredField("definingClass"))
+        assertEquals(null, NtpTilesGridModeWriterFingerprint.declaredField("name"))
+        assertEquals(null, NtpTilesGridModeWriterFingerprint.declaredField("returnType"))
+        assertEquals(null, NtpTilesGridModeWriterFingerprint.declaredField("parameters"))
+    }
+
+    @Test
     fun `fingerprint anchors on the background image pref literal`() {
         assertEquals(
             listOf(NTP_BACKGROUND_IMAGE_PREF),
             NtpTilesGridModeWriterFingerprint.declaredField("strings"),
         )
-        // Brave R8-renames the factory class and the flag itself, so neither the
-        // defining class nor a method name can be pinned.
-        assertEquals(null, NtpTilesGridModeWriterFingerprint.declaredField("definingClass"))
-        assertEquals(null, NtpTilesGridModeWriterFingerprint.declaredField("name"))
     }
 
     @Test

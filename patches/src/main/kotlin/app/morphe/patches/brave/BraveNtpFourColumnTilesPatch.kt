@@ -25,6 +25,14 @@
  * then folds away the surrounding four-column code (`const/4 v2, 4` and its
  * width guard disappear, leaving setColumnCount with a stale register).
  * Writing the flag instead leaves the reader and all of its code intact.
+ *
+ * The gate shape is stable across channels while the surrounding signature is
+ * not. Verified on:
+ *   Nightly 1.98.21 — writer in a constructor, return `V`,  gate at +19..+28 bytes
+ *   stable  1.96.60 — writer in `a(TabImpl[])Lxic;`,  gate at +19 bytes
+ * Both carry the same pref literal, the same `if-nez` gate immediately after the
+ * pref read, and the same single flag write, so nothing but the pref literal and
+ * the structural shape can be pinned.
  */
 package app.morphe.patches.brave
 
@@ -48,13 +56,16 @@ internal const val NTP_TILES_LAYOUT =
 internal const val NTP_BACKGROUND_IMAGE_PREF = "brave.new_tab_page.show_background_image"
 
 /**
- * The single `iput-boolean <v>, <obj>, MostVisitedTilesLayout-><flag>:Z` that
- * writes the layout-mode flag. Brave R8-renames the owning class and the flag
- * itself, so identify the write structurally and anchor the enclosing method on
- * the pref literal it must also contain.
+ * The `iput-boolean <v>, <obj>, MostVisitedTilesLayout-><flag>:Z` that writes the
+ * layout-mode flag, together with the branch that guards it.
+ *
+ * Brave R8-renames the owning class, the flag and the method, and the enclosing
+ * method's shape differs between channels: on Nightly 1.98.21 it is a constructor
+ * returning `V`, on stable 1.96.60 it is `a(TabImpl[])Lxic;`. So nothing about the
+ * signature is pinned. The method is instead anchored on the pref literal it must
+ * contain, and required to also carry the flag write.
  */
 internal object NtpTilesGridModeWriterFingerprint : Fingerprint(
-    returnType = "V",
     strings = listOf(NTP_BACKGROUND_IMAGE_PREF),
     custom = { method, _ ->
         val implementation = method.implementation
