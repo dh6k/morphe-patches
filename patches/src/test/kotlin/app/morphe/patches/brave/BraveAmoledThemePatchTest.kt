@@ -884,6 +884,36 @@ class BraveAmoledThemePatchTest {
     }
 
     @Test
+    fun `bare palette tones split by tone because the role name is a lie`() {
+        // The real shapes from Brave 1.96.60: every v31 chrome fill aliases
+        // system_neutral2_600 and only the tone differs — 6 is the window,
+        // 24 is the surface_bright behind the popup menu and app bar.
+        val xml = """
+            <selector>
+                <item n0:color="@android:color/system_neutral2_600" n0:lStar="6.0"
+                  xmlns:n0="http://schemas.android.com/apk/res/android" />
+            </selector>
+            <selector>
+                <item n0:color="@android:color/system_neutral2_600" n0:lStar="24.0"
+                  xmlns:n0="http://schemas.android.com/apk/res/android" />
+            </selector>
+        """.trimIndent()
+
+        val (out, replaced) = rewriteDarkLStarSelectors(xml, "#000000", "#1e2029")
+        assertEquals(2, replaced)
+        assertEquals(
+            1,
+            Regex("""n0:color="#000000"""").findAll(out).count(),
+            "tone 6 is the window background",
+        )
+        assertEquals(
+            1,
+            Regex("""n0:color="#1e2029"""").findAll(out).count(),
+            "tone 24 is a raised surface",
+        )
+    }
+
+    @Test
     fun `night v31 overrides keep each tier on its own colour`() {
         val out = buildNightV31Overrides(mapOf("b" to "#1e2029", "a" to "#000000"))
         assertTrue("""<color name="a">#000000</color>""" in out)

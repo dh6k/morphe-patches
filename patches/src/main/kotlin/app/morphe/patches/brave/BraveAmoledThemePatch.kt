@@ -138,6 +138,15 @@ internal val DARK_LSTAR_SELECTOR = Regex(
 /** Below this lStar a surface role is too dark to read text on. */
 internal const val DARK_SURFACE_LSTAR_CEILING = 24.0
 
+/**
+ * At or above this tone a v31 palette selector paints a raised surface. The
+ * lStar on those selectors is the Material tone itself: res/color-v31 carries
+ * m3_ref_palette_dynamic_neutral_variant6 (the window) through variant24 (the
+ * surface_bright behind popups and menus), so the tone — not a name nobody kept
+ * — is what separates the two tiers.
+ */
+internal const val RAISED_SURFACE_MIN_TONE = 12.0
+
 private val HEX_COLOR = Regex("""^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})$""")
 private val COLOR_ELEMENT = Regex(
     pattern = """<color\s+name="([^"]+)"\s*>([^<]+)</color>""",
@@ -665,9 +674,14 @@ internal fun declareNightTextColors(
 
 /**
  * A res/color-v31 selector that pins a tone to a very low lStar is a dark
- * surface. Point it at the AMOLED background and drop lStar, which only exists
+ * surface. Point it at the colour of its tier and drop lStar, which only exists
  * to let Material You re-tint the tone. Only the two attributes are touched so
  * the xmlns:n0 declaration on the same tag survives.
+ *
+ * These selectors are how the popup menu, the app bar and the window background
+ * are painted on Android 12/12L, and every one of them aliases the same
+ * `system_neutral2_600` palette tone — so the role lookup finds nothing and the
+ * tone has to decide the tier.
  */
 internal fun rewriteDarkLStarSelectors(
     xml: String,
@@ -681,10 +695,17 @@ internal fun rewriteDarkLStarSelectors(
     var replaced = 0
     val out = DARK_LSTAR_SELECTOR.replace(xml) { match ->
         val role = match.groupValues[1]
-        val lStar = match.groupValues[2].toDoubleOrNull() ?: return@replace match.value
-        if (lStar > DARK_SURFACE_LSTAR_CEILING) return@replace match.value
-        // The role decides the tier: a container role keeps the raised colour.
-        val target = if (MATERIAL_YOU_CONTAINER_ROLES.matches(role)) container else background
+        val tone = match.groupValues[2].toDoubleOrNull() ?: return@replace match.value
+        if (tone > DARK_SURFACE_LSTAR_CEILING) return@replace match.value
+        // A named role decides the tier outright. A bare palette tone carries no
+        // name, so the tone is the only evidence left: tone 6 paints the window,
+        // tone 12 and up paint the raised steps.
+        val target = when {
+            MATERIAL_YOU_CONTAINER_ROLES.matches(role) -> container
+            MATERIAL_YOU_BASE_ROLES.matches(role) -> background
+            tone >= RAISED_SURFACE_MIN_TONE -> container
+            else -> background
+        }
         replaced++
         match.value
             .replace(Regex("""n0:color="[^"]*""""), """n0:color="$target"""")

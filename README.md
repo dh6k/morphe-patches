@@ -246,8 +246,9 @@ Patch-time AMOLED rewrite for [issue #21](https://github.com/dh6k/morphe-patches
 **How a surface is classified.** There is no reliable name to match, so the tier is decided by evidence, strongest first:
 
 1. The id's role in `values-v31/v34/v35` — `system_surface_container*`, `system_surface_bright` and `system_surface_variant` are raised; `system_background`, `system_surface`, `system_surface_dim` and the API 31 `system_neutral*` tones are the window.
-2. The fill's value — a raised fill is a step brighter than `#1c1c1d` (`BASE_SURFACE_MAX_CHANNEL`).
-3. A denylist of ids styles paint with `android:colorBackground` / `android:windowBackground`, which are never raised whatever their value looks like.
+2. The palette tone, for `res/color-v31` selectors. On Android 12/12L/13 the popup menu, the app bar and the window background are all painted through `m3_ref_palette_dynamic_neutral_variant*` selectors whose colour is the *same* `system_neutral2_600` — so the role lookup finds nothing and only the tone separates them: 6 is the window, 12 and up are the raised steps (24 is the `surface_bright` behind the popup menu).
+3. The fill's value — a raised fill is a step brighter than `#1c1c1d` (`BASE_SURFACE_MAX_CHANNEL`).
+4. A denylist of ids styles paint with `android:colorBackground` / `android:windowBackground`, which are never raised whatever their value looks like.
 
 **Validation (static, Brave stable `1.96.60` `com.brave.browser`, arm64-v8a universal APK).** The resource rewrite was run over the apktool-decoded resource tree, once with the default flat preset and once with `surfaceUsesBackground=false, surfaceColor=#1e2029`:
 
@@ -258,7 +259,11 @@ Patch-time AMOLED rewrite for [issue #21](https://github.com/dh6k/morphe-patches
 
 Both runs produced exactly the same set of colour ids — the tier option re-colours ids, it never adds or drops one — and every rewritten value is an opaque hex. The role evidence classified 14 ids (`values-v34` ladder: `system_surface_container*`, `surface_bright`, `surface_variant`) plus 9 window roles; the remaining 190 raised ids came from the value heuristic. **That heuristic is the honest ceiling here: no on-device screenshot confirms those 190 are all buttons and cards rather than window fills.** The window-background denylist found 12 ids on this build and none of them would have been raised anyway, so it is insurance for other builds, not something this APK exercised.
 
-**Not covered:** web content force-dark (`brave_night_mode_enabled_key`), NTP theme collections, Chromium `ColorProvider` / native `.pak` chrome, and a runtime colour picker. No on-device test was run for this change.
+**The popup menu, and why the window cannot follow it.** On Android 12/12L/13 the app menu background is `?attr` → `@color` → `res/color-v31/m3_ref_palette_dynamic_neutral_variant24.xml`, while the window background, `system_surface_dark` and `system_surface_dim_dark` all resolve through `…neutral_variant6.xml`. The two files name the same `system_neutral2_600` palette tone and differ only in their tone value, which is why an earlier build sent both to the flat background and the menu looked like the window. Verified after the fix on the same decoded tree: `neutral_variant6` → `#000000`, `neutral_variant22` and `neutral_variant24` → `#1e2029`.
+
+That same aliasing puts a ceiling on the Settings screen: on API 31–33 `system_background_dark`, `system_surface_dark` and `system_surface_dim_dark` are three ids pointing at **one** selector file, and on API 34+ Material 3 defines `background` and `surface` as the same colour. The settings page is the window background by design, so the `AMOLED background` option is what moves it — the surface colour cannot.
+
+**Not covered:** web content force-dark (`brave_night_mode_enabled_key`), the `chrome://settings` page background, NTP theme collections, Chromium `ColorProvider` / native `.pak` chrome, and a runtime colour picker. No on-device test was run for this change.
 
 ### Brave NTP four-column tiles
 
