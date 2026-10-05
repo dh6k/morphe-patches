@@ -1,3 +1,9 @@
+## [1.9.0-dev.4](https://github.com/dh6k/morphe-patches/compare/v1.9.0-dev.3...v1.9.0-dev.4) (2026-10-05)
+
+### 🐛 Bug Fixes
+
+* **brave:** give the app menu its surface colour on Android 12-13 ([0d33ca9](https://github.com/dh6k/morphe-patches/commit/0d33ca9d78d6283cdd4efd8201644dd9d2dd09d4)), closes [#000000](https://github.com/dh6k/morphe-patches/issues/000000) [#1e2029](https://github.com/dh6k/morphe-patches/issues/1e2029) [#000000](https://github.com/dh6k/morphe-patches/issues/000000)
+
 ## [1.9.0-dev.3](https://github.com/dh6k/morphe-patches/compare/v1.9.0-dev.2...v1.9.0-dev.3) (2026-10-05)
 
 ### ✨ New Features

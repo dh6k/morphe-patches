@@ -75,7 +75,7 @@ See [Patch notes](#patch-notes) for Startup Performance, Custom NTP wallpaper, a
 ## Patches
 
 <!-- PATCHES_START EXPANDED -->
-> **[v1.9.0-dev.3](https://github.com/dh6k/morphe-patches/releases/tag/v1.9.0-dev.3)**&nbsp;&nbsp;•&nbsp;&nbsp;`dev`&nbsp;&nbsp;•&nbsp;&nbsp;11 patches total
+> **[v1.9.0-dev.4](https://github.com/dh6k/morphe-patches/releases/tag/v1.9.0-dev.4)**&nbsp;&nbsp;•&nbsp;&nbsp;`dev`&nbsp;&nbsp;•&nbsp;&nbsp;11 patches total
 <details open>
 <summary>📦 Quetta Browser&nbsp;&nbsp;•&nbsp;&nbsp;2 patches</summary>
 <br>
