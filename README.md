@@ -1,7 +1,7 @@
 <p align="center">
   <a href="https://github.com/dh6k/morphe-patches/releases/latest"><img src="https://img.shields.io/github/v/release/dh6k/morphe-patches?color=7928CA&label=Release&logo=github&style=flat-square" alt="Latest Release" /></a>
   <a href="https://github.com/dh6k/morphe-patches/releases"><img src="https://img.shields.io/github/downloads/dh6k/morphe-patches/total?style=flat-square&logo=github" alt="Total Downloads" /></a>
-  <img src="https://img.shields.io/badge/Runtime-Morphe_Patcher_1.7.0-8A2BE2?style=flat-square" alt="Runtime" />
+  <img src="https://img.shields.io/badge/Runtime-Morphe_Patcher_1.15.0-8A2BE2?style=flat-square" alt="Runtime" />
   <img src="https://img.shields.io/badge/License-GPLv3-blue?style=flat-square" alt="License" />
 </p>
 
@@ -75,7 +75,7 @@ See [Patch notes](#patch-notes) for Startup Performance, Custom NTP wallpaper, a
 ## Patches
 
 <!-- PATCHES_START EXPANDED -->
-> **[v1.8.0](https://github.com/dh6k/morphe-patches/releases/tag/v1.8.0)**&nbsp;&nbsp;•&nbsp;&nbsp;`main`&nbsp;&nbsp;•&nbsp;&nbsp;10 patches total
+> **[v1.9.0-dev.4](https://github.com/dh6k/morphe-patches/releases/tag/v1.9.0-dev.4)**&nbsp;&nbsp;•&nbsp;&nbsp;`dev`&nbsp;&nbsp;•&nbsp;&nbsp;11 patches total
 <details open>
 <summary>📦 Quetta Browser&nbsp;&nbsp;•&nbsp;&nbsp;2 patches</summary>
 <br>
@@ -99,12 +99,13 @@ See [Patch notes](#patch-notes) for Startup Performance, Custom NTP wallpaper, a
 </details>
 
 <details open>
-<summary>📦 Brave Browser&nbsp;&nbsp;•&nbsp;&nbsp;4 patches</summary>
+<summary>📦 Brave Browser&nbsp;&nbsp;•&nbsp;&nbsp;5 patches</summary>
 <br>
 
 | 💊&nbsp;Patch | 📜&nbsp;Description | ⚙️&nbsp;Options |
 |----------|----------------|-----------|
-| [Brave AMOLED theme](#brave-amoled-theme) | Patch-time AMOLED dark theme (issue #21): rewrites Brave dark chrome surfaces to pure black (or a custom opaque hex). Optional text and accent colors (defaults keep Brave's #f0f2ff / #737ade). Forces Material You dynamic colors off in bytecode (the pref is non-persistent) and overrides system neutral night roles on Android 12+. Apply Dark theme in Brave to see it. Does not change web content force-dark, NTP theme collections, or add a runtime color picker. Default off. | • AMOLED background<br>• Text color<br>• Accent color<br>• Disable Material You dynamic colors |
+| [Brave AMOLED theme](#brave-amoled-theme) | Patch-time AMOLED dark theme (issue #21): rewrites Brave dark chrome surfaces to pure black (or a custom opaque hex). Raised surfaces — buttons, cards, sheets and the Material You container ladder — can take their own surface color instead of one flat black, so the UI keeps an elevation step like Material 3. Optional text and accent colors (defaults keep Brave's #f0f2ff / #737ade). Forces Material You dynamic colors off in bytecode (the pref is non-persistent) and overrides system neutral night roles on Android 12+; leaving that force off keeps the Material You roles and low-lStar selectors untouched. Apply Dark theme in Brave to see it. Does not change web content force-dark, NTP theme collections, or add a runtime color picker. Default off. | • AMOLED background<br>• Text color<br>• Accent color<br>• Disable Material You dynamic colors<br>• Surfaces use the background color<br>• Surface / button color |
+| [Brave NTP four-column tiles](#brave-ntp-four-column-tiles) | Experimental version-unpinned patch (issue #24): keeps the new-tab pinned and most-visited tiles in a four-column grid that extends downwards, the same layout Brave uses with no background image, and keeps that layout when a background image is enabled. Neutralizes the "brave.new_tab_page.show_background_image" gate in the NTP builder that otherwise forces the tiles into a single horizontally scrolling row. Default off. |  |
 | [Brave Origin](#brave-origin) | Unlocks Brave Origin and enables feature toggle controls. |  |
 | [Brave Startup Performance Optimization](#brave-startup-performance-optimization) | Optimizes startup time and eliminates background CPU/disk overhead by disabling unused OEM carrier partner customizations. Marks PartnerBrowserCustomizations initialized without SharedPreferences/ContentResolver/ThreadPool/timeout work, drains init callbacks immediately, and forces partner homepage and incognito lockdown gates closed. |  |
 | [Custom NTP wallpaper](#custom-ntp-wallpaper) | Alpha experimental version-unpinned patch (issue #13): forces the Brave new-tab background to a custom PNG chosen at patch time. Rewrites the Java ambient wallpaper catalog (BackgroundImage drawable resource id) and makes wallpaper callbacks use it instead of native branded/URL images. IMPORTANT: crop the image to your current screen resolution first, then select that file in the patch options. Brave's New tab page settings only toggle "Show background images". Default off. | • Custom NTP wallpaper |
@@ -112,12 +113,13 @@ See [Patch notes](#patch-notes) for Startup Performance, Custom NTP wallpaper, a
 </details>
 
 <details open>
-<summary>📦 Brave Beta&nbsp;&nbsp;•&nbsp;&nbsp;4 patches</summary>
+<summary>📦 Brave Beta&nbsp;&nbsp;•&nbsp;&nbsp;5 patches</summary>
 <br>
 
 | 💊&nbsp;Patch | 📜&nbsp;Description | ⚙️&nbsp;Options |
 |----------|----------------|-----------|
-| [Brave AMOLED theme](#brave-amoled-theme) | Patch-time AMOLED dark theme (issue #21): rewrites Brave dark chrome surfaces to pure black (or a custom opaque hex). Optional text and accent colors (defaults keep Brave's #f0f2ff / #737ade). Forces Material You dynamic colors off in bytecode (the pref is non-persistent) and overrides system neutral night roles on Android 12+. Apply Dark theme in Brave to see it. Does not change web content force-dark, NTP theme collections, or add a runtime color picker. Default off. | • AMOLED background<br>• Text color<br>• Accent color<br>• Disable Material You dynamic colors |
+| [Brave AMOLED theme](#brave-amoled-theme) | Patch-time AMOLED dark theme (issue #21): rewrites Brave dark chrome surfaces to pure black (or a custom opaque hex). Raised surfaces — buttons, cards, sheets and the Material You container ladder — can take their own surface color instead of one flat black, so the UI keeps an elevation step like Material 3. Optional text and accent colors (defaults keep Brave's #f0f2ff / #737ade). Forces Material You dynamic colors off in bytecode (the pref is non-persistent) and overrides system neutral night roles on Android 12+; leaving that force off keeps the Material You roles and low-lStar selectors untouched. Apply Dark theme in Brave to see it. Does not change web content force-dark, NTP theme collections, or add a runtime color picker. Default off. | • AMOLED background<br>• Text color<br>• Accent color<br>• Disable Material You dynamic colors<br>• Surfaces use the background color<br>• Surface / button color |
+| [Brave NTP four-column tiles](#brave-ntp-four-column-tiles) | Experimental version-unpinned patch (issue #24): keeps the new-tab pinned and most-visited tiles in a four-column grid that extends downwards, the same layout Brave uses with no background image, and keeps that layout when a background image is enabled. Neutralizes the "brave.new_tab_page.show_background_image" gate in the NTP builder that otherwise forces the tiles into a single horizontally scrolling row. Default off. |  |
 | [Brave Origin](#brave-origin) | Unlocks Brave Origin and enables feature toggle controls. |  |
 | [Brave Startup Performance Optimization](#brave-startup-performance-optimization) | Optimizes startup time and eliminates background CPU/disk overhead by disabling unused OEM carrier partner customizations. Marks PartnerBrowserCustomizations initialized without SharedPreferences/ContentResolver/ThreadPool/timeout work, drains init callbacks immediately, and forces partner homepage and incognito lockdown gates closed. |  |
 | [Custom NTP wallpaper](#custom-ntp-wallpaper) | Alpha experimental version-unpinned patch (issue #13): forces the Brave new-tab background to a custom PNG chosen at patch time. Rewrites the Java ambient wallpaper catalog (BackgroundImage drawable resource id) and makes wallpaper callbacks use it instead of native branded/URL images. IMPORTANT: crop the image to your current screen resolution first, then select that file in the patch options. Brave's New tab page settings only toggle "Show background images". Default off. | • Custom NTP wallpaper |
@@ -125,12 +127,13 @@ See [Patch notes](#patch-notes) for Startup Performance, Custom NTP wallpaper, a
 </details>
 
 <details open>
-<summary>📦 Brave Nightly&nbsp;&nbsp;•&nbsp;&nbsp;4 patches</summary>
+<summary>📦 Brave Nightly&nbsp;&nbsp;•&nbsp;&nbsp;5 patches</summary>
 <br>
 
 | 💊&nbsp;Patch | 📜&nbsp;Description | ⚙️&nbsp;Options |
 |----------|----------------|-----------|
-| [Brave AMOLED theme](#brave-amoled-theme) | Patch-time AMOLED dark theme (issue #21): rewrites Brave dark chrome surfaces to pure black (or a custom opaque hex). Optional text and accent colors (defaults keep Brave's #f0f2ff / #737ade). Forces Material You dynamic colors off in bytecode (the pref is non-persistent) and overrides system neutral night roles on Android 12+. Apply Dark theme in Brave to see it. Does not change web content force-dark, NTP theme collections, or add a runtime color picker. Default off. | • AMOLED background<br>• Text color<br>• Accent color<br>• Disable Material You dynamic colors |
+| [Brave AMOLED theme](#brave-amoled-theme) | Patch-time AMOLED dark theme (issue #21): rewrites Brave dark chrome surfaces to pure black (or a custom opaque hex). Raised surfaces — buttons, cards, sheets and the Material You container ladder — can take their own surface color instead of one flat black, so the UI keeps an elevation step like Material 3. Optional text and accent colors (defaults keep Brave's #f0f2ff / #737ade). Forces Material You dynamic colors off in bytecode (the pref is non-persistent) and overrides system neutral night roles on Android 12+; leaving that force off keeps the Material You roles and low-lStar selectors untouched. Apply Dark theme in Brave to see it. Does not change web content force-dark, NTP theme collections, or add a runtime color picker. Default off. | • AMOLED background<br>• Text color<br>• Accent color<br>• Disable Material You dynamic colors<br>• Surfaces use the background color<br>• Surface / button color |
+| [Brave NTP four-column tiles](#brave-ntp-four-column-tiles) | Experimental version-unpinned patch (issue #24): keeps the new-tab pinned and most-visited tiles in a four-column grid that extends downwards, the same layout Brave uses with no background image, and keeps that layout when a background image is enabled. Neutralizes the "brave.new_tab_page.show_background_image" gate in the NTP builder that otherwise forces the tiles into a single horizontally scrolling row. Default off. |  |
 | [Brave Origin](#brave-origin) | Unlocks Brave Origin and enables feature toggle controls. |  |
 | [Brave Startup Performance Optimization](#brave-startup-performance-optimization) | Optimizes startup time and eliminates background CPU/disk overhead by disabling unused OEM carrier partner customizations. Marks PartnerBrowserCustomizations initialized without SharedPreferences/ContentResolver/ThreadPool/timeout work, drains init callbacks immediately, and forces partner homepage and incognito lockdown gates closed. |  |
 | [Custom NTP wallpaper](#custom-ntp-wallpaper) | Alpha experimental version-unpinned patch (issue #13): forces the Brave new-tab background to a custom PNG chosen at patch time. Rewrites the Java ambient wallpaper catalog (BackgroundImage drawable resource id) and makes wallpaper callbacks use it instead of native branded/URL images. IMPORTANT: crop the image to your current screen resolution first, then select that file in the patch options. Brave's New tab page settings only toggle "Show background images". Default off. | • Custom NTP wallpaper |
@@ -223,6 +226,70 @@ By design this disables OEM partner homepage and Incognito-lockdown behavior. On
 Alpha experimental patch for [issue #13](https://github.com/dh6k/morphe-patches/issues/13). Brave's **New tab page** settings only expose **Show background images**; this patch forces the NTP background to a patch-time PNG by rewriting the Java ambient wallpaper catalog (`BackgroundImage` drawable resource id) and making wallpaper callbacks use it instead of native branded/URL images.
 
 **How to use:** crop the wallpaper to your **current screen resolution** first (gallery / any crop tool, exact width × height of the device), then select that PNG in the patch options. Default off. Ambiguous targets fail closed. Intended for arm64-v8a APKs; the framework does not enforce ABI.
+
+### Brave AMOLED theme
+
+Patch-time AMOLED rewrite for [issue #21](https://github.com/dh6k/morphe-patches/issues/21). Brave's dark chrome ships near-black neutrals (`#121212`, `#1e2029`, `#2e3039`) and a Material You role ladder on Android 12+; this patch flattens the chrome to a chosen background, and can keep raised surfaces on their own colour so the UI does not collapse into one flat black.
+
+**Why the flat preset reads as Material 2.** With a single background colour a card, a sheet and the window are all the same pixel value, which is exactly what pre-M3 Android chrome looked like. Material 3 keeps an elevation step — containers are a shade brighter than the window. The two tiers restore that step without touching shape, corner radius or typography, because Brave ships no Material 2 asset set to switch to: the APK contains only `m3_*` selectors (113 files) and never an `m2_*` or `md2_*` resource, and every style name in a release build is obfuscated to `0_resource_name_obfuscated`.
+
+**Options.**
+
+| Option | Effect |
+| --- | --- |
+| `AMOLED background` | Window backgrounds and everything else in dark chrome. `#000000` for pure OLED. |
+| `Surfaces use the background color` | **On (default): one flat black, identical to the previous AMOLED rewrite.** Off: raised surfaces take the surface colour below. |
+| `Surface / button color` | Opaque hex for buttons, cards, sheets and the Material You container ladder. Default `#1e2029`, Brave's own dark container tone. |
+| `Text color`, `Accent color` | Unchanged from earlier releases. |
+| `Disable Material You dynamic colors` | Forces the non-persistent `brave_android_dynamic_colors_enabled` readers to `false` in bytecode. Turning it **off** now also skips the Material You resource rewrites — previously the role files were still pinned to the AMOLED hex, so the wallpaper palette could never show and the switch was a no-op. |
+
+**How a surface is classified.** There is no reliable name to match, so the tier is decided by evidence, strongest first:
+
+1. The id's role in `values-v31/v34/v35` — `system_surface_container*`, `system_surface_bright` and `system_surface_variant` are raised; `system_background`, `system_surface`, `system_surface_dim` and the API 31 `system_neutral*` tones are the window.
+2. The palette tone, for `res/color-v31` selectors. On Android 12/12L/13 the popup menu, the app bar and the window background are all painted through `m3_ref_palette_dynamic_neutral_variant*` selectors whose colour is the *same* `system_neutral2_600` — so the role lookup finds nothing and only the tone separates them: 6 is the window, 12 and up are the raised steps (24 is the `surface_bright` behind the popup menu).
+3. The fill's value — a raised fill is a step brighter than `#1c1c1d` (`BASE_SURFACE_MAX_CHANNEL`).
+4. A denylist of ids styles paint with `android:colorBackground` / `android:windowBackground`, which are never raised whatever their value looks like.
+
+**Validation (static, Brave stable `1.96.60` `com.brave.browser`, arm64-v8a universal APK).** The resource rewrite was run over the apktool-decoded resource tree, once with the default flat preset and once with `surfaceUsesBackground=false, surfaceColor=#1e2029`:
+
+| Run | day | night | container | Material You roles | night-v31 overrides | lStar selectors | drawable fills |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Flat (default) | 73 | 37 | 0 | 16 | 138 | 6 | 85 |
+| Two tiers | 9 | 6 | 87 | 16 | 138 | 6 | 85 |
+
+Both runs produced exactly the same set of colour ids — the tier option re-colours ids, it never adds or drops one — and every rewritten value is an opaque hex. The role evidence classified 14 ids (`values-v34` ladder: `system_surface_container*`, `surface_bright`, `surface_variant`) plus 9 window roles; the remaining 190 raised ids came from the value heuristic. **That heuristic is the honest ceiling here: no on-device screenshot confirms those 190 are all buttons and cards rather than window fills.** The window-background denylist found 12 ids on this build and none of them would have been raised anyway, so it is insurance for other builds, not something this APK exercised.
+
+**The popup menu, and why the window cannot follow it.** On Android 12/12L/13 the app menu background is `?attr` → `@color` → `res/color-v31/m3_ref_palette_dynamic_neutral_variant24.xml`, while the window background, `system_surface_dark` and `system_surface_dim_dark` all resolve through `…neutral_variant6.xml`. The two files name the same `system_neutral2_600` palette tone and differ only in their tone value, which is why an earlier build sent both to the flat background and the menu looked like the window. Verified after the fix on the same decoded tree: `neutral_variant6` → `#000000`, `neutral_variant22` and `neutral_variant24` → `#1e2029`.
+
+That same aliasing puts a ceiling on the Settings screen: on API 31–33 `system_background_dark`, `system_surface_dark` and `system_surface_dim_dark` are three ids pointing at **one** selector file, and on API 34+ Material 3 defines `background` and `surface` as the same colour. The settings page is the window background by design, so the `AMOLED background` option is what moves it — the surface colour cannot.
+
+**Not covered:** web content force-dark (`brave_night_mode_enabled_key`), the `chrome://settings` page background, NTP theme collections, Chromium `ColorProvider` / native `.pak` chrome, and a runtime colour picker. No on-device test was run for this change.
+
+### Brave NTP four-column tiles
+
+Experimental version-unpinned patch for [issue #24](https://github.com/dh6k/morphe-patches/issues/24). Brave's NTP tiles collapse into a single horizontally scrolling row as soon as a background image is enabled.
+
+**Cause.** `MostVisitedTilesLayout` (a Chromium class Brave partially rewrote) keeps two layouts behind one boolean instance flag — `TilesLinearLayout` in a `HorizontalScrollView` for a single row, or a `GridLayout` with a hardcoded **4 columns** laid out downwards. Brave writes that flag in the NTP builder, and only when the `brave.new_tab_page.show_background_image` pref is **off**:
+
+```
+pref = PrefService.getBoolean("brave.new_tab_page.show_background_image")
+if (pref) skip
+MostVisitedTilesLayout-><flag> = true     // iput-boolean, the single write in the APK
+```
+
+The flag has exactly one writer and one reader (the measure pass), so the gate is the only thing standing between the two layouts.
+
+**Fix.** The patch replaces the single `if-nez` skip branch after the pref read with a `nop`, so the flag is always written as true. `if-nez` is a 2-byte format-21t and `nop` is a 2-byte format-10x, so the swap is byte-identical and every branch offset in the ~6.3 kB factory method stays valid.
+
+**Why it writes the flag instead of the read.** Rewriting the reader to force `true` makes the value provably constant, and the reassembler then folds away the surrounding four-column code — `const/4 v2, 4` and its width guard disappear, leaving `setColumnCount` with a stale register and a one-column grid. Writing the producer leaves the reader and all of its code untouched.
+
+`HorizontalScrollView` is only used in `onLayout` to auto-scroll a focused tile into view, and both of its call sites are null-guarded, so the grid path does not depend on the scroll container.
+
+**Validation:** statically validated on three builds — stable `1.96.60` (`com.brave.browser`), Nightly `1.98.21`, and Nightly `1.99.6` (both `com.brave.browser_nightly`, arm64-v8a universal). All three carry the same pref literal, the same single `if-nez` gate immediately after the pref read, and the same single flag write, so the fingerprint pins only the pref literal plus the structural shape.
+
+The enclosing method differs per build — a constructor on Nightly 1.98.21, `a(TabImpl[])Lxic;` on stable 1.96.60, `a(TabImpl[])Lnrc;` on Nightly 1.99.6 — so nothing about the signature is pinned. An earlier attempt that pinned `returnType = "V"` matched one build and silently missed another. On 1.96.60 six methods carry the pref literal and only one of them also writes the flag, so resolution stays unique.
+
+On every build the patched dex was disassembled and compared against the original: the measure pass is byte-identical and still carries `const/4 v2, 4` and `setColumnCount`; the gate site becomes `nop`; the factory method's code size is unchanged (5436 bytes on 1.99.6, 6596 on 1.96.60), so no branch offset drifts. No on-device test was run.
 
 ### Keep Titanium Extensions Child Processes Alive
 

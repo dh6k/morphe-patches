@@ -1,5 +1,6 @@
 package app.morphe.patches.helium
 
+import app.morphe.patches.declaredField
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -21,16 +22,16 @@ class ForceHighestRefreshRatePatchTest {
 
     @Test
     fun `setter fingerprint pins exact windowandroid shape`() {
-        assertEquals("Lorg/chromium/ui/base/WindowAndroid;", SetPreferredRefreshRateFingerprint.definingClass)
-        assertEquals("setPreferredRefreshRate", SetPreferredRefreshRateFingerprint.name)
-        assertEquals("V", SetPreferredRefreshRateFingerprint.returnType)
-        assertEquals(listOf("F"), SetPreferredRefreshRateFingerprint.parameters)
+        assertEquals(WINDOW_ANDROID_CLASS, SetPreferredRefreshRateFingerprint.declaredField("definingClass"))
+        assertEquals(SET_PREFERRED_REFRESH_RATE, SetPreferredRefreshRateFingerprint.declaredField("name"))
+        assertEquals("V", SetPreferredRefreshRateFingerprint.declaredField("returnType"))
+        assertEquals(listOf("F"), SetPreferredRefreshRateFingerprint.declaredField("parameters"))
     }
     @Test
     fun `nearest-mode fingerprint excludes setter and pins float param`() {
-        assertEquals("Lorg/chromium/ui/base/WindowAndroid;", NearestDisplayModeFingerprint.definingClass)
-        assertEquals("V", NearestDisplayModeFingerprint.returnType)
-        assertEquals(listOf("F"), NearestDisplayModeFingerprint.parameters)
+        assertEquals(WINDOW_ANDROID_CLASS, NearestDisplayModeFingerprint.declaredField("definingClass"))
+        assertEquals("V", NearestDisplayModeFingerprint.declaredField("returnType"))
+        assertEquals(listOf("F"), NearestDisplayModeFingerprint.declaredField("parameters"))
     }
 
     @Test

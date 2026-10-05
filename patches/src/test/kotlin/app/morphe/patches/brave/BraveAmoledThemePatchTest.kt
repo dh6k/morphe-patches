@@ -11,7 +11,14 @@ class BraveAmoledThemePatchTest {
     @Test
     fun `option keys are bundle specific`() {
         assertEquals(
-            setOf("backgroundColor", "textColor", "accentColor", "disableDynamicColors"),
+            setOf(
+                "backgroundColor",
+                "textColor",
+                "accentColor",
+                "disableDynamicColors",
+                "surfaceUsesBackground",
+                "surfaceColor",
+            ),
             braveAmoledThemePatch.options.keys,
         )
     }
@@ -113,8 +120,9 @@ class BraveAmoledThemePatchTest {
             </resources>
         """.trimIndent()
 
-        val (out, replaced) = rewriteNightColorXml(xml, "#000000")
-        assertEquals(2, replaced)
+        val (out, tierCounts) = rewriteSurfaceTiers(xml, "#000000", "#000000")
+        assertEquals(2, tierCounts.background)
+        assertEquals(0, tierCounts.container)
         assertTrue("""<color name="bg">#000000</color>""" in out)
         assertTrue("""<color name="card">#000000</color>""" in out)
         assertTrue("""<color name="accent">#737ade</color>""" in out)
@@ -521,8 +529,13 @@ class BraveAmoledThemePatchTest {
         // Both hexes pass the surface heuristic; only the one the app renders
         // text with must be spared.
         assertTrue(isAmoledSurfaceColor("#1c1c1d"))
-        val (out, replaced) = rewriteSurfaceColorXml(xml, "#000000", setOf("ink_only"))
-        assertEquals(1, replaced)
+        val (out, tierCounts) = rewriteSurfaceTiers(
+            xml,
+            "#000000",
+            "#000000",
+            excludeNames = setOf("ink_only"),
+        )
+        assertEquals(1, tierCounts.background)
         assertTrue("""<color name="ink_only">#1c1c1d</color>""" in out)
         assertTrue("""<color name="panel">#000000</color>""" in out)
     }
@@ -698,5 +711,296 @@ class BraveAmoledThemePatchTest {
             """<color name="body_ink">#f0f2ff</color>""" in night,
             "genuinely dark ink still needs a readable night value",
         )
+    }
+
+    @Test
+    fun `surface tiers split window fills from raised fills`() {
+        val xml = """
+            <resources>
+                <color name="window_bg">#121212</color>
+                <color name="card">#1e2025</color>
+                <color name="sheet">#2e3039</color>
+                <color name="ink">#f0f2ff</color>
+            </resources>
+        """.trimIndent()
+
+        val (out, counts) = rewriteSurfaceTiers(xml, "#000000", "#1e2029")
+        assertEquals(1, counts.background)
+        assertEquals(2, counts.container)
+        assertTrue("""<color name="window_bg">#000000</color>""" in out)
+        assertTrue("""<color name="card">#1e2029</color>""" in out)
+        assertTrue("""<color name="sheet">#1e2029</color>""" in out)
+        assertTrue("""<color name="ink">#f0f2ff</color>""" in out)
+    }
+
+    @Test
+    fun `the default mode writes the background over every surface`() {
+        val xml = """
+            <resources>
+                <color name="window_bg">#121212</color>
+                <color name="card">#1e2029</color>
+                <color name="ink">#f0f2ff</color>
+            </resources>
+        """.trimIndent()
+
+        val (out, counts) = rewriteSurfaceTiers(xml, "#000000", "#000000")
+        assertEquals(
+            """
+            <resources>
+                <color name="window_bg">#000000</color>
+                <color name="card">#000000</color>
+                <color name="ink">#f0f2ff</color>
+            </resources>
+            """.trimIndent(),
+            out,
+        )
+        assertEquals(2, counts.background)
+        assertEquals(0, counts.container, "one tier means one target, so nothing reads as raised")
+    }
+
+    @Test
+    fun `role evidence overrides the value heuristic for a raised id`() {
+        val xml = """
+            <resources>
+                <color name="now_raised">#121212</color>
+                <color name="still_flat">#121212</color>
+            </resources>
+        """.trimIndent()
+
+        val (out, counts) = rewriteSurfaceTiers(
+            xml,
+            "#000000",
+            "#1e2029",
+            containerNames = setOf("now_raised"),
+        )
+        assertEquals(1, counts.background)
+        assertEquals(1, counts.container)
+        assertTrue("""<color name="now_raised">#1e2029</color>""" in out)
+        assertTrue("""<color name="still_flat">#000000</color>""" in out)
+    }
+
+    @Test
+    fun `material you role files map ids to their tier`() {
+        val xml = """
+            <resources>
+                <color name="a">@android:color/system_surface_dark</color>
+                <color name="b">@android:color/system_surface_container_high_dark</color>
+                <color name="c">@android:color/system_neutral1_900</color>
+                <color name="d">@android:color/system_on_surface_dark</color>
+            </resources>
+        """.trimIndent()
+
+        val tiers = collectMaterialYouRoleTiers(xml)
+        assertEquals(false, tiers["a"])
+        assertEquals(true, tiers["b"])
+        assertEquals(false, tiers["c"], "a v31 neutral tone is the window background")
+        assertEquals(null, tiers["d"], "ink is not a surface role")
+    }
+
+    @Test
+    fun `window background ids are collected from every values qualifier`() {
+        val res = createTempDirectory("amoled-window").toFile()
+        res.resolve("values").mkdirs()
+        res.resolve("values-v31").mkdirs()
+        res.resolve("values/styles.xml").writeText(
+            """
+            <resources>
+                <style name="T">
+                    <item name="android:colorBackground">@color/window_bg</item>
+                    <item name="android:windowBackground">@color/other_window</item>
+                    <item name="android:background">@color/card_bg</item>
+                </style>
+            </resources>
+            """.trimIndent(),
+        )
+        res.resolve("values-v31/styles.xml").writeText(
+            """
+            <resources>
+                <style name="V31">
+                    <item name="android:colorBackground">@color/v31_window</item>
+                </style>
+            </resources>
+            """.trimIndent(),
+        )
+
+        val ids = collectWindowBackgroundIds(res)
+        assertTrue("window_bg" in ids)
+        assertTrue("other_window" in ids)
+        assertTrue("v31_window" in ids, "a later qualifier can swap the id")
+        assertFalse("card_bg" in ids, "a card background is not the window")
+    }
+
+    @Test
+    fun `a window background is never raised by the value heuristic`() {
+        val xml = """
+            <resources>
+                <color name="window_bg">#1f1f1f</color>
+                <color name="card_bg">#1f1f1f</color>
+            </resources>
+        """.trimIndent()
+
+        val (out, counts) = rewriteSurfaceTiers(
+            xml,
+            "#000000",
+            "#1e2029",
+            baseNames = setOf("window_bg"),
+        )
+        assertEquals(1, counts.background)
+        assertEquals(1, counts.container)
+        assertTrue("""<color name="window_bg">#000000</color>""" in out)
+        assertTrue("""<color name="card_bg">#1e2029</color>""" in out)
+    }
+
+    @Test
+    fun `material you rewrite sends the container ladder to the surface color`() {
+        val xml = """
+            <resources>
+                <color name="bg">@android:color/system_surface_dark</color>
+                <color name="card">@android:color/system_surface_container_dark</color>
+            </resources>
+        """.trimIndent()
+
+        val (out, replaced) = rewriteMaterialYouDarkNeutrals(xml, "#000000", "#1e2029")
+        assertEquals(2, replaced)
+        assertTrue("""<color name="bg">#000000</color>""" in out)
+        assertTrue("""<color name="card">#1e2029</color>""" in out)
+    }
+
+    @Test
+    fun `low lstar selectors split by role`() {
+        val xml = """
+            <selector>
+                <item n0:color="@android:color/system_surface_dark" n0:lStar="8.0"
+                  xmlns:n0="http://schemas.android.com/apk/res/android" />
+                <item n0:color="@android:color/system_surface_container_high_dark" n0:lStar="9.0"
+                  xmlns:n0="http://schemas.android.com/apk/res/android" />
+            </selector>
+        """.trimIndent()
+
+        val (out, replaced) = rewriteDarkLStarSelectors(xml, "#000000", "#1e2029")
+        assertEquals(2, replaced)
+        assertTrue("""n0:color="#000000"""" in out)
+        assertTrue("""n0:color="#1e2029"""" in out)
+    }
+
+    @Test
+    fun `bare palette tones split by tone because the role name is a lie`() {
+        // The real shapes from Brave 1.96.60: every v31 chrome fill aliases
+        // system_neutral2_600 and only the tone differs — 6 is the window,
+        // 24 is the surface_bright behind the popup menu and app bar.
+        val xml = """
+            <selector>
+                <item n0:color="@android:color/system_neutral2_600" n0:lStar="6.0"
+                  xmlns:n0="http://schemas.android.com/apk/res/android" />
+            </selector>
+            <selector>
+                <item n0:color="@android:color/system_neutral2_600" n0:lStar="24.0"
+                  xmlns:n0="http://schemas.android.com/apk/res/android" />
+            </selector>
+        """.trimIndent()
+
+        val (out, replaced) = rewriteDarkLStarSelectors(xml, "#000000", "#1e2029")
+        assertEquals(2, replaced)
+        assertEquals(
+            1,
+            Regex("""n0:color="#000000"""").findAll(out).count(),
+            "tone 6 is the window background",
+        )
+        assertEquals(
+            1,
+            Regex("""n0:color="#1e2029"""").findAll(out).count(),
+            "tone 24 is a raised surface",
+        )
+    }
+
+    @Test
+    fun `night v31 overrides keep each tier on its own colour`() {
+        val out = buildNightV31Overrides(mapOf("b" to "#1e2029", "a" to "#000000"))
+        assertTrue("""<color name="a">#000000</color>""" in out)
+        assertTrue("""<color name="b">#1e2029</color>""" in out)
+        assertTrue(out.indexOf("""name="a"""") < out.indexOf("""name="b""""), "sorted by id")
+    }
+
+    @Test
+    fun `surface option keeps window and raised ids apart end to end`() {
+        val res = createTempDirectory("amoled-tiers").toFile()
+        res.resolve("values").mkdirs()
+        res.resolve("values-night").mkdirs()
+        res.resolve("values-v34").mkdirs()
+
+        res.resolve("values/colors.xml").writeText(
+            """<resources><color name="window_bg">#121212</color></resources>""",
+        )
+        res.resolve("values-night/colors.xml").writeText(
+            """
+            <resources>
+                <color name="window_bg">#121212</color>
+                <color name="card_bg">#121212</color>
+            </resources>
+            """.trimIndent(),
+        )
+        // The role file is the tier evidence for card_bg: the same id, a raised
+        // role, so the value heuristic must not be the thing deciding.
+        res.resolve("values-v34/colors.xml").writeText(
+            """
+            <resources>
+                <color name="window_bg">@android:color/system_surface_dark</color>
+                <color name="card_bg">@android:color/system_surface_container_high_dark</color>
+            </resources>
+            """.trimIndent(),
+        )
+
+        val result = applyAmoledResources(
+            res,
+            "#000000",
+            surfaceUsesBackground = false,
+            surfaceColorHex = "#1e2029",
+        )
+
+        assertEquals(1, result.containerColorsReplaced)
+        val night = res.resolve("values-night/colors.xml").readText()
+        assertTrue("""<color name="window_bg">#000000</color>""" in night)
+        assertTrue("""<color name="card_bg">#1e2029</color>""" in night)
+        val nv31 = res.resolve("values-night-v31/colors.xml").readText()
+        assertTrue("""<color name="card_bg">#1e2029</color>""" in nv31)
+        assertTrue("""<color name="window_bg">#000000</color>""" in nv31)
+    }
+
+    @Test
+    fun `keeping dynamic colors leaves the material you resources alone`() {
+        val res = createTempDirectory("amoled-my").toFile()
+        res.resolve("values").mkdirs()
+        res.resolve("values-night").mkdirs()
+        res.resolve("values-v31").mkdirs()
+        res.resolve("color-v31").mkdirs()
+
+        res.resolve("values-night/colors.xml").writeText(
+            """<resources><color name="window_bg">#121212</color></resources>""",
+        )
+        val v31 =
+            """<resources><color name="s">@android:color/system_neutral1_900</color></resources>"""
+        res.resolve("values-v31/colors.xml").writeText(v31)
+        val lstar = """
+            <selector>
+                <item n0:color="@android:color/system_neutral2_600" n0:lStar="6.0"
+                  xmlns:n0="http://schemas.android.com/apk/res/android" />
+            </selector>
+        """.trimIndent()
+        res.resolve("color-v31/dark_lstar.xml").writeText(lstar)
+
+        val result = applyAmoledResources(res, "#000000", disableDynamicColors = false)
+
+        assertEquals(0, result.v31MaterialYouReplaced)
+        assertEquals(0, result.lStarSelectorsReplaced)
+        assertEquals(v31, res.resolve("values-v31/colors.xml").readText())
+        assertEquals(lstar, res.resolve("color-v31/dark_lstar.xml").readText())
+        // Brave's own hex tokens are flattened in both modes.
+        assertTrue(
+            """<color name="window_bg">#000000</color>""" in
+                res.resolve("values-night/colors.xml").readText(),
+        )
+        // The Material You role id must not be pinned back to the AMOLED hex.
+        val nv31 = res.resolve("values-night-v31/colors.xml")
+        assertFalse(nv31.isFile && """name="s"""" in nv31.readText())
     }
 }
