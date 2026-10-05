@@ -1,3 +1,9 @@
+## [1.9.0-dev.3](https://github.com/dh6k/morphe-patches/compare/v1.9.0-dev.2...v1.9.0-dev.3) (2026-10-05)
+
+### ✨ New Features
+
+* **brave:** keep raised AMOLED surfaces off the flat background ([363eb71](https://github.com/dh6k/morphe-patches/commit/363eb711d1b47da4c628fc1118c7980789bbb5c3)), closes [#1e2029](https://github.com/dh6k/morphe-patches/issues/1e2029)
+
 ## [1.9.0-dev.2](https://github.com/dh6k/morphe-patches/compare/v1.9.0-dev.1...v1.9.0-dev.2) (2026-10-02)
 
 ### 🐛 Bug Fixes
