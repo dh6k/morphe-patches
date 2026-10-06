@@ -129,9 +129,14 @@ internal val MATERIAL_YOU_DARK_NEUTRAL_ROLES = Regex(
  * Material You can tint it. lStar only applies to dynamic colors, so the value
  * falls back to the raw tone — a near-black grey. Rewriting the color and
  * dropping lStar is what actually forces AMOLED.
+ *
+ * The namespace prefix is NOT stable: apktool assigns n0:, n1:, n2:, … per file
+ * in declaration order, so 1.96.60 decoded with n0: while 1.96.61 uses n1:.
+ * Hardcoding n0: here silently matched nothing and left the popup menu and the
+ * settings window grey (issue #21). The prefix is captured and reused instead.
  */
 internal val DARK_LSTAR_SELECTOR = Regex(
-    pattern = """<item\s+n0:color="(@android:color/system_[^"]+)"\s+n0:lStar="(\d+(?:\.\d+)?)"""",
+    pattern = """<item\s+(n\d+):color="(@android:color/system_[^"]+)"\s+\1:lStar="(\d+(?:\.\d+)?)"""",
     option = RegexOption.IGNORE_CASE,
 )
 
@@ -694,8 +699,9 @@ internal fun rewriteDarkLStarSelectors(
         ?: throw PatchException("Surface color must be an opaque hex: $containerHex")
     var replaced = 0
     val out = DARK_LSTAR_SELECTOR.replace(xml) { match ->
-        val role = match.groupValues[1]
-        val tone = match.groupValues[2].toDoubleOrNull() ?: return@replace match.value
+        val prefix = match.groupValues[1]
+        val role = match.groupValues[2]
+        val tone = match.groupValues[3].toDoubleOrNull() ?: return@replace match.value
         if (tone > DARK_SURFACE_LSTAR_CEILING) return@replace match.value
         // A named role decides the tier outright. A bare palette tone carries no
         // name, so the tone is the only evidence left: tone 6 paints the window,
@@ -708,15 +714,15 @@ internal fun rewriteDarkLStarSelectors(
         }
         replaced++
         match.value
-            .replace(Regex("""n0:color="[^"]*""""), """n0:color="$target"""")
-            .replace(Regex("""\s+n0:lStar="[^"]*""""), "")
+            .replace(Regex("""${Regex.escape(prefix)}:color="[^"]*""""), """$prefix:color="$target"""")
+            .replace(Regex("""\s+${Regex.escape(prefix)}:lStar="[^"]*""""), "")
     }
     return out to replaced
 }
 
 private val VECTOR_PATH = Regex("""<path\b""")
 
-private val VECTOR_FILL = Regex("(n0:fillColor|n1:fillColor)=\"([^\"]+)\"")
+private val VECTOR_FILL = Regex("(n\\d+:fillColor)=\"([^\"]+)\"")
 
 /**
  * Vector panels (promo cards, sheets) hardcode the dark chrome fill instead of
@@ -811,8 +817,17 @@ internal val MATERIAL_YOU_COLORS_PATHS = listOf(
     "values-v35/colors.xml",
 )
 
-/** Selector directories that can pin a surface to a low lStar. */
-internal val SELECTOR_DIRS = listOf("color", "color-night", "color-v31")
+/**
+ * Selector directories that can pin a surface to a low lStar. Discovered, not
+ * hardcoded: qualifier sets like color-night-v8 exist on real builds and a
+ * fixed list silently misses whatever apktool decodes under a new qualifier.
+ */
+internal fun selectorDirs(resourceDirectory: File): List<String> =
+    resourceDirectory.listFiles()
+        .orEmpty()
+        .filter { it.isDirectory && (it.name == "color" || it.name.startsWith("color-")) }
+        .map { it.name }
+        .sorted()
 
 internal fun applyAmoledResources(
     resourceDirectory: File,
@@ -971,7 +986,7 @@ internal fun applyAmoledResources(
 
     var lStarReplaced = 0
     if (disableDynamicColors) {
-        SELECTOR_DIRS.forEach { dir ->
+        selectorDirs(resourceDirectory).forEach { dir ->
             val dirFile = resourceDirectory.resolve(dir)
             dirFile.listFiles()
                 .orEmpty()

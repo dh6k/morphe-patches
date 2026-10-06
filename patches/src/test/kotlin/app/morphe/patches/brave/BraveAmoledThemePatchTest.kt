@@ -1003,4 +1003,56 @@ class BraveAmoledThemePatchTest {
         val nv31 = res.resolve("values-night-v31/colors.xml")
         assertFalse(nv31.isFile && """name="s"""" in nv31.readText())
     }
+
+    @Test
+    fun `lstar selector matches whatever namespace prefix apktool emitted`() {
+        // Brave 1.96.61 decodes the v31 palette selectors with n1:, not n0:.
+        // A hardcoded n0: silently matched nothing and left the popup menu and
+        // the settings window grey (issue #21).
+        val xml = """
+            <selector>
+                <item n1:color="@android:color/system_neutral2_600" n1:lStar="24.0"
+                  xmlns:n1="http://schemas.android.com/apk/res/android" />
+                <item n2:color="@android:color/system_neutral2_600" n2:lStar="6.0"
+                  xmlns:n2="http://schemas.android.com/apk/res/android" />
+            </selector>
+        """.trimIndent()
+
+        val (out, replaced) = rewriteDarkLStarSelectors(xml, "#000000", "#1e2029")
+        assertEquals(2, replaced)
+        assertTrue("""n1:color="#1e2029"""" in out, "tone 24 keeps its n1: prefix on the container")
+        assertTrue("""n2:color="#000000"""" in out, "tone 6 keeps its n2: prefix on the background")
+        assertFalse("lStar" in out, "lStar only exists to let Material You re-tint")
+        assertFalse("n0:" in out, "no prefix is forced back to n0:")
+    }
+
+    @Test
+    fun `lstar rewrite in flat mode sends every tier to the background`() {
+        // The exact shape of res/color-v31/m3_ref_palette_dynamic_neutral_variant24
+        // on Brave 1.96.61: the popup menu terminal. In flat mode the container
+        // hex equals the background, so the menu must come out black.
+        val xml = """
+            <selector>
+                <item n1:color="@android:color/system_neutral2_600" n1:lStar="24.0"
+                  xmlns:n1="http://schemas.android.com/apk/res/android" />
+            </selector>
+        """.trimIndent()
+
+        val (out, replaced) = rewriteDarkLStarSelectors(xml, "#000000")
+        assertEquals(1, replaced)
+        assertTrue("""n1:color="#000000"""" in out)
+    }
+
+    @Test
+    fun `vector fills match any namespace prefix`() {
+        val xml = """
+            <vector>
+                <path n2:fillColor="#1e2029" n2:pathData="M0,0" />
+            </vector>
+        """.trimIndent()
+
+        val (out, replaced) = rewriteVectorSurfaceFills(xml, "#000000")
+        assertEquals(1, replaced)
+        assertTrue("""n2:fillColor="#000000"""" in out)
+    }
 }
