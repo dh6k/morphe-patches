@@ -1,3 +1,9 @@
+## [1.9.0-dev.5](https://github.com/dh6k/morphe-patches/compare/v1.9.0-dev.4...v1.9.0-dev.5) (2026-10-13)
+
+### 🐛 Bug Fixes
+
+* **brave:** match lStar selectors on any apktool namespace prefix ([65817c9](https://github.com/dh6k/morphe-patches/commit/65817c9d1477c9018f4f9b77b5ce17a6ca8bbd18))
+
 ## [1.9.0-dev.4](https://github.com/dh6k/morphe-patches/compare/v1.9.0-dev.3...v1.9.0-dev.4) (2026-10-05)
 
 ### 🐛 Bug Fixes
