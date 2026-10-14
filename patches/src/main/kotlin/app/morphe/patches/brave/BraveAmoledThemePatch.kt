@@ -520,6 +520,38 @@ private fun parseStyles(xml: String): List<ParsedStyle> {
  * flip between the colors of different themes. Every lookup here is
  * chain-local, so no file iteration order can change the result.
  */
+
+/**
+ * Replaces ?attr/ references in windowBackground/colorBackground items with a
+ * direct @color/ reference. Theme attributes resolve at runtime per-theme, so
+ * static patching cannot reliably determine which color they point to. By
+ * bypassing the indirection entirely, two-tier mode gets a deterministic
+ * window background.
+ *
+ * Returns the number of replacements made.
+ */
+internal fun replaceWindowBackgroundAttrRefs(resourceDirectory: File): Int {
+    var count = 0
+    val pattern = Regex(
+        """(<item\s+name="(?:android:)?(?:colorBackground|windowBackground)"[^>]*>\s*)\?[^<]+(\s*</item>)"""
+    )
+    resourceDirectory.listFiles().orEmpty()
+        .filter { it.isDirectory && it.name.startsWith("values") }
+        .flatMap { it.listFiles().orEmpty().toList() }
+        .filter { it.isFile && it.name.endsWith(".xml", ignoreCase = true) }
+        .forEach { file ->
+            val original = file.readText()
+            val replaced = pattern.replace(original) { m ->
+                count++
+                "${m.groupValues[1]}@color/amoled_window_background${m.groupValues[2]}"
+            }
+            if (replaced != original) {
+                file.writeText(replaced)
+            }
+        }
+    return count
+}
+
 internal fun collectWindowBackgroundIds(resourceDirectory: File): Set<String> {
     // Deterministic qualifier order throughout.
     val qualifierDirs = resourceDirectory.listFiles().orEmpty()
@@ -988,6 +1020,24 @@ internal fun applyAmoledResources(
     }
     val containerNames = if (surfaceUsesBackground) emptySet() else roleTiers.filterValues { it }.keys
     // Window backgrounds are never raised, whatever their value looks like.
+    // In two-tier mode, first bypass ?attr/ indirection in windowBackground
+    // (it resolves per-theme at runtime, which static patching cannot see),
+    // then collect the ids.
+    if (!surfaceUsesBackground) {
+        replaceWindowBackgroundAttrRefs(resourceDirectory)
+        // Define the bypass color as pure black in night resources.
+        val nightColorsFile = resourceDirectory.resolve(NIGHT_COLORS_PATH)
+        if (nightColorsFile.isFile) {
+            val xml = nightColorsFile.readText()
+            if (!xml.contains("amoled_window_background")) {
+                val injected = xml.replace(
+                    "</resources>",
+                    "    <color name=\"amoled_window_background\">#ff000000</color>\n</resources>"
+                )
+                nightColorsFile.writeText(injected)
+            }
+        }
+    }
     val baseNames = if (surfaceUsesBackground) {
         emptySet()
     } else {
