@@ -676,11 +676,9 @@ internal fun applyPreferenceCardBackgrounds(resourceDirectory: File): Int {
         .filter { it.isFile && it.name.endsWith(".xml", ignoreCase = true) }
         .forEach { file ->
             val original = file.readText()
-            // Only process preference item layouts.
-            // In obfuscated builds the ID is @7F01080C (not @id/icon_frame).
-            if (!original.contains("icon_frame") && !original.contains("7F01080C") &&
-                !original.contains("7f01080c")) return@forEach
-
+            // Process any layout with selectableItemBackground (preference items
+            // and other clickable rows). In obfuscated builds the IDs are
+            // APKTOOL_DUMMYVAL_0x..., so we match by the background value.
             var replaced = bgPattern.replace(original) { m ->
                 val prefix = m.groupValues[1].ifEmpty { "android:" }
                 count++
