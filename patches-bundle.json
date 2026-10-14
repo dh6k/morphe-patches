@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-10-14T14:12:19",
-  "description": "## [1.9.0-dev.7](https://github.com/dh6k/morphe-patches/compare/v1.9.0-dev.6...v1.9.0-dev.7) (2026-10-14)\n\n### 🐛 Bug Fixes\n\n* **brave:** resolve windowBackground attr through the theme's own parent chain ([f865376](https://github.com/dh6k/morphe-patches/commit/f865376462931ccced9652523825e064a85b38a0))",
-  "download_url": "https://github.com/dh6k/morphe-patches/releases/download/v1.9.0-dev.7/patches-1.9.0-dev.7.mpp",
+  "created_at": "2026-10-14T15:08:57",
+  "description": "## [1.9.0-dev.8](https://github.com/dh6k/morphe-patches/compare/v1.9.0-dev.7...v1.9.0-dev.8) (2026-10-14)\n\n### 🐛 Bug Fixes\n\n* **brave:** bypass windowBackground attr indirection with a direct color ([73fd63e](https://github.com/dh6k/morphe-patches/commit/73fd63e09cd3e26f6cc88944c1bdc38070a93e00))",
+  "download_url": "https://github.com/dh6k/morphe-patches/releases/download/v1.9.0-dev.8/patches-1.9.0-dev.8.mpp",
   "signature_download_url": "",
-  "version": "1.9.0-dev.7"
+  "version": "1.9.0-dev.8"
 }

@@ -1,3 +1,9 @@
+## [1.9.0-dev.8](https://github.com/dh6k/morphe-patches/compare/v1.9.0-dev.7...v1.9.0-dev.8) (2026-10-14)
+
+### 🐛 Bug Fixes
+
+* **brave:** bypass windowBackground attr indirection with a direct color ([73fd63e](https://github.com/dh6k/morphe-patches/commit/73fd63e09cd3e26f6cc88944c1bdc38070a93e00))
+
 ## [1.9.0-dev.7](https://github.com/dh6k/morphe-patches/compare/v1.9.0-dev.6...v1.9.0-dev.7) (2026-10-14)
 
 ### 🐛 Bug Fixes
