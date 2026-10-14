@@ -664,10 +664,13 @@ internal fun createPreferenceCardDrawable(resourceDirectory: File, containerHex:
  */
 internal fun applyPreferenceCardBackgrounds(resourceDirectory: File): Int {
     var count = 0
-    // Match background="?android:selectableItemBackground" with optional namespace prefix.
-    // In obfuscated builds the value may be ?android:0101030E (the resource ID).
+    // Match any background containing selectableItemBackground or its resource ID.
+    // Lenient pattern for obfuscated builds with varying prefixes/formats.
     val bgPattern = Regex(
-        """(\w+:)?background="\?android:(?:selectableItemBackground|0101030E)""""
+        """[\w:]*background="[^"]*selectableItemBackground[^"]*""""
+    )
+    val bgIdPattern = Regex(
+        """[\w:]*background="[^"]*0101030E[^"]*""""
     )
 
     resourceDirectory.listFiles().orEmpty()
@@ -679,10 +682,16 @@ internal fun applyPreferenceCardBackgrounds(resourceDirectory: File): Int {
             // Process any layout with selectableItemBackground (preference items
             // and other clickable rows). In obfuscated builds the IDs are
             // APKTOOL_DUMMYVAL_0x..., so we match by the background value.
-            var replaced = bgPattern.replace(original) { m ->
-                val prefix = m.groupValues[1].ifEmpty { "android:" }
+            var replaced = original
+            replaced = bgPattern.replace(replaced) { m ->
                 count++
-                """${prefix}background="@drawable/amoled_preference_card""""
+                val attrName = m.value.substringBefore("=")
+                """$attrName="@drawable/amoled_preference_card""""
+            }
+            replaced = bgIdPattern.replace(replaced) { m ->
+                count++
+                val attrName = m.value.substringBefore("=")
+                """$attrName="@drawable/amoled_preference_card""""
             }
             // Add margins for card spacing. Insert after the background attribute.
             if (replaced != original) {
