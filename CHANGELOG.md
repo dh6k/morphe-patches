@@ -1,3 +1,9 @@
+## [1.9.0-dev.9](https://github.com/dh6k/morphe-patches/compare/v1.9.0-dev.8...v1.9.0-dev.9) (2026-10-14)
+
+### 🐛 Bug Fixes
+
+* **brave:** also bypass transparent windowBackground in two-tier mode ([1203885](https://github.com/dh6k/morphe-patches/commit/120388554062cace6542a618f4c832aed826aea4))
+
 ## [1.9.0-dev.8](https://github.com/dh6k/morphe-patches/compare/v1.9.0-dev.7...v1.9.0-dev.8) (2026-10-14)
 
 ### 🐛 Bug Fixes
