@@ -1,3 +1,9 @@
+## [1.9.0-dev.6](https://github.com/dh6k/morphe-patches/compare/v1.9.0-dev.5...v1.9.0-dev.6) (2026-10-14)
+
+### 🐛 Bug Fixes
+
+* **brave:** resolve windowBackground through attr references ([6fbe764](https://github.com/dh6k/morphe-patches/commit/6fbe764cc45ee6542d66248d9ef3c62460fd10c8))
+
 ## [1.9.0-dev.5](https://github.com/dh6k/morphe-patches/compare/v1.9.0-dev.4...v1.9.0-dev.5) (2026-10-13)
 
 ### 🐛 Bug Fixes
