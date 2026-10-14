@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-10-14T19:46:12",
-  "description": "## [1.9.0-dev.14](https://github.com/dh6k/morphe-patches/compare/v1.9.0-dev.13...v1.9.0-dev.14) (2026-10-14)\n\n### 🐛 Bug Fixes\n\n* **brave:** apply cards to all selectableItemBackground layouts ([51b6f32](https://github.com/dh6k/morphe-patches/commit/51b6f3273dd04d3c90f21a9e2e248898ada8db78)), closes [#21](https://github.com/dh6k/morphe-patches/issues/21)",
-  "download_url": "https://github.com/dh6k/morphe-patches/releases/download/v1.9.0-dev.14/patches-1.9.0-dev.14.mpp",
+  "created_at": "2026-10-14T20:01:50",
+  "description": "## [1.9.0-dev.15](https://github.com/dh6k/morphe-patches/compare/v1.9.0-dev.14...v1.9.0-dev.15) (2026-10-14)\n\n### 🐛 Bug Fixes\n\n* **brave:** use lenient pattern for card backgrounds ([3fb4edd](https://github.com/dh6k/morphe-patches/commit/3fb4edd847074a0d9aaa873b37223bb2c2ef292c)), closes [#21](https://github.com/dh6k/morphe-patches/issues/21)",
+  "download_url": "https://github.com/dh6k/morphe-patches/releases/download/v1.9.0-dev.15/patches-1.9.0-dev.15.mpp",
   "signature_download_url": "",
-  "version": "1.9.0-dev.14"
+  "version": "1.9.0-dev.15"
 }

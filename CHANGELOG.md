@@ -1,3 +1,9 @@
+## [1.9.0-dev.15](https://github.com/dh6k/morphe-patches/compare/v1.9.0-dev.14...v1.9.0-dev.15) (2026-10-14)
+
+### 🐛 Bug Fixes
+
+* **brave:** use lenient pattern for card backgrounds ([3fb4edd](https://github.com/dh6k/morphe-patches/commit/3fb4edd847074a0d9aaa873b37223bb2c2ef292c)), closes [#21](https://github.com/dh6k/morphe-patches/issues/21)
+
 ## [1.9.0-dev.14](https://github.com/dh6k/morphe-patches/compare/v1.9.0-dev.13...v1.9.0-dev.14) (2026-10-14)
 
 ### 🐛 Bug Fixes
