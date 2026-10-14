@@ -1055,4 +1055,26 @@ class BraveAmoledThemePatchTest {
         assertEquals(1, replaced)
         assertTrue("""n2:fillColor="#000000"""" in out)
     }
+
+    @Test
+    fun `window background ids resolve through attr references`() {
+        // Nightly themes point windowBackground at ?attr/ instead of @color/
+        // directly. Those ids must still land in baseNames, otherwise two-tier
+        // mode paints the window with the surface color (issue #21).
+        val dir = createTempDirectory("res").toFile()
+        dir.resolve("values").mkdirs()
+        dir.resolve("values/styles.xml").writeText(
+            """
+            <resources>
+                <style name="Theme.Night">
+                    <item name="android:windowBackground">?APKTOOL_DUMMYVAL_0x7f05018f</item>
+                    <item name="APKTOOL_DUMMYVAL_0x7f05018f">@color/APKTOOL_DUMMYVAL_0x7f070554</item>
+                </style>
+            </resources>
+            """.trimIndent(),
+        )
+
+        val ids = collectWindowBackgroundIds(dir)
+        assertTrue("APKTOOL_DUMMYVAL_0x7f070554" in ids)
+    }
 }

@@ -468,21 +468,60 @@ private val WINDOW_BACKGROUND_ITEM = Regex(
         """"\s*>\s*@color/([^<]+)\s*<""",
 )
 
+/** Matches ?attr/ references in windowBackground, e.g. ?APKTOOL_DUMMYVAL_0x7f05018f */
+private val WINDOW_BACKGROUND_ATTR_REF = Regex(
+    """<item\s+name="(?:android:)?(?:colorBackground|windowBackground)""" +
+        """"\s*>\s*\?([^<\s]+)\s*<""",
+)
+
+/** Matches <item name="X">@color/Y</item> to resolve theme attributes. */
+private val THEME_ATTR_COLOR_ASSIGNMENT = Regex(
+    """<item\s+name="([^"]+)"[^>]*>\s*@color/([^<]+)\s*<""",
+)
+
 /**
  * Ids styles paint the window with. These must never be raised: a window a step
  * brighter than the AMOLED background is exactly the flat-versus-elevated mix-up
  * the surface tier exists to avoid, and the value heuristic cannot tell a
  * #1f1f1f window from a #1f1f1f card.
+ *
+ * Handles direct @color/ references as well as indirect ?attr/ references,
+ * which are resolved by scanning theme assignments (e.g. windowBackground
+ * -> ?attr/0x7f05018f -> @color/0x7f0702d2).
  */
 internal fun collectWindowBackgroundIds(resourceDirectory: File): Set<String> {
     val out = linkedSetOf<String>()
+    val attrRefs = linkedSetOf<String>()
     resourceDirectory.listFiles().orEmpty()
         .filter { it.isDirectory && it.name.startsWith("values") }
         .flatMap { it.listFiles().orEmpty().toList() }
         .filter { it.isFile && it.name.endsWith(".xml", ignoreCase = true) }
         .forEach { file ->
-            WINDOW_BACKGROUND_ITEM.findAll(file.readText()).forEach { out += it.groupValues[1] }
+            val text = file.readText()
+            WINDOW_BACKGROUND_ITEM.findAll(text).forEach { out += it.groupValues[1] }
+            WINDOW_BACKGROUND_ATTR_REF.findAll(text).forEach {
+                // ?APKTOOL_DUMMYVAL_0x... -> APKTOOL_DUMMYVAL_0x...
+                // ?android:colorBackground -> android:colorBackground
+                attrRefs += it.groupValues[1].removePrefix("?")
+            }
         }
+    // Resolve ?attr/ references by scanning theme assignments.
+    if (attrRefs.isNotEmpty()) {
+        val attrToColor = mutableMapOf<String, String>()
+        resourceDirectory.listFiles().orEmpty()
+            .filter { it.isDirectory && it.name.startsWith("values") }
+            .flatMap { it.listFiles().orEmpty().toList() }
+            .filter { it.isFile && it.name.equals("styles.xml", ignoreCase = true) }
+            .forEach { file ->
+                THEME_ATTR_COLOR_ASSIGNMENT.findAll(file.readText()).forEach { m ->
+                    // Later assignments win, matching theme overlay order.
+                    attrToColor[m.groupValues[1]] = m.groupValues[2]
+                }
+            }
+        for (ref in attrRefs) {
+            attrToColor[ref]?.let { out += it }
+        }
+    }
     return out
 }
 
