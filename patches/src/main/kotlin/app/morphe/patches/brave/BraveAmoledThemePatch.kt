@@ -619,6 +619,86 @@ internal fun replaceWindowBackgroundAttrRefs(resourceDirectory: File): Int {
     return count
 }
 
+/**
+ * Creates a rounded rectangle drawable for preference cards in two-tier mode.
+ * The cards use the surface (container) color so they stand out against the
+ * black window background. (issue #21)
+ *
+ * Returns true if the drawable was created.
+ */
+internal fun createPreferenceCardDrawable(resourceDirectory: File, containerHex: String): Boolean {
+    val drawableDir = resourceDirectory.resolve("drawable")
+    if (!drawableDir.isDirectory) {
+        drawableDir.mkdirs()
+    }
+
+    val drawableFile = drawableDir.resolve("amoled_preference_card.xml")
+    if (drawableFile.exists()) return false
+
+    val hex = normalizeOpaqueHex(containerHex) ?: return false
+    // Shape solid colors use #AARRGGBB or #RRGGBB; strip the alpha if opaque.
+    val colorHex = if (hex.length == 9 && hex.startsWith("#ff", ignoreCase = true)) {
+        "#" + hex.substring(3)
+    } else {
+        hex
+    }
+
+    drawableFile.writeText(
+        """<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="$colorHex" />
+    <corners android:radius="16dp" />
+</shape>
+""",
+    )
+    return true
+}
+
+/**
+ * Applies the preference card background to preference item layouts.
+ * Replaces ?android:selectableItemBackground (transparent ripple) with the
+ * card drawable, and adds margins for spacing between cards. (issue #21)
+ *
+ * Returns the number of layouts modified.
+ */
+internal fun applyPreferenceCardBackgrounds(resourceDirectory: File): Int {
+    var count = 0
+    // Match background="?android:selectableItemBackground" with optional namespace prefix.
+    // In obfuscated builds the value may be ?android:0101030E (the resource ID).
+    val bgPattern = Regex(
+        """(\w+:)?background="\?android:(?:selectableItemBackground|0101030E)""""
+    )
+
+    resourceDirectory.listFiles().orEmpty()
+        .filter { it.isDirectory && it.name.startsWith("layout") }
+        .flatMap { it.listFiles().orEmpty().toList() }
+        .filter { it.isFile && it.name.endsWith(".xml", ignoreCase = true) }
+        .forEach { file ->
+            val original = file.readText()
+            // Only process preference item layouts (contain icon_frame).
+            if (!original.contains("icon_frame")) return@forEach
+
+            var replaced = bgPattern.replace(original) { m ->
+                val prefix = m.groupValues[1].ifEmpty { "android:" }
+                count++
+                """${prefix}background="@drawable/amoled_preference_card""""
+            }
+            // Add margins for card spacing. Insert after the background attribute.
+            if (replaced != original) {
+                val marginPattern = Regex(
+                    """(background="@drawable/amoled_preference_card")"""
+                )
+                replaced = marginPattern.replace(replaced) { m ->
+                    // Use android: prefix for margins (standard, not obfuscated).
+                    """${m.groupValues[1]} android:layout_marginStart="8dp" android:layout_marginEnd="8dp" android:layout_marginTop="4dp" android:layout_marginBottom="4dp""""
+                }
+                file.writeText(replaced)
+            }
+        }
+    return count
+}
+
 internal fun collectWindowBackgroundIds(resourceDirectory: File): Set<String> {
     // Deterministic qualifier order throughout.
     val qualifierDirs = resourceDirectory.listFiles().orEmpty()
@@ -1104,6 +1184,10 @@ internal fun applyAmoledResources(
                 nightColorsFile.writeText(injected)
             }
         }
+        // Create rounded card drawables for preference items so the two tiers
+        // are visually distinct (black window, grey cards). (issue #21)
+        createPreferenceCardDrawable(resourceDirectory, containerHex)
+        applyPreferenceCardBackgrounds(resourceDirectory)
     }
     val baseNames = if (surfaceUsesBackground) {
         emptySet()

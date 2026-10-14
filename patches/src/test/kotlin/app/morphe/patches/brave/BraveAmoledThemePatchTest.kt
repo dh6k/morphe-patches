@@ -1225,4 +1225,38 @@ class BraveAmoledThemePatchTest {
         assertFalse("?APKTOOL_DUMMYVAL_0x7f05018f" in layoutXml)
         assertTrue("@color/amoled_window_background" in layoutXml)
     }
+
+    @Test
+    fun `preference cards get grey rounded backgrounds`() {
+        // In two-tier mode, preference items become grey rounded cards on the
+        // black window background, for clear visual separation. (issue #21)
+        val dir = createTempDirectory("res-cards").toFile()
+        dir.resolve("layout").mkdirs()
+        dir.resolve("drawable").mkdirs()
+        // Preference item layout with transparent ripple background.
+        dir.resolve("layout/pref_item.xml").writeText(
+            """
+            <LinearLayout xmlns:n1="http://schemas.android.com/apk/res/android"
+                n1:background="?android:selectableItemBackground"
+                n1:layout_width="fill_parent" n1:layout_height="wrap_content">
+                <LinearLayout n1:id="@id/icon_frame" />
+            </LinearLayout>
+            """.trimIndent(),
+        )
+
+        val created = createPreferenceCardDrawable(dir, "#ff1e2029")
+        assertTrue(created)
+        val drawableFile = dir.resolve("drawable/amoled_preference_card.xml")
+        assertTrue(drawableFile.exists())
+        val drawableXml = drawableFile.readText()
+        assertTrue("#1e2029" in drawableXml)
+        assertTrue("16dp" in drawableXml)
+
+        val count = applyPreferenceCardBackgrounds(dir)
+        assertEquals(1, count)
+        val layoutXml = dir.resolve("layout/pref_item.xml").readText()
+        assertTrue("@drawable/amoled_preference_card" in layoutXml)
+        assertFalse("?android:selectableItemBackground" in layoutXml)
+        assertTrue("layout_marginStart" in layoutXml)
+    }
 }
