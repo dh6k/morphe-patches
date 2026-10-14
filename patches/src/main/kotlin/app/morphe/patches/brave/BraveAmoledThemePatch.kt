@@ -463,21 +463,45 @@ internal fun collectOverrideHexes(
     }
 }
 
-private val WINDOW_BACKGROUND_ITEM = Regex(
-    """<item\s+name="(?:android:)?(?:colorBackground|windowBackground)""" +
-        """"\s*>\s*@color/([^<]+)\s*<""",
+private val STYLE_OPEN = Regex("""<style\s+name="([^"]+)"([^>]*)>""")
+private val STYLE_PARENT_ATTR = Regex("""parent="([^"]+)"""")
+private val STYLE_ITEM = Regex("""<item\s+name="([^"]+)"[^>]*>\s*([^<]*?)\s*<""")
+
+/** One <style> block parsed out of a values styles.xml / themes.xml. */
+private data class ParsedStyle(
+    val name: String,
+    val parentName: String?,
+    val items: Map<String, String>,
 )
 
-/** Matches ?attr/ references in windowBackground, e.g. ?APKTOOL_DUMMYVAL_0x7f05018f */
-private val WINDOW_BACKGROUND_ATTR_REF = Regex(
-    """<item\s+name="(?:android:)?(?:colorBackground|windowBackground)""" +
-        """"\s*>\s*\?([^<\s]+)\s*<""",
+private val WINDOW_BACKGROUND_ATTRS = setOf(
+    "windowBackground",
+    "android:windowBackground",
+    "colorBackground",
+    "android:colorBackground",
 )
 
-/** Matches <item name="X">@color/Y</item> to resolve theme attributes. */
-private val THEME_ATTR_COLOR_ASSIGNMENT = Regex(
-    """<item\s+name="([^"]+)"[^>]*>\s*@color/([^<]+)\s*<""",
-)
+private fun parseStyles(xml: String): List<ParsedStyle> {
+    val out = mutableListOf<ParsedStyle>()
+    for (m in STYLE_OPEN.findAll(xml)) {
+        val name = m.groupValues[1]
+        val tagTail = m.groupValues[2]
+        val selfClosing = tagTail.trimEnd().endsWith("/")
+        val parentName = STYLE_PARENT_ATTR.find(tagTail)?.groupValues?.get(1)
+            ?.removePrefix("@style/")
+            ?: name.substringBeforeLast('.', missingDelimiterValue = "").takeIf { it.isNotEmpty() }
+        val body = if (selfClosing) {
+            ""
+        } else {
+            val end = xml.indexOf("</style>", m.range.last + 1)
+            if (end < 0) "" else xml.substring(m.range.last + 1, end)
+        }
+        val items = STYLE_ITEM.findAll(body)
+            .associate { it.groupValues[1] to it.groupValues[2].trim() }
+        out += ParsedStyle(name, parentName, items)
+    }
+    return out
+}
 
 /**
  * Ids styles paint the window with. These must never be raised: a window a step
@@ -485,41 +509,105 @@ private val THEME_ATTR_COLOR_ASSIGNMENT = Regex(
  * the surface tier exists to avoid, and the value heuristic cannot tell a
  * #1f1f1f window from a #1f1f1f card.
  *
- * Handles direct @color/ references as well as indirect ?attr/ references,
- * which are resolved by scanning theme assignments (e.g. windowBackground
- * -> ?attr/0x7f05018f -> @color/0x7f0702d2).
+ * Handles direct @color/ references as well as indirect ?attr/ references
+ * (e.g. windowBackground -> ?APKTOOL_DUMMYVAL_0x7f05018f ->
+ * @color/APKTOOL_DUMMYVAL_0x7f0702cf).
+ *
+ * ?attr/ is resolved the way Android does at runtime: against the parent chain
+ * of the style that sets the window background. It is never resolved by merging
+ * assignments from unrelated themes into one map — that made the dev.6
+ * resolution depend on the unordered File.listFiles() order (issue #21), a coin
+ * flip between the colors of different themes. Every lookup here is
+ * chain-local, so no file iteration order can change the result.
  */
 internal fun collectWindowBackgroundIds(resourceDirectory: File): Set<String> {
-    val out = linkedSetOf<String>()
-    val attrRefs = linkedSetOf<String>()
-    resourceDirectory.listFiles().orEmpty()
+    // Deterministic qualifier order throughout.
+    val qualifierDirs = resourceDirectory.listFiles().orEmpty()
         .filter { it.isDirectory && it.name.startsWith("values") }
-        .flatMap { it.listFiles().orEmpty().toList() }
-        .filter { it.isFile && it.name.endsWith(".xml", ignoreCase = true) }
-        .forEach { file ->
-            val text = file.readText()
-            WINDOW_BACKGROUND_ITEM.findAll(text).forEach { out += it.groupValues[1] }
-            WINDOW_BACKGROUND_ATTR_REF.findAll(text).forEach {
-                // ?APKTOOL_DUMMYVAL_0x... -> APKTOOL_DUMMYVAL_0x...
-                // ?android:colorBackground -> android:colorBackground
-                attrRefs += it.groupValues[1].removePrefix("?")
+        .sortedBy { it.name }
+    val byQualifier = mutableMapOf<String, Map<String, ParsedStyle>>()
+    for (dir in qualifierDirs) {
+        val styles = mutableMapOf<String, ParsedStyle>()
+        dir.listFiles().orEmpty()
+            .filter { it.isFile }
+            .filter {
+                it.name.equals("styles.xml", ignoreCase = true) ||
+                    it.name.equals("themes.xml", ignoreCase = true)
+            }
+            .sortedBy { it.name }
+            .forEach { file ->
+                for (style in parseStyles(file.readText())) styles[style.name] = style
+            }
+        byQualifier[dir.name] = styles
+    }
+    // Cross-qualifier parent fallback, deterministic: "values" first, then
+    // alphabetical. Only used when the parent is not defined in the same
+    // qualifier as the child.
+    val byName = linkedMapOf<String, ParsedStyle>()
+    for (dir in qualifierDirs) {
+        for ((name, style) in byQualifier.getValue(dir.name).toSortedMap()) {
+            byName.putIfAbsent(name, style)
+        }
+    }
+
+    fun chain(qualifier: String, start: ParsedStyle): List<ParsedStyle> {
+        val chain = mutableListOf<ParsedStyle>()
+        val seen = mutableSetOf<String>()
+        var q: String? = qualifier
+        var s: ParsedStyle? = start
+        while (s != null && seen.add(s.name)) {
+            chain += s
+            val parentName = s.parentName
+            s = if (parentName == null) {
+                null
+            } else {
+                val next = q?.let { byQualifier[it]?.get(parentName) } ?: byName[parentName]
+                if (next != null) {
+                    // Continue the walk in the qualifier where the parent was found.
+                    q = byQualifier.entries.firstOrNull { it.value[parentName] === next }?.key ?: q
+                }
+                next
             }
         }
-    // Resolve ?attr/ references by scanning theme assignments.
-    if (attrRefs.isNotEmpty()) {
-        val attrToColor = mutableMapOf<String, String>()
-        resourceDirectory.listFiles().orEmpty()
-            .filter { it.isDirectory && it.name.startsWith("values") }
-            .flatMap { it.listFiles().orEmpty().toList() }
-            .filter { it.isFile && it.name.equals("styles.xml", ignoreCase = true) }
-            .forEach { file ->
-                THEME_ATTR_COLOR_ASSIGNMENT.findAll(file.readText()).forEach { m ->
-                    // Later assignments win, matching theme overlay order.
-                    attrToColor[m.groupValues[1]] = m.groupValues[2]
+        return chain
+    }
+
+    fun resolveAttr(chain: List<ParsedStyle>, attrName: String, seen: MutableSet<String>): String? {
+        if (!seen.add(attrName)) return null // ?attr/ cycle guard
+        for (style in chain) {
+            val raw = style.items[attrName] ?: continue
+            return when {
+                raw.startsWith("@color/") -> raw.removePrefix("@color/")
+                raw.startsWith("?") ->
+                    resolveAttr(chain, raw.removePrefix("?").removePrefix("attr/"), seen)
+                else -> null // @android:color/, #hex, @drawable/: not a window color id
+            }
+        }
+        return null
+    }
+
+    val out = linkedSetOf<String>()
+    for (dir in qualifierDirs) {
+        val qualifier = dir.name
+        val styles = byQualifier.getValue(qualifier)
+        for (styleName in styles.keys.sorted()) {
+            val styleChain = chain(qualifier, styles.getValue(styleName))
+            // Effective window background: the nearest definition up the chain,
+            // like the framework resolves it for the active theme.
+            val holder = styleChain.firstOrNull { style ->
+                WINDOW_BACKGROUND_ATTRS.any { it in style.items }
+            } ?: continue
+            for (attr in WINDOW_BACKGROUND_ATTRS) {
+                val raw = holder.items[attr] ?: continue
+                when {
+                    raw.startsWith("@color/") -> out += raw.removePrefix("@color/")
+                    raw.startsWith("?") -> resolveAttr(
+                        styleChain,
+                        raw.removePrefix("?").removePrefix("attr/"),
+                        mutableSetOf(),
+                    )?.let { out += it }
                 }
             }
-        for (ref in attrRefs) {
-            attrToColor[ref]?.let { out += it }
         }
     }
     return out
@@ -1085,6 +1173,7 @@ internal fun applyAmoledResources(
         lStarSelectorsReplaced = lStarReplaced,
         drawableSurfaceFills = drawableFills,
         preferenceFilesChanged = dynamicPrefs,
+        windowBackgroundIds = baseNames.size,
     )
 }
 
@@ -1102,6 +1191,7 @@ internal data class AmoledRewriteResult(
     val lStarSelectorsReplaced: Int = 0,
     val drawableSurfaceFills: Int = 0,
     val preferenceFilesChanged: Int,
+    val windowBackgroundIds: Int = 0,
 )
 
 internal fun forceFalseBooleanPrologueSmali(): String =
@@ -1247,7 +1337,8 @@ private val braveAmoledResourcePatch: ResourcePatch = resourcePatch(
                 "textBearingIds=${result.textBearingIds} " +
                 "lStarSelectors=${result.lStarSelectorsReplaced} " +
                 "drawableFills=${result.drawableSurfaceFills} " +
-                "prefFiles=${result.preferenceFilesChanged}",
+                "prefFiles=${result.preferenceFilesChanged} " +
+                "windowBackgroundIds=${result.windowBackgroundIds}",
         )
     }
 }

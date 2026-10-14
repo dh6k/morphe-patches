@@ -1077,4 +1077,67 @@ class BraveAmoledThemePatchTest {
         val ids = collectWindowBackgroundIds(dir)
         assertTrue("APKTOOL_DUMMYVAL_0x7f070554" in ids)
     }
+
+    @Test
+    fun `attr resolution never consults unrelated themes`() {
+        // Regression for issue #21 (dev.6): the old flat scan merged attr
+        // assignments from every theme into one map with "last wins" over the
+        // unordered File.listFiles(), so an unrelated theme's assignment for
+        // the same attr name could win the coin flip and resolve the window
+        // background to the wrong color id.
+        val dir = createTempDirectory("res").toFile()
+        dir.resolve("values").mkdirs()
+        dir.resolve("values/styles.xml").writeText(
+            """
+            <resources>
+                <style name="Theme.App" parent="Base">
+                    <item name="android:windowBackground">?my_attr</item>
+                </style>
+                <style name="Base">
+                    <item name="my_attr">@color/right</item>
+                </style>
+                <style name="Unrelated">
+                    <item name="my_attr">@color/wrong</item>
+                </style>
+            </resources>
+            """.trimIndent(),
+        )
+
+        val ids = collectWindowBackgroundIds(dir)
+        assertTrue("right" in ids, "attr resolves through the style's own parent chain")
+        assertFalse("wrong" in ids, "an unrelated theme must never decide the resolution")
+    }
+
+    @Test
+    fun `night theme inherits windowBackground through parent chain`() {
+        // Mirrors Brave Nightly v1.99.40 (issue #21): the night theme declares
+        // no items of its own, it just points at the day parent which sets
+        // windowBackground to ?attr/ and assigns that attr to the night color.
+        val dir = createTempDirectory("res").toFile()
+        dir.resolve("values").mkdirs()
+        dir.resolve("values-night").mkdirs()
+        dir.resolve("values/styles.xml").writeText(
+            """
+            <resources>
+                <style name="Theme.Day">
+                    <item name="android:windowBackground">?APKTOOL_DUMMYVAL_0x7f05018f</item>
+                    <item name="APKTOOL_DUMMYVAL_0x7f05018f">@color/APKTOOL_DUMMYVAL_0x7f0702cf</item>
+                </style>
+            </resources>
+            """.trimIndent(),
+        )
+        dir.resolve("values-night/styles.xml").writeText(
+            """
+            <resources>
+                <style name="Theme.Night" parent="@style/Theme.Day" />
+            </resources>
+            """.trimIndent(),
+        )
+
+        val ids = collectWindowBackgroundIds(dir)
+        assertTrue(
+            "APKTOOL_DUMMYVAL_0x7f0702cf" in ids,
+            "the night theme resolves through its parent chain deterministically",
+        )
+    }
 }
