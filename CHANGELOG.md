@@ -1,3 +1,9 @@
+## [1.9.0-dev.7](https://github.com/dh6k/morphe-patches/compare/v1.9.0-dev.6...v1.9.0-dev.7) (2026-10-14)
+
+### 🐛 Bug Fixes
+
+* **brave:** resolve windowBackground attr through the theme's own parent chain ([f865376](https://github.com/dh6k/morphe-patches/commit/f865376462931ccced9652523825e064a85b38a0))
+
 ## [1.9.0-dev.6](https://github.com/dh6k/morphe-patches/compare/v1.9.0-dev.5...v1.9.0-dev.6) (2026-10-14)
 
 ### 🐛 Bug Fixes
