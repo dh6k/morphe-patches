@@ -564,6 +564,29 @@ internal fun replaceWindowBackgroundAttrRefs(resourceDirectory: File): Int {
             }
         }
     // Replace android:background="?<windowAttr>" in layouts.
+    // Fallback for obfuscated builds (e.g. Brave Nightly): resource names
+    // like "windowBackground" are obfuscated to APKTOOL_DUMMYVAL_0x...,
+    // so the name-based collection above finds nothing. Discover the attr
+    // ID directly from layouts instead — the Settings CoordinatorLayout
+    // root uses ?0x7f05018f in Brave Nightly (verified stable 1.99.40-1.99.42).
+    if (windowAttrs.isEmpty()) {
+        val coordinatorBgPattern = Regex(
+            """<androidx\.coordinatorlayout\.widget\.CoordinatorLayout[^>]*?\w+:background="\?[^"]*?(0x[0-9a-fA-F]+)[^"]*""""
+        )
+        resourceDirectory.listFiles().orEmpty()
+            .filter { it.isDirectory && it.name.startsWith("layout") }
+            .flatMap { it.listFiles().orEmpty().toList() }
+            .filter { it.isFile && it.name.endsWith(".xml", ignoreCase = true) }
+            .forEach { file ->
+                coordinatorBgPattern.findAll(file.readText()).forEach { m ->
+                    windowAttrs += m.groupValues[1]
+                }
+            }
+    }
+    // Last resort: known Brave Nightly windowBackground attr ID.
+    if (windowAttrs.isEmpty()) {
+        windowAttrs += "0x7f05018f"
+    }
     if (windowAttrs.isNotEmpty()) {
         val layoutPattern = Regex(
             """(?:android:)?background="\?[^"]*?(?:${windowAttrs.joinToString("|")})[^"]*""""

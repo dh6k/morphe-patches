@@ -1187,4 +1187,42 @@ class BraveAmoledThemePatchTest {
         val ids = collectWindowBackgroundIds(dir)
         assertTrue("amoled_window_background" in ids)
     }
+
+    @Test
+    fun `obfuscated windowBackground attr is discovered from CoordinatorLayout`() {
+        // Brave Nightly obfuscates all resource names, so the name-based
+        // "windowBackground" lookup finds nothing. The fallback discovers
+        // the attr ID from the Settings CoordinatorLayout root.
+        // (issue #21, verified on 1.99.42).
+        val dir = createTempDirectory("res-obf").toFile()
+        dir.resolve("values").mkdirs()
+        dir.resolve("layout").mkdirs()
+        // Obfuscated theme: names are APKTOOL_DUMMYVAL_0x..., no match.
+        dir.resolve("values/styles.xml").writeText(
+            """
+            <resources>
+                <style name="APKTOOL_DUMMYVAL_0x7f150000">
+                    <item name="APKTOOL_DUMMYVAL_0x7f050000">?APKTOOL_DUMMYVAL_0x7f05018f</item>
+                </style>
+            </resources>
+            """.trimIndent(),
+        )
+        // Settings layout with obfuscated background attr ref.
+        dir.resolve("layout/APKTOOL_DUMMYVAL_0x7f0f0000.xml").writeText(
+            """
+            <androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:n1="http://schemas.android.com/apk/res/android"
+                n1:id="@id/settings_activity" n1:background="?APKTOOL_DUMMYVAL_0x7f05018f"
+                n1:layout_width="fill_parent" n1:layout_height="fill_parent">
+            </androidx.coordinatorlayout.widget.CoordinatorLayout>
+            """.trimIndent(),
+        )
+
+        val count = replaceWindowBackgroundAttrRefs(dir)
+        // 1 layout background (theme items don't match obfuscated names)
+        assertEquals(1, count)
+
+        val layoutXml = dir.resolve("layout/APKTOOL_DUMMYVAL_0x7f0f0000.xml").readText()
+        assertFalse("?APKTOOL_DUMMYVAL_0x7f05018f" in layoutXml)
+        assertTrue("@color/amoled_window_background" in layoutXml)
+    }
 }
