@@ -1145,9 +1145,12 @@ class BraveAmoledThemePatchTest {
     fun `window background attr refs are bypassed with a direct color`() {
         // ?attr/ in windowBackground resolves per-theme at runtime, which
         // static patching cannot see. Transparent windows also defeat the
-        // two-tier separation. The fix bypasses both (issue #21).
+        // two-tier separation. Layouts using the same attr for
+        // android:background (e.g. Settings root) get the same treatment.
+        // (issue #21).
         val dir = createTempDirectory("res").toFile()
         dir.resolve("values").mkdirs()
+        dir.resolve("layout").mkdirs()
         dir.resolve("values/styles.xml").writeText(
             """
             <resources>
@@ -1159,15 +1162,26 @@ class BraveAmoledThemePatchTest {
             </resources>
             """.trimIndent(),
         )
+        dir.resolve("layout/settings.xml").writeText(
+            """
+            <CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                android:background="?APKTOOL_DUMMYVAL_0x7f05018f">
+            </CoordinatorLayout>
+            """.trimIndent(),
+        )
 
         val count = replaceWindowBackgroundAttrRefs(dir)
-        assertEquals(3, count)
+        // 3 theme items + 1 layout background
+        assertEquals(4, count)
 
-        val xml = dir.resolve("values/styles.xml").readText()
-        assertFalse("?APKTOOL_DUMMYVAL_0x7f05018f" in xml)
-        assertFalse("?android:colorBackground" in xml)
-        assertFalse("@android:color/transparent" in xml)
-        assertTrue("@color/amoled_window_background" in xml)
+        val stylesXml = dir.resolve("values/styles.xml").readText()
+        assertFalse("?APKTOOL_DUMMYVAL_0x7f05018f" in stylesXml)
+        assertFalse("?android:colorBackground" in stylesXml)
+        assertFalse("@android:color/transparent" in stylesXml)
+
+        val layoutXml = dir.resolve("layout/settings.xml").readText()
+        assertFalse("?APKTOOL_DUMMYVAL_0x7f05018f" in layoutXml)
+        assertTrue("@color/amoled_window_background" in layoutXml)
 
         // The bypass color is now collectible as a window background id.
         val ids = collectWindowBackgroundIds(dir)

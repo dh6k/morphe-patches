@@ -530,20 +530,32 @@ private fun parseStyles(xml: String): List<ParsedStyle> {
  * pure black). By bypassing the indirection entirely, two-tier mode gets a
  * deterministic window background.
  *
+ * Also replaces android:background="?<windowAttr>" in layouts (e.g. the
+ * Settings CoordinatorLayout root), which is the same indirection outside
+ * of theme items.
+ *
  * Returns the number of replacements made.
  */
 internal fun replaceWindowBackgroundAttrRefs(resourceDirectory: File): Int {
     var count = 0
-    val pattern = Regex(
+    val themePattern = Regex(
         """(<item\s+name="(?:android:)?(?:colorBackground|windowBackground)"[^>]*>\s*)(?:\?[^<]+|@android:color/transparent)(\s*</item>)"""
     )
+    // Collect the attr ids used as window backgrounds, so layouts using the
+    // same attr for android:background get the same treatment.
+    val windowAttrs = mutableSetOf<String>()
+    val attrIdPattern = Regex("""\?(?:[^"]*?)(0x[0-9a-fA-F]+)""")
     resourceDirectory.listFiles().orEmpty()
         .filter { it.isDirectory && it.name.startsWith("values") }
         .flatMap { it.listFiles().orEmpty().toList() }
         .filter { it.isFile && it.name.endsWith(".xml", ignoreCase = true) }
         .forEach { file ->
             val original = file.readText()
-            val replaced = pattern.replace(original) { m ->
+            // Collect attr ids before replacing.
+            themePattern.findAll(original).forEach { m ->
+                attrIdPattern.find(m.value)?.let { windowAttrs += it.groupValues[1] }
+            }
+            val replaced = themePattern.replace(original) { m ->
                 count++
                 "${m.groupValues[1]}@color/amoled_window_background${m.groupValues[2]}"
             }
@@ -551,6 +563,36 @@ internal fun replaceWindowBackgroundAttrRefs(resourceDirectory: File): Int {
                 file.writeText(replaced)
             }
         }
+    // Replace android:background="?<windowAttr>" in layouts.
+    if (windowAttrs.isNotEmpty()) {
+        val layoutPattern = Regex(
+            """(?:android:)?background="\?[^"]*?(?:${windowAttrs.joinToString("|")})[^"]*""""
+        )
+        // Handle namespace prefixes like n1:background="..."
+        val prefixedPattern = Regex(
+            """\w+:background="\?[^"]*?(?:${windowAttrs.joinToString("|")})[^"]*""""
+        )
+        resourceDirectory.listFiles().orEmpty()
+            .filter { it.isDirectory && it.name.startsWith("layout") }
+            .flatMap { it.listFiles().orEmpty().toList() }
+            .filter { it.isFile && it.name.endsWith(".xml", ignoreCase = true) }
+            .forEach { file ->
+                val original = file.readText()
+                var replaced = layoutPattern.replace(original) {
+                    count++
+                    """android:background="@color/amoled_window_background""""
+                }
+                replaced = prefixedPattern.replace(replaced) {
+                    // Preserve the prefix (e.g. n1:background="...")
+                    val prefix = it.value.substringBefore(":background")
+                    count++
+                    """$prefix:background="@color/amoled_window_background""""
+                }
+                if (replaced != original) {
+                    file.writeText(replaced)
+                }
+            }
+    }
     return count
 }
 
