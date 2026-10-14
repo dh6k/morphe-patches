@@ -1,3 +1,9 @@
+## [1.9.0-dev.13](https://github.com/dh6k/morphe-patches/compare/v1.9.0-dev.12...v1.9.0-dev.13) (2026-10-14)
+
+### 🐛 Bug Fixes
+
+* **brave:** detect preference items by obfuscated ID too ([0226ad7](https://github.com/dh6k/morphe-patches/commit/0226ad7a8e7fb2ba3a19ea5de53f708e1fb4077f)), closes [#21](https://github.com/dh6k/morphe-patches/issues/21)
+
 ## [1.9.0-dev.12](https://github.com/dh6k/morphe-patches/compare/v1.9.0-dev.11...v1.9.0-dev.12) (2026-10-14)
 
 ### 🐛 Bug Fixes
