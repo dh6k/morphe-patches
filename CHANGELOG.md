@@ -1,3 +1,9 @@
+## [1.9.0-dev.10](https://github.com/dh6k/morphe-patches/compare/v1.9.0-dev.9...v1.9.0-dev.10) (2026-10-14)
+
+### 🐛 Bug Fixes
+
+* **brave:** bypass window attr in layout backgrounds too ([1216b9a](https://github.com/dh6k/morphe-patches/commit/1216b9ad028a2912d262c435064ebb3a1a0de294))
+
 ## [1.9.0-dev.9](https://github.com/dh6k/morphe-patches/compare/v1.9.0-dev.8...v1.9.0-dev.9) (2026-10-14)
 
 ### 🐛 Bug Fixes
