@@ -522,18 +522,20 @@ private fun parseStyles(xml: String): List<ParsedStyle> {
  */
 
 /**
- * Replaces ?attr/ references in windowBackground/colorBackground items with a
- * direct @color/ reference. Theme attributes resolve at runtime per-theme, so
- * static patching cannot reliably determine which color they point to. By
- * bypassing the indirection entirely, two-tier mode gets a deterministic
- * window background.
+ * Replaces ?attr/ references and @android:color/transparent in
+ * windowBackground/colorBackground items with a direct @color/ reference.
+ * Theme attributes resolve at runtime per-theme, so static patching cannot
+ * reliably determine which color they point to. Transparent windows also
+ * defeat the two-tier separation (the View behind shows through instead of
+ * pure black). By bypassing the indirection entirely, two-tier mode gets a
+ * deterministic window background.
  *
  * Returns the number of replacements made.
  */
 internal fun replaceWindowBackgroundAttrRefs(resourceDirectory: File): Int {
     var count = 0
     val pattern = Regex(
-        """(<item\s+name="(?:android:)?(?:colorBackground|windowBackground)"[^>]*>\s*)\?[^<]+(\s*</item>)"""
+        """(<item\s+name="(?:android:)?(?:colorBackground|windowBackground)"[^>]*>\s*)(?:\?[^<]+|@android:color/transparent)(\s*</item>)"""
     )
     resourceDirectory.listFiles().orEmpty()
         .filter { it.isDirectory && it.name.startsWith("values") }

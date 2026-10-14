@@ -1144,8 +1144,8 @@ class BraveAmoledThemePatchTest {
     @Test
     fun `window background attr refs are bypassed with a direct color`() {
         // ?attr/ in windowBackground resolves per-theme at runtime, which
-        // static patching cannot see. The fix bypasses the indirection
-        // entirely (issue #21).
+        // static patching cannot see. Transparent windows also defeat the
+        // two-tier separation. The fix bypasses both (issue #21).
         val dir = createTempDirectory("res").toFile()
         dir.resolve("values").mkdirs()
         dir.resolve("values/styles.xml").writeText(
@@ -1154,17 +1154,19 @@ class BraveAmoledThemePatchTest {
                 <style name="Theme.Night">
                     <item name="android:windowBackground">?APKTOOL_DUMMYVAL_0x7f05018f</item>
                     <item name="windowBackground">?android:colorBackground</item>
+                    <item name="android:colorBackground">@android:color/transparent</item>
                 </style>
             </resources>
             """.trimIndent(),
         )
 
         val count = replaceWindowBackgroundAttrRefs(dir)
-        assertEquals(2, count)
+        assertEquals(3, count)
 
         val xml = dir.resolve("values/styles.xml").readText()
         assertFalse("?APKTOOL_DUMMYVAL_0x7f05018f" in xml)
         assertFalse("?android:colorBackground" in xml)
+        assertFalse("@android:color/transparent" in xml)
         assertTrue("@color/amoled_window_background" in xml)
 
         // The bypass color is now collectible as a window background id.
