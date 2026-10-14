@@ -1,3 +1,9 @@
+## [1.9.0-dev.11](https://github.com/dh6k/morphe-patches/compare/v1.9.0-dev.10...v1.9.0-dev.11) (2026-10-14)
+
+### 🐛 Bug Fixes
+
+* **brave:** discover windowBackground attr from obfuscated layouts ([b6596de](https://github.com/dh6k/morphe-patches/commit/b6596de6a8432be86b303cf9168dea8bd5eb2cac)), closes [#21](https://github.com/dh6k/morphe-patches/issues/21)
+
 ## [1.9.0-dev.10](https://github.com/dh6k/morphe-patches/compare/v1.9.0-dev.9...v1.9.0-dev.10) (2026-10-14)
 
 ### 🐛 Bug Fixes
