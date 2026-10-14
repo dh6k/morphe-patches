@@ -1,3 +1,9 @@
+## [1.9.0-dev.12](https://github.com/dh6k/morphe-patches/compare/v1.9.0-dev.11...v1.9.0-dev.12) (2026-10-14)
+
+### 🐛 Bug Fixes
+
+* **brave:** add grey rounded cards for preference items in two-tier mode ([989c98c](https://github.com/dh6k/morphe-patches/commit/989c98c238debed3b4e7afd4c3cb7625d30a1b81)), closes [#1e2029](https://github.com/dh6k/morphe-patches/issues/1e2029) [#21](https://github.com/dh6k/morphe-patches/issues/21)
+
 ## [1.9.0-dev.11](https://github.com/dh6k/morphe-patches/compare/v1.9.0-dev.10...v1.9.0-dev.11) (2026-10-14)
 
 ### 🐛 Bug Fixes
