@@ -1,3 +1,9 @@
+## [1.9.0-dev.14](https://github.com/dh6k/morphe-patches/compare/v1.9.0-dev.13...v1.9.0-dev.14) (2026-10-14)
+
+### 🐛 Bug Fixes
+
+* **brave:** apply cards to all selectableItemBackground layouts ([51b6f32](https://github.com/dh6k/morphe-patches/commit/51b6f3273dd04d3c90f21a9e2e248898ada8db78)), closes [#21](https://github.com/dh6k/morphe-patches/issues/21)
+
 ## [1.9.0-dev.13](https://github.com/dh6k/morphe-patches/compare/v1.9.0-dev.12...v1.9.0-dev.13) (2026-10-14)
 
 ### 🐛 Bug Fixes
