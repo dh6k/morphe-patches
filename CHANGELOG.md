@@ -1,3 +1,9 @@
+## [1.9.0-dev.16](https://github.com/dh6k/morphe-patches/compare/v1.9.0-dev.15...v1.9.0-dev.16) (2026-10-15)
+
+### 🐛 Bug Fixes
+
+* **brave:** log card creation for debugging ([9380900](https://github.com/dh6k/morphe-patches/commit/938090099e8b0afa36fffca7965b5c5a8c4a39fc)), closes [#21](https://github.com/dh6k/morphe-patches/issues/21)
+
 ## [1.9.0-dev.15](https://github.com/dh6k/morphe-patches/compare/v1.9.0-dev.14...v1.9.0-dev.15) (2026-10-14)
 
 ### 🐛 Bug Fixes
