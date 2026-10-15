@@ -1195,8 +1195,9 @@ internal fun applyAmoledResources(
         }
         // Create rounded card drawables for preference items so the two tiers
         // are visually distinct (black window, grey cards). (issue #21)
-        createPreferenceCardDrawable(resourceDirectory, containerHex)
-        applyPreferenceCardBackgrounds(resourceDirectory)
+        val cardCreated = createPreferenceCardDrawable(resourceDirectory, containerHex)
+        val cardLayouts = applyPreferenceCardBackgrounds(resourceDirectory)
+        println("[AMOLED] preferenceCards created=$cardCreated layouts=$cardLayouts")
     }
     val baseNames = if (surfaceUsesBackground) {
         emptySet()
