@@ -1,3 +1,31 @@
+## [1.9.0](https://github.com/dh6k/morphe-patches/compare/v1.8.0...v1.9.0) (2026-10-22)
+
+### 🐛 Bug Fixes
+
+* **brave:** add grey rounded cards for preference items in two-tier mode ([989c98c](https://github.com/dh6k/morphe-patches/commit/989c98c238debed3b4e7afd4c3cb7625d30a1b81)), closes [#1e2029](https://github.com/dh6k/morphe-patches/issues/1e2029) [#21](https://github.com/dh6k/morphe-patches/issues/21)
+* **brave:** also bypass transparent windowBackground in two-tier mode ([1203885](https://github.com/dh6k/morphe-patches/commit/120388554062cace6542a618f4c832aed826aea4))
+* **brave:** apply cards to all selectableItemBackground layouts ([51b6f32](https://github.com/dh6k/morphe-patches/commit/51b6f3273dd04d3c90f21a9e2e248898ada8db78)), closes [#21](https://github.com/dh6k/morphe-patches/issues/21)
+* **brave:** bypass window attr in layout backgrounds too ([1216b9a](https://github.com/dh6k/morphe-patches/commit/1216b9ad028a2912d262c435064ebb3a1a0de294))
+* **brave:** bypass windowBackground attr indirection with a direct color ([73fd63e](https://github.com/dh6k/morphe-patches/commit/73fd63e09cd3e26f6cc88944c1bdc38070a93e00))
+* **brave:** detect preference items by obfuscated ID too ([0226ad7](https://github.com/dh6k/morphe-patches/commit/0226ad7a8e7fb2ba3a19ea5de53f708e1fb4077f)), closes [#21](https://github.com/dh6k/morphe-patches/issues/21)
+* **brave:** discover windowBackground attr from obfuscated layouts ([b6596de](https://github.com/dh6k/morphe-patches/commit/b6596de6a8432be86b303cf9168dea8bd5eb2cac)), closes [#21](https://github.com/dh6k/morphe-patches/issues/21)
+* **brave:** give the app menu its surface colour on Android 12-13 ([0d33ca9](https://github.com/dh6k/morphe-patches/commit/0d33ca9d78d6283cdd4efd8201644dd9d2dd09d4)), closes [#000000](https://github.com/dh6k/morphe-patches/issues/000000) [#1e2029](https://github.com/dh6k/morphe-patches/issues/1e2029) [#000000](https://github.com/dh6k/morphe-patches/issues/000000)
+* **brave:** log card creation for debugging ([9380900](https://github.com/dh6k/morphe-patches/commit/938090099e8b0afa36fffca7965b5c5a8c4a39fc)), closes [#21](https://github.com/dh6k/morphe-patches/issues/21)
+* **brave:** match lStar selectors on any apktool namespace prefix ([65817c9](https://github.com/dh6k/morphe-patches/commit/65817c9d1477c9018f4f9b77b5ce17a6ca8bbd18))
+* **brave:** match the NTP grid gate across Brave channels ([cb9d123](https://github.com/dh6k/morphe-patches/commit/cb9d123f4cfff533e653fb42b64379b3f7a9e02b)), closes [#1738](https://github.com/dh6k/morphe-patches/issues/1738) [#1747](https://github.com/dh6k/morphe-patches/issues/1747)
+* **brave:** resolve windowBackground attr through the theme's own parent chain ([f865376](https://github.com/dh6k/morphe-patches/commit/f865376462931ccced9652523825e064a85b38a0))
+* **brave:** resolve windowBackground through attr references ([6fbe764](https://github.com/dh6k/morphe-patches/commit/6fbe764cc45ee6542d66248d9ef3c62460fd10c8))
+* **brave:** use lenient pattern for card backgrounds ([3fb4edd](https://github.com/dh6k/morphe-patches/commit/3fb4edd847074a0d9aaa873b37223bb2c2ef292c)), closes [#21](https://github.com/dh6k/morphe-patches/issues/21)
+
+### ✨ New Features
+
+* **brave:** keep NTP tiles in four columns with a background image ([632015d](https://github.com/dh6k/morphe-patches/commit/632015dc64144fccedeaa5db29a28dc9e89a0a8e))
+* **brave:** keep raised AMOLED surfaces off the flat background ([363eb71](https://github.com/dh6k/morphe-patches/commit/363eb711d1b47da4c628fc1118c7980789bbb5c3)), closes [#1e2029](https://github.com/dh6k/morphe-patches/issues/1e2029)
+
+### 🚀 Updated App Support
+
+* upgrade morphe-patcher to 1.15.0 ([46479c7](https://github.com/dh6k/morphe-patches/commit/46479c7531b87ca7743c8503a901cda8e165a2a9))
+
 ## [1.9.0-dev.16](https://github.com/dh6k/morphe-patches/compare/v1.9.0-dev.15...v1.9.0-dev.16) (2026-10-15)
 
 ### 🐛 Bug Fixes
