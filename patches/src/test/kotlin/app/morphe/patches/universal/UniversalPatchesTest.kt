@@ -1,5 +1,6 @@
 package app.morphe.patches.universal
 
+import app.morphe.patches.declaredField
 import javax.xml.parsers.DocumentBuilderFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -96,8 +97,8 @@ class UniversalPatchesTest {
             manifestAttr(it, "name") == "firebase_analytics_collection_enabled"
         }
         assertEquals("false", appMeta.getAttribute("android:value"))
-        val activity = directChildren(application, "activity").single() as Element
-        val nestedMeta = (activity.getElementsByTagName("meta-data").item(0) as Element)
+        val activity = directChildren(application, "activity").single()
+        val nestedMeta = activity.getElementsByTagName("meta-data").item(0) as Element
         assertEquals("true", nestedMeta.getAttribute("android:value"))
         val services = directChildren(application, "service")
         assertEquals("false", services.first {
@@ -111,29 +112,29 @@ class UniversalPatchesTest {
     @Test fun `firebase analytics setter targets collection switch`() {
         assertEquals(
             "Lcom/google/firebase/analytics/FirebaseAnalytics;",
-            FirebaseAnalyticsSetter.definingClass,
+            FirebaseAnalyticsSetter.declaredField("definingClass"),
         )
-        assertEquals("setAnalyticsCollectionEnabled", FirebaseAnalyticsSetter.name)
-        assertEquals("V", FirebaseAnalyticsSetter.returnType)
-        assertEquals(listOf("Z"), FirebaseAnalyticsSetter.parameters)
+        assertEquals("setAnalyticsCollectionEnabled", FirebaseAnalyticsSetter.declaredField("name"))
+        assertEquals("V", FirebaseAnalyticsSetter.declaredField("returnType"))
+        assertEquals(listOf("Z"), FirebaseAnalyticsSetter.declaredField("parameters"))
     }
 
     @Test fun `adjust initializer targets v4 entry point`() {
-        assertEquals("Lcom/adjust/sdk/Adjust;", AdjustInitializer.definingClass)
-        assertEquals("onCreate", AdjustInitializer.name)
-        assertEquals("V", AdjustInitializer.returnType)
-        assertEquals(listOf("Lcom/adjust/sdk/AdjustConfig;"), AdjustInitializer.parameters)
+        assertEquals("Lcom/adjust/sdk/Adjust;", AdjustInitializer.declaredField("definingClass"))
+        assertEquals("onCreate", AdjustInitializer.declaredField("name"))
+        assertEquals("V", AdjustInitializer.declaredField("returnType"))
+        assertEquals(listOf("Lcom/adjust/sdk/AdjustConfig;"), AdjustInitializer.declaredField("parameters"))
     }
 
     @Test fun `adjust v5 initializer targets initSdk entry point`() {
-        assertEquals("Lcom/adjust/sdk/Adjust;", AdjustV5Initializer.definingClass)
-        assertEquals("initSdk", AdjustV5Initializer.name)
-        assertEquals("V", AdjustV5Initializer.returnType)
-        assertEquals(listOf("Lcom/adjust/sdk/AdjustConfig;"), AdjustV5Initializer.parameters)
+        assertEquals("Lcom/adjust/sdk/Adjust;", AdjustV5Initializer.declaredField("definingClass"))
+        assertEquals("initSdk", AdjustV5Initializer.declaredField("name"))
+        assertEquals("V", AdjustV5Initializer.declaredField("returnType"))
+        assertEquals(listOf("Lcom/adjust/sdk/AdjustConfig;"), AdjustV5Initializer.declaredField("parameters"))
     }
 
     @Test fun `crashlytics boxed overload is covered`() {
-        assertEquals("setCrashlyticsCollectionEnabled", FirebaseCrashlyticsBoxedSetter.name)
-        assertEquals(listOf("Ljava/lang/Boolean;"), FirebaseCrashlyticsBoxedSetter.parameters)
+        assertEquals("setCrashlyticsCollectionEnabled", FirebaseCrashlyticsBoxedSetter.declaredField("name"))
+        assertEquals(listOf("Ljava/lang/Boolean;"), FirebaseCrashlyticsBoxedSetter.declaredField("parameters"))
     }
 }

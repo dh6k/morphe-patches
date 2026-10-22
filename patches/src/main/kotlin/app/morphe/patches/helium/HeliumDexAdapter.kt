@@ -100,7 +100,7 @@ internal fun Method.toStructuralMethod(): StructuralMethod {
     val implementation = implementation ?: return StructuralMethod(
         "$definingClass->$name",
         name,
-        returnType.toString(),
+        returnType,
         params,
         0,
         isStatic,
@@ -123,7 +123,7 @@ internal fun Method.toStructuralMethod(): StructuralMethod {
                     index,
                     reference.definingClass,
                     reference.name,
-                    reference.returnType.toString(),
+                    reference.returnType,
                     reference.parameterTypes.map { it.toString() },
                     instructionRegisters(instruction),
                     instruction.opcode == Opcode.INVOKE_STATIC,
@@ -211,7 +211,7 @@ internal fun Method.toStructuralMethod(): StructuralMethod {
     return StructuralMethod(
         descriptor,
         name,
-        returnType.toString(),
+        returnType,
         params,
         implementation.registerCount,
         isStatic,

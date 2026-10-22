@@ -1,5 +1,6 @@
 package app.morphe.patches.quetta
 
+import app.morphe.patches.declaredField
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -18,15 +19,17 @@ class ForceHighestRefreshRatePatchTest {
 
     @Test
     fun `quetta fingerprints pin windowandroid and quetta structural shape`() {
-        assertEquals("Lorg/chromium/ui/base/WindowAndroid;", QuettaSetPreferredRefreshRateFingerprint.definingClass)
-        assertEquals("setPreferredRefreshRate", QuettaSetPreferredRefreshRateFingerprint.name)
-        assertEquals("V", QuettaSetPreferredRefreshRateFingerprint.returnType)
-        assertEquals(listOf("F"), QuettaSetPreferredRefreshRateFingerprint.parameters)
+        val setter = QuettaSetPreferredRefreshRateFingerprint
+        assertEquals("Lorg/chromium/ui/base/WindowAndroid;", setter.declaredField("definingClass"))
+        assertEquals("setPreferredRefreshRate", setter.declaredField("name"))
+        assertEquals("V", setter.declaredField("returnType"))
+        assertEquals(listOf("F"), setter.declaredField("parameters"))
 
-        assertEquals("Lorg/chromium/ui/base/WindowAndroid;", QuettaNearestDisplayModeFingerprint.definingClass)
-        assertEquals("V", QuettaNearestDisplayModeFingerprint.returnType)
-        assertEquals(listOf("F"), QuettaNearestDisplayModeFingerprint.parameters)
-        assertTrue(QuettaNearestDisplayModeFingerprint.custom != null)
+        val nearest = QuettaNearestDisplayModeFingerprint
+        assertEquals("Lorg/chromium/ui/base/WindowAndroid;", nearest.declaredField("definingClass"))
+        assertEquals("V", nearest.declaredField("returnType"))
+        assertEquals(listOf("F"), nearest.declaredField("parameters"))
+        assertTrue(nearest.custom != null)
     }
 
     @Test

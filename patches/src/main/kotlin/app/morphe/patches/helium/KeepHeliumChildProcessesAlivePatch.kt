@@ -197,8 +197,8 @@ private val heliumManifestPatch: ResourcePatch = resourcePatch(
             mutateHeliumKeepAliveManifest(
                 manifest,
                 HeliumNotificationConfig(
-                    title = sanitizeHeliumNotificationLine(options["notificationTitle"]?.value as? String, HELIUM_DEFAULT_NOTIFICATION_TITLE),
-                    text = sanitizeHeliumNotificationLine(options["notificationText"]?.value as? String, HELIUM_DEFAULT_NOTIFICATION_TEXT),
+                    title = sanitizeHeliumNotificationLine(options["notificationTitle"].value as? String, HELIUM_DEFAULT_NOTIFICATION_TITLE),
+                    text = sanitizeHeliumNotificationLine(options["notificationText"].value as? String, HELIUM_DEFAULT_NOTIFICATION_TEXT),
                 ),
             )
         }
