@@ -1,3 +1,9 @@
+## [1.10.0-dev.1](https://github.com/dh6k/morphe-patches/compare/v1.9.0...v1.10.0-dev.1) (2026-10-30)
+
+### ✨ New Features
+
+* **bare:** port keep-alive patch to Bare Browser ([ce8c590](https://github.com/dh6k/morphe-patches/commit/ce8c59082778975ac2dd5e0a0ddae68f2a8c2dd4))
+
 ## [1.9.0](https://github.com/dh6k/morphe-patches/compare/v1.8.0...v1.9.0) (2026-10-22)
 
 ### 🐛 Bug Fixes
