@@ -1,3 +1,9 @@
+## [1.10.0-dev.3](https://github.com/dh6k/morphe-patches/compare/v1.10.0-dev.2...v1.10.0-dev.3) (2026-11-10)
+
+### 🐛 Bug Fixes
+
+* **helium:** declare amoled_window_background in day colors (issue [#47](https://github.com/dh6k/morphe-patches/issues/47)) ([f63ebf6](https://github.com/dh6k/morphe-patches/commit/f63ebf69cbc354754c972c4250b48cc14d656ca8)), closes [#ffffffff](https://github.com/dh6k/morphe-patches/issues/ffffffff)
+
 ## [1.10.0-dev.2](https://github.com/dh6k/morphe-patches/compare/v1.10.0-dev.1...v1.10.0-dev.2) (2026-11-10)
 
 ### ✨ New Features
