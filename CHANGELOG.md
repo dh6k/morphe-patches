@@ -1,3 +1,9 @@
+## [1.10.0-dev.2](https://github.com/dh6k/morphe-patches/compare/v1.10.0-dev.1...v1.10.0-dev.2) (2026-11-10)
+
+### ✨ New Features
+
+* **helium:** add Titanium AMOLED theme patch (issue [#47](https://github.com/dh6k/morphe-patches/issues/47)) ([4565f3a](https://github.com/dh6k/morphe-patches/commit/4565f3a31d438c33e334b32131ebaf7da388a7c3)), closes [121212/#1A1A1A](https://github.com/121212/morphe-patches/issues/1A1A1A) [#c6c6c6](https://github.com/dh6k/morphe-patches/issues/c6c6c6)
+
 ## [1.10.0-dev.1](https://github.com/dh6k/morphe-patches/compare/v1.9.0...v1.10.0-dev.1) (2026-10-30)
 
 ### ✨ New Features

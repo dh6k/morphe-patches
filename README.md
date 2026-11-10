@@ -75,7 +75,7 @@ See [Patch notes](#patch-notes) for Startup Performance, Custom NTP wallpaper, a
 ## Patches
 
 <!-- PATCHES_START EXPANDED -->
-> **[v1.10.0-dev.1](https://github.com/dh6k/morphe-patches/releases/tag/v1.10.0-dev.1)**&nbsp;&nbsp;•&nbsp;&nbsp;`dev`&nbsp;&nbsp;•&nbsp;&nbsp;12 patches total
+> **[v1.10.0-dev.2](https://github.com/dh6k/morphe-patches/releases/tag/v1.10.0-dev.2)**&nbsp;&nbsp;•&nbsp;&nbsp;`dev`&nbsp;&nbsp;•&nbsp;&nbsp;13 patches total
 <details open>
 <summary>📦 Quetta Browser&nbsp;&nbsp;•&nbsp;&nbsp;2 patches</summary>
 <br>
@@ -141,13 +141,14 @@ See [Patch notes](#patch-notes) for Startup Performance, Custom NTP wallpaper, a
 </details>
 
 <details open>
-<summary>📦 Titanium Browser for Android&nbsp;&nbsp;•&nbsp;&nbsp;2 patches</summary>
+<summary>📦 Titanium Browser for Android&nbsp;&nbsp;•&nbsp;&nbsp;3 patches</summary>
 <br>
 
 | 💊&nbsp;Patch | 📜&nbsp;Description | ⚙️&nbsp;Options |
 |----------|----------------|-----------|
 | [Force highest refresh rate](#force-highest-refresh-rate) | Experimental version-unpinned patch: forces Chromium to pick the highest-refresh display mode by requesting Float.MAX_VALUE through WindowAndroid. Works on any panel (60/90/120/144/165Hz+) without knowing the max at patch time. May increase battery usage; ambiguous targets fail closed. |  |
 | [Keep Titanium Extensions Child Processes Alive](#keep-titanium-extensions-child-processes-alive) | Experimental version-unpinned structural/data-flow patch: starts one main-process foreground service with persistent low-priority notification and forces STRONG binding plus IMPORTANT priority only for extension child processes (detected via --extension-process, matching upstream Titanium commit ff12f1c). Renderer and GPU children keep stock priority, so RAM and battery pressure stay closer to baseline. Tolerates routine signature, register, and helper-name changes; ambiguous targets fail closed. Mitigates LMK kills only. To hide the notification, use Android Settings > Apps > Titanium > Notifications (the keep-alive service stays active either way). | • Notification title<br>• Notification text |
+| [Titanium AMOLED theme](#titanium-amoled-theme) | Patch-time AMOLED dark theme (issue #47): rewrites Titanium dark chrome surfaces to pure black (or custom opaque hexes) in three tiers — window backgrounds #000000, Settings background #121212, raised surfaces #1A1A1A — matching the Ungoogled Chromium pure-black reference. Pins Material You dark roles to the AMOLED hexes by default; leaving that off keeps the wallpaper palette. Resource-only, no bytecode. Apply Dark theme in Titanium to see it. Does not change web content force-dark, does not reach ColorProvider / native .pak chrome, and adds no runtime color picker. Default off. | • AMOLED background<br>• Settings background<br>• Surface / button color<br>• Text color<br>• Accent color<br>• Pin Material You dark roles to black |
 
 </details>
 
