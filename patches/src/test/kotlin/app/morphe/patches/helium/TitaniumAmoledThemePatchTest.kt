@@ -817,4 +817,184 @@ class TitaniumAmoledThemePatchTest {
         assertEquals("#0a0a0a", normalizeTitaniumOpaqueHex("#0A0A0A"))
         assertEquals(null, normalizeTitaniumOpaqueHex("#80121314"))
     }
+
+    @Test
+    fun `light window background is stock white and never a surface`() {
+        // ChromeTabbedActivity's theme resolves windowBackground through
+        // ?attr to #ffffff in light mode (verified on Titanium 157: attr
+        // 0x7f050184 -> @color/0x7f070228 -> #ffffff, no night override; the
+        // same theme's colorBackground is @android:color/white). The day
+        // declaration must be exactly that, never black.
+        assertEquals("#ffffffff", TITANIUM_LIGHT_WINDOW_BACKGROUND)
+        assertFalse(isTitaniumSurfaceColor(TITANIUM_LIGHT_WINDOW_BACKGROUND))
+        // #ffffffff reads as light text ink — this is WHY the day declaration
+        // is injected after the sweeps and excluded from the text step.
+        assertTrue(isTitaniumTextColor(TITANIUM_LIGHT_WINDOW_BACKGROUND))
+    }
+
+    @Test
+    fun `window background bypass color is declared in day and night with the right values`() {
+        // Regression test for the light-mode crash (issue #47 follow-up):
+        // the attr rewrite runs over the DAY styles.xml too, so a night-only
+        // declaration is a Resources$NotFoundException at Activity.onCreate
+        // (on device: id 0x7f070825, the first id the patcher assigns past
+        // stock's max color id 0x7f070824 on Titanium 157).
+        val res = createTempDirectory("titanium-amoled-daybg").toFile()
+        res.resolve("values").mkdirs()
+        res.resolve("values-night").mkdirs()
+        res.resolve("values/colors.xml").writeText(
+            """
+            <resources>
+                <color name="win_alias">@color/win_lit</color>
+                <color name="win_lit">#ff303030</color>
+                <color name="card">#393939</color>
+                <color name="ink">#e3e3e3</color>
+            </resources>
+            """.trimIndent(),
+        )
+        res.resolve("values-night/colors.xml").writeText(
+            """
+            <resources>
+                <color name="night_win">@color/win_alias</color>
+            </resources>
+            """.trimIndent(),
+        )
+        res.resolve("values/styles.xml").writeText(
+            """
+            <resources>
+                <style name="Theme.Dark">
+                    <item name="android:windowBackground">?android:colorBackground</item>
+                    <item name="android:colorBackground">@color/win_alias</item>
+                </style>
+                <style name="Theme.Splash">
+                    <item name="android:windowBackground">@android:color/transparent</item>
+                </style>
+            </resources>
+            """.trimIndent(),
+        )
+
+        val result = applyTitaniumAmoledResources(
+            resourceDirectory = res,
+            backgroundHex = "#000000",
+            settingsHex = "#121212",
+            textColorHex = "#e3e3e3",
+            accentColorHex = "#8ab4f8",
+            surfaceColorHex = "#1a1a1a",
+        )
+        assertTrue(result.dayWindowBackgroundDeclared)
+
+        val day = res.resolve("values/colors.xml").readText()
+        assertTrue(
+            """<color name="amoled_window_background">#ffffffff</color>""" in day,
+            "day declaration must be stock light white, not black and not tinted",
+        )
+        assertFalse(
+            """<color name="amoled_window_background">#000000</color>""" in day,
+            "a black day declaration would paint every light-mode window black",
+        )
+        assertFalse(
+            """<color name="amoled_window_background">#e3e3e3</color>""" in day,
+            "the text sweep must not tint the day declaration to the text color",
+        )
+        // The sweep itself still works.
+        assertTrue("""<color name="win_lit">#000000</color>""" in day)
+        assertTrue("""<color name="card">#1a1a1a</color>""" in day)
+
+        val night = res.resolve("values-night/colors.xml").readText()
+        assertTrue(
+            """<color name="amoled_window_background">#ff000000</color>""" in night,
+            "night declaration stays pure black",
+        )
+
+        val styles = res.resolve("values/styles.xml").readText()
+        assertTrue("@color/amoled_window_background" in styles)
+        assertFalse("?android:colorBackground" in styles)
+        assertFalse("@android:color/transparent" in styles)
+    }
+
+    @Test
+    fun `no window background reference dangles in light mode`() {
+        // Every @color/amoled_window_background reference must resolve in
+        // the light configuration too — i.e. the name must be declared in a
+        // non-night file. This is the exact shape of the light-mode crash.
+        val res = createTempDirectory("titanium-amoled-dangle").toFile()
+        res.resolve("values").mkdirs()
+        res.resolve("values-night").mkdirs()
+        res.resolve("layout").mkdirs()
+        res.resolve("values/colors.xml").writeText(
+            """
+            <resources>
+                <color name="win_lit">#ff303030</color>
+            </resources>
+            """.trimIndent(),
+        )
+        res.resolve("values-night/colors.xml").writeText(
+            """<resources><color name="night_win">@color/win_lit</color></resources>""",
+        )
+        res.resolve("values/styles.xml").writeText(
+            """
+            <resources>
+                <style name="Theme.Dark">
+                    <item name="android:windowBackground">?APKTOOL_DUMMYVAL_0x7f05018f</item>
+                </style>
+            </resources>
+            """.trimIndent(),
+        )
+        res.resolve("layout/settings.xml").writeText(
+            """
+            <androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                android:background="?APKTOOL_DUMMYVAL_0x7f05018f">
+            </androidx.coordinatorlayout.widget.CoordinatorLayout>
+            """.trimIndent(),
+        )
+
+        applyTitaniumAmoledResources(res, "#000000", "#121212")
+
+        // The bypass color must be declared in the day file (a non-night
+        // file) — the night declaration alone does not cover light mode.
+        val day = res.resolve("values/colors.xml").readText()
+        assertTrue(
+            """<color name="amoled_window_background">#ffffffff</color>""" in day,
+        )
+        val night = res.resolve("values-night/colors.xml").readText()
+        assertTrue(
+            """<color name="amoled_window_background">#ff000000</color>""" in night,
+        )
+        // Walk the whole tree: styles and layout both reference the bypass
+        // color, and every such reference resolves in light mode via the day
+        // declaration above.
+        val referencing = res.walkTopDown()
+            .filter { it.isFile }
+            .filter { "@color/amoled_window_background" in it.readText() }
+            .map { it.relativeTo(res).path }
+            .toList()
+        assertTrue("values/styles.xml" in referencing)
+        assertTrue("layout/settings.xml" in referencing)
+        // Note: values/colors.xml and values-night/colors.xml DECLARE the
+        // bypass color (asserted above) rather than referencing it, so they
+        // are not in this list — the walk only finds @color/ references.
+    }
+
+    @Test
+    fun `text rewrite never tints the window background bypass color`() {
+        // #ffffffff reads as light text ink, so without the exclusion the
+        // text step would repaint the light-mode window background with the
+        // text color on a re-run over an already-patched APK.
+        val xml = """
+            <resources>
+                <color name="amoled_window_background">#ffffffff</color>
+                <color name="title">#e3e3e3</color>
+                <color name="body">#c7c7c7</color>
+            </resources>
+        """.trimIndent()
+        val (out, count) = rewriteTitaniumTextColorXml(
+            xml,
+            "#ffffff",
+            excludeNames = setOf("amoled_window_background"),
+        )
+        assertEquals(2, count)
+        assertTrue("""<color name="amoled_window_background">#ffffffff</color>""" in out)
+        assertTrue("""<color name="title">#ffffff</color>""" in out)
+        assertTrue("""<color name="body">#cecece</color>""" in out)
+    }
 }

@@ -78,6 +78,17 @@
  * drawable + override rewrites (night counts are included in the formula
  * but are zero on 157, so they can never be the sole signal).
  *
+ * The window-background bypass color is declared in BOTH files: #ff000000 in
+ * values-night/colors.xml (dark) and the stock light window background
+ * #ffffffff in values/colors.xml (light). The attr rewrite touches day
+ * styles too, so a night-only declaration crashes light mode at
+ * Activity.onCreate with Resources$NotFoundException — verified on a real
+ * device (issue #47 follow-up, realme RMX3370, Android 17). The day
+ * declaration is injected AFTER every sweep on purpose: #ffffffff reads as
+ * light text ink, so the text rewrite would tint it to the text color if it
+ * were present during the sweep; the text step also excludes the bypass id
+ * by name so a re-run over an already-patched APK cannot tint it either.
+ *
  * Known open item, NOT claimed as fixed: the light-grey "New tab" card
  * header #c6c6c6 in the tab switcher (SCREENSHOTS.md img9). It is most
  * likely the per-tab theme colour (Chromium TabThemeColorProvider), not a
@@ -106,6 +117,23 @@ internal const val TITANIUM_PACKAGE = "io.github.jqssun.helium"
 internal const val TITANIUM_DAY_COLORS_PATH = "values/colors.xml"
 internal const val TITANIUM_NIGHT_COLORS_PATH = "values-night/colors.xml"
 internal const val TITANIUM_NIGHT_V31_COLORS_PATH = "values-night-v31/colors.xml"
+
+/**
+ * Stock light-mode window background (issue #47 follow-up: light-mode crash).
+ * ChromeTabbedActivity's theme resolves windowBackground through ?attr to
+ * #ffffff in light mode — attr 0x7f050184 -> @color/0x7f070228 -> #ffffff,
+ * no night override — and the same theme's colorBackground is
+ * @android:color/white. The bypass color `amoled_window_background` must be
+ * declared in the DAY file with this value: the attr rewrite runs over
+ * every styles.xml under a values-qualified directory INCLUDING the day
+ * file, so in light mode the theme
+ * resolves windowBackground to this id, and a night-only declaration is a
+ * Resources$NotFoundException at Activity.onCreate (on device: id
+ * 0x7f070825, the first id the patcher assigns past stock's max color id
+ * 0x7f070824 on Titanium 157). It must NOT be black: a #000000 day
+ * declaration would paint every light-mode window black.
+ */
+internal const val TITANIUM_LIGHT_WINDOW_BACKGROUND = "#ffffffff"
 
 /** Chrome/Titanium dark surface literals seen on 157; heuristic still covers drift. */
 internal val TITANIUM_KNOWN_DARK_SURFACE_HEXES = setOf(
@@ -446,12 +474,23 @@ internal fun rewriteTitaniumSurfaceTiers(
     )
 }
 
-internal fun rewriteTitaniumTextColorXml(xml: String, textHex: String): Pair<String, Int> {
+/**
+ * The bypass color is never text ink, in either file: the day declaration
+ * #ffffffff reads as light text, so without this exclusion the text step
+ * would tint the light-mode window background to the text color on a
+ * re-run over an already-patched APK.
+ */
+internal fun rewriteTitaniumTextColorXml(
+    xml: String,
+    textHex: String,
+    excludeNames: Set<String> = emptySet(),
+): Pair<String, Int> {
     val base = normalizeTitaniumOpaqueHex(textHex)
         ?: throw PatchException("Text color must be an opaque hex: $textHex")
     var replaced = 0
     val out = TITANIUM_COLOR_ELEMENT.replace(xml) { match ->
         val name = match.groupValues[1]
+        if (name in excludeNames) return@replace match.value
         val raw = match.groupValues[2].trim()
         val rgb = parseTitaniumHexColor(normalizeTitaniumOpaqueHex(raw) ?: "")
             ?.takeIf { isTitaniumTextColor(raw) }
@@ -1338,7 +1377,11 @@ internal fun applyTitaniumAmoledResources(
         daySettingsReplaced = bgTiers.settings
         dayContainerReplaced = bgTiers.container
         if (textColorHex != null) {
-            val (afterText, count) = rewriteTitaniumTextColorXml(xml, textColorHex)
+            val (afterText, count) = rewriteTitaniumTextColorXml(
+                xml,
+                textColorHex,
+                excludeNames = setOf("amoled_window_background"),
+            )
             xml = afterText
             dayTextReplaced = count
             // Light mode keeps dark ink, so only declare what resolves to nothing.
@@ -1384,7 +1427,11 @@ internal fun applyTitaniumAmoledResources(
     var nightAccentReplaced = 0
     var nightInkDeclared = 0
     if (textColorHex != null) {
-        val (afterText, count) = rewriteTitaniumTextColorXml(nightXml, textColorHex)
+        val (afterText, count) = rewriteTitaniumTextColorXml(
+            nightXml,
+            textColorHex,
+            excludeNames = setOf("amoled_window_background"),
+        )
         nightXml = afterText
         nightTextReplaced = count
         // Ids the app renders text with but that only exist in the light config
@@ -1500,6 +1547,35 @@ internal fun applyTitaniumAmoledResources(
         nightV31.writeText(buildTitaniumNightV31Overrides(overrides))
     }
 
+    // The bypass color must also be declared in the DAY file, with the stock
+    // light-mode window background — NOT black. The attr rewrite above runs
+    // over every values*/styles.xml INCLUDING the day file, so in light mode
+    // the theme resolves windowBackground to this id; a night-only
+    // declaration is a Resources$NotFoundException at Activity.onCreate
+    // (verified on device: id 0x7f070825, the first id the patcher assigns
+    // past stock's max color id 0x7f070824 on Titanium 157).
+    //
+    // Injected AFTER every sweep on purpose: #ffffffff reads as light text
+    // ink, so the text rewrite would tint it to the text color if it were
+    // present during the sweep (the text step also excludes this id by name,
+    // so a re-run over an already-patched APK cannot tint it either). The
+    // surface sweep cannot touch it either way — white is not a surface —
+    // and the override collector skips this id by name. The injection is not
+    // counted toward the empty-rewrite guard below: declaring the bypass
+    // color alone must never defeat the fail-closed check.
+    var dayWindowBackgroundDeclared = false
+    if (dayFile.isFile) {
+        val xml = dayFile.readText()
+        if (!xml.contains("amoled_window_background")) {
+            val injected = xml.replace(
+                "</resources>",
+                "    <color name=\"amoled_window_background\">$TITANIUM_LIGHT_WINDOW_BACKGROUND</color>\n</resources>",
+            )
+            dayFile.writeText(injected)
+        }
+        dayWindowBackgroundDeclared = true
+    }
+
     // Fail closed on an empty rewrite. The night sweep is a no-op on Titanium
     // 157 (values-night holds no literals), so the guard counts day + role +
     // drawable + overrides — the same formula the patch execute block repeats
@@ -1532,6 +1608,7 @@ internal fun applyTitaniumAmoledResources(
         lStarSelectorsReplaced = lStarReplaced,
         drawableSurfaceFills = drawableFills,
         windowBackgroundIds = expandedBase.size,
+        dayWindowBackgroundDeclared = dayWindowBackgroundDeclared,
     )
 }
 
@@ -1552,6 +1629,8 @@ internal data class TitaniumAmoledRewriteResult(
     val lStarSelectorsReplaced: Int = 0,
     val drawableSurfaceFills: Int = 0,
     val windowBackgroundIds: Int = 0,
+    /** The bypass color is declared in the day file (light-mode value). */
+    val dayWindowBackgroundDeclared: Boolean = false,
 )
 
 private fun titaniumAmoledCompatibilities() = listOf(
@@ -1719,7 +1798,8 @@ val titaniumAmoledThemePatch: ResourcePatch = resourcePatch(
                 "textBearingIds=${result.textBearingIds} " +
                 "lStarSelectors=${result.lStarSelectorsReplaced} " +
                 "drawableFills=${result.drawableSurfaceFills} " +
-                "windowBackgroundIds=${result.windowBackgroundIds}",
+                "windowBackgroundIds=${result.windowBackgroundIds} " +
+                "dayWindowBgDeclared=${result.dayWindowBackgroundDeclared}",
         )
     }
 }
