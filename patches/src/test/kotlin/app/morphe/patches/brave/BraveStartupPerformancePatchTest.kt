@@ -50,7 +50,10 @@ class BraveStartupPerformancePatchTest {
         assertEquals(2, partnerInitAnchors.size)
         assertTrue(partnerInitAnchors.all { it.startsWith("Chrome.Homepage.PartnerCustomized") })
         assertEquals(listOf("setOnInitializeAsyncFinished"), partnerCallbackAnchors)
-        assertTrue(partnerHomepageRejectAnchors.single().contains("too long"))
+        // Full const-string, not the bare fragment: "is too long." is not a
+        // standalone string in Brave, so it can never match under Patcher
+        // 2.0.0+ exact fingerprint matching (see the anchor's KDoc).
+        assertEquals(listOf("\" is too long."), partnerHomepageRejectAnchors)
         assertTrue(partnerDelegateUrlAnchors.single().contains("delegate URL"))
     }
 }

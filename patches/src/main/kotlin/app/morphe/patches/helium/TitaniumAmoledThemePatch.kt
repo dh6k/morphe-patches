@@ -1753,6 +1753,12 @@ val titaniumAmoledThemePatch: ResourcePatch = resourcePatch(
             throw PatchException("Decoded res/ directory not found")
         }
         val pin = (pinMaterialYou as? Boolean) ?: true
+        // Patcher 2.3.0 decodes resources on request: a directory only holds
+        // the files decoded so far, so a patch that lists it must decode first
+        // (ResourcePatchContext KDoc). This patch lists values*/layout*/
+        // drawable*/color* and checks files by isFile, so decode the whole
+        // res tree up front — the same work 1.15.0 did before patches ran.
+        decode("res/**")
         val result = applyTitaniumAmoledResources(
             resourceDirectory = res,
             backgroundHex = background,

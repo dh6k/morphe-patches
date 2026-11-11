@@ -11,6 +11,10 @@ import app.morphe.patcher.Fingerprint
  * The field is read off [Fingerprint] rather than the runtime class because
  * fingerprints are usually `object` declarations, so the fields live on the base
  * class while javaClass is the anonymous subclass.
+ *
+ * Patcher 2.3.0 removed the `strings` backing field (raw strings became
+ * StringFilters): do NOT use this helper for `strings` — read the public
+ * `strings` property on the fingerprint instead.
  */
 internal fun Fingerprint.declaredField(name: String): Any? =
     Fingerprint::class.java.getDeclaredField(name).apply { isAccessible = true }.get(this)
