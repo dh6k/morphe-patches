@@ -1,3 +1,9 @@
+## [1.10.0-dev.4](https://github.com/dh6k/morphe-patches/compare/v1.10.0-dev.3...v1.10.0-dev.4) (2026-11-11)
+
+### 🐛 Bug Fixes
+
+* **brave:** match Origin purchase-data hook parameter order ([#48](https://github.com/dh6k/morphe-patches/issues/48)) ([3fa139a](https://github.com/dh6k/morphe-patches/commit/3fa139aad096a600f0e16b08d1797195f007ef99))
+
 ## [1.10.0-dev.3](https://github.com/dh6k/morphe-patches/compare/v1.10.0-dev.2...v1.10.0-dev.3) (2026-11-10)
 
 ### 🐛 Bug Fixes
