@@ -56,7 +56,7 @@ This does not block all Quetta telemetry or every Quetta network connection (for
 
 | Build | Package name | Support status |
 | --- | --- | --- |
-| Brave Browser | `com.brave.browser` | Origin tested on `1.92.140`; Startup Performance validated on Nightly `1.98.21` |
+| Brave Browser | `com.brave.browser` | Origin tested on `1.99.56`, `1.100.52`, `1.101.25`; Startup Performance validated on Nightly `1.98.21` |
 | Brave Beta | `com.brave.browser_beta` | Experimental; version-unpinned |
 | Brave Nightly | `com.brave.browser_nightly` | Experimental; version-unpinned; Startup Performance validated on `1.98.21` |
 

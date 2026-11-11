@@ -159,8 +159,8 @@ val braveOriginPatch = bytecodePatch(
         Fingerprint(
             returnType = "V",
             parameters = listOf(
-                "Lorg/chromium/chrome/browser/profiles/Profile;",
                 "Ljava/lang/String;",
+                "Lorg/chromium/chrome/browser/profiles/Profile;",
             ),
             strings = listOf(
                 "brave.origin.product_id_android",
