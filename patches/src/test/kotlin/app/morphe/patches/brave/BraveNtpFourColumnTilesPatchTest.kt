@@ -26,9 +26,12 @@ class BraveNtpFourColumnTilesPatchTest {
 
     @Test
     fun `fingerprint anchors on the background image pref literal`() {
+        // Patcher 2.3.0 removed the `strings` backing field (raw strings are now
+        // StringFilters); the public `strings` property still returns the
+        // declared literals.
         assertEquals(
             listOf(NTP_BACKGROUND_IMAGE_PREF),
-            NtpTilesGridModeWriterFingerprint.declaredField("strings"),
+            NtpTilesGridModeWriterFingerprint.strings,
         )
     }
 

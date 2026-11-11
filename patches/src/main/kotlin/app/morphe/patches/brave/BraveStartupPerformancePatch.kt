@@ -40,8 +40,19 @@ internal val partnerCallbackAnchors = listOf(
     "setOnInitializeAsyncFinished",
 )
 
+/**
+ * Anchor for the partner-homepage length guard, `h(GURL)Z` in
+ * `PartnerBrowserCustomizations`. The log line is built from two const-strings:
+ * `"The homepage URL \""` + url + `"\" is too long."`. The anchor must be the
+ * FULL const-string `"\" is too long."` — the bare fragment `"is too long."`
+ * is not a standalone string in Brave (it only occurs inside two unrelated
+ * strings), so under Patcher 2.0.0+ exact string matching the fingerprint
+ * could never match. Verified standalone ×1 in classes5.dex of Brave 1.99.42
+ * and 1.101.25. The full string also matches under pre-2.0.0 CONTAINS
+ * semantics, so old Managers are unaffected.
+ */
 internal val partnerHomepageRejectAnchors = listOf(
-    "is too long.",
+    "\" is too long.",
 )
 
 internal val partnerDelegateUrlAnchors = listOf(

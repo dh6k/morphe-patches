@@ -79,6 +79,10 @@ private val braveOriginResourcePatch = resourcePatch(
         )
         // The preferences XML filename is obfuscated and changes between Brave versions.
         // Find the correct file by scanning all res/xml/*.xml files for our switch keys.
+        // Patcher 2.3.0 decodes resources on request: a directory only holds
+        // the files decoded so far, so a patch that lists it must decode first
+        // (ResourcePatchContext KDoc).
+        decode("res/xml/**")
         val xmlDir = get("res/xml")
         val targetFile = xmlDir.listFiles()
             ?.filter { it.extension == "xml" }
@@ -155,8 +159,8 @@ val braveOriginPatch = bytecodePatch(
         Fingerprint(
             returnType = "V",
             parameters = listOf(
-                "Lorg/chromium/chrome/browser/profiles/Profile;",
                 "Ljava/lang/String;",
+                "Lorg/chromium/chrome/browser/profiles/Profile;",
             ),
             strings = listOf(
                 "brave.origin.product_id_android",

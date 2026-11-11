@@ -70,6 +70,10 @@ val changeAppIconPatch = resourcePatch(
             val application = manifest.getElementsByTagName("application").item(0) as? Element
                 ?: throw PatchException("AndroidManifest.xml does not contain an <application> element")
             val originalIcon = application.getAndroidAttributeIcon("icon")
+            // Patcher 2.3.0 decodes resources on request: a directory only holds
+            // the files decoded so far, so a patch that lists it must decode first
+            // (ResourcePatchContext KDoc). findAdaptiveIconLayers lists res/.
+            decode("res/**")
             val adaptiveLayers = findAdaptiveIconLayers(get("res"), originalIcon)
 
             installCustomIconResources(

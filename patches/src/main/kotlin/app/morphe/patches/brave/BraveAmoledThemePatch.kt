@@ -1509,7 +1509,15 @@ private val braveAmoledResourcePatch: ResourcePatch = resourcePatch(
             ?.let { normalizeOpaqueHex(it) }
         val accent = (braveAmoledThemePatch.options["accentColor"].value as? String)
             ?.let { normalizeOpaqueHex(it) }
-        val res = get("res")
+        val res = run {
+            // Patcher 2.3.0 decodes resources on request: a directory only holds
+            // the files decoded so far, so a patch that lists it must decode first
+            // (ResourcePatchContext KDoc). This patch lists values*/layout*/
+            // drawable*/color* and checks files by isFile, so decode the whole
+            // res tree up front — the same work 1.15.0 did before patches ran.
+            decode("res/**")
+            get("res")
+        }
         if (!res.isDirectory) {
             throw PatchException("Decoded res/ directory not found")
         }
